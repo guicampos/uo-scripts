@@ -1,0 +1,31 @@
+from Assistant import Engine
+import re
+import clr
+import System
+clr.AddReference("System.Core")
+clr.ImportExtensions(System.Linq)
+
+#Function to get enemy 
+# and m.ID != 0x2eb exclude all wraiths with this the mirrors will not honored everytime
+def GetEnemies(enemyNotorieties = None, enemyMaxDistance = 32, orderBy = lambda m: m.Distance):
+    getEnemy = Engine.Mobiles.Where(lambda m: m.Distance < enemyMaxDistance
+                                              and m.Serial != Engine.Player.Serial
+                                              and m.ID != 0x2eb
+                                              and (enemyNotorieties == None 
+                                              or enemyNotorieties.Contains(m.Notoriety.ToString()))).OrderBy(orderBy)                                              
+    return getEnemy
+
+# 0x6f is an metal elemental
+def GetElementals(enemyNotorieties = None, enemyMaxDistance = 32, enemyType = None, orderBy = lambda m: m.Distance):
+    getEnemy = Engine.Mobiles.Where(lambda m: m.Distance < enemyMaxDistance
+                                              and m.Serial != Engine.Player.Serial
+                                              and m.ID == enemyType
+                                              and (enemyNotorieties == None 
+                                              or enemyNotorieties.Contains(m.Notoriety.ToString()))).OrderBy(orderBy)                                              
+    return getEnemy
+
+def getEnemiesCount(mobileList = None):
+    i=0
+    for m in mobileList:
+        i = i + 1    
+    return i

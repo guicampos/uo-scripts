@@ -1,0 +1,10 @@
+moveItemPause = 800
+smallPause = 100
+middlePause = 400
+lookForCaptchas = 'n' 
+captaAlertScriptName = 'CaptchaAlert'
+possibleToBreak = 'y'
+extractMiBs = 'y'
+#the next two lines are only needed when extractMiBs = 'y'
+bankCrystal = 0x42a30987
+bankBag = 0x46775617

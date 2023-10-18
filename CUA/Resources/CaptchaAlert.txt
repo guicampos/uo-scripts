@@ -1,0 +1,44 @@
+from ClassicAssist.UO.Data import Statics
+from ClassicAssist.UO import UOMath
+from Assistant import Engine
+from System import Convert
+from Assistant import Engine
+from ClassicAssist.UO import UOMath
+from ClassicAssist.UO.Data import Direction
+import System
+import clr
+clr.AddReference('System.Core')
+clr.ImportExtensions(System.Linq)
+
+if not TimerExists("Captcha"):
+    CreateTimer("Captcha")
+res,gumps = Engine.Gumps.GetGumps()
+#print gumps.GumpElements
+for gump in gumps:
+    for element in gump.GumpElements:
+        if element.Text != None:
+            if "AFK Captcha" in element.Text:
+                PlaySound("captcha.wav")
+                Pause(1000)
+                TimerMsg("Captcha")
+                #MessageBox("Captcha Detected", "Go Fill It In Before You Get Jailed!")
+                Pause(2000)
+                SetTimer("Captcha", 0)
+    #for e in range(len(gump)):
+    #    print e
+
+while Dead("self"):
+    #MessageBox("You died", "Go take care of that.")
+    # get button to res gump
+    Pause(5000)
+    ReplyGump(0xb04c9a31, 1)
+    #WaitForGump(0xfff0567, 5000)
+    #WaitForGump(0xfff0569, 5000)
+    #WaitForGump(0xfff056b, 5000)
+    if not Dead("self"):
+        PlaySound("captcha.wav")
+        #Pause(1000)
+       # PlayMacro("GargyLumberEquip")
+        #MessageBox("You died", "Go take care of that.")
+        Pause(20000)
+    #Stop("Lumberjacking (Only Frostwood)")

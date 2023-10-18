@@ -1,0 +1,174 @@
+from Assistant import Engine
+import re
+import clr
+import System
+clr.AddReference("System.Core")
+clr.ImportExtensions(System.Linq)
+# Custom Classes
+import TargetEnemies
+SetQuietMode(True)
+
+######### Variables ############
+tripleSlashGumpID = 0x7ec42f38 
+################################
+########## To Set   ############
+bow = GetAlias('bow')
+halberd =  GetAlias('halberd')
+shield=0x41af694e
+doubleaxe =  GetAlias('axeWithArea')
+#doubleOhneArea =  GetAlias('axeWithArea')
+eneRange = 5
+bowRange = 12
+################################
+
+def checkTimers():
+    if not TimerExists("Evasion"):
+        CreateTimer("Evasion")
+        SetTimer("Evasion", 0)
+    if not TimerExists("Curse Weapon"):
+        CreateTimer("Curse Weapon")
+        SetTimer("Curse Weapon", 0)
+    if not TimerExists("WaitAbility"):
+        CreateTimer("WaitAbility")
+        SetTimer("WaitAbility", 0)
+    if not TimerExists("Consecrate"):
+        CreateTimer("Consecrate")
+        SetTimer("Consecrate", 0)
+    if not TimerExists("GiftOfRenewal"):
+        CreateTimer("GiftOfRenewal")
+        SetTimer("GiftOfRenewal", 0)        
+    if not TimerExists("SacredBoon"):
+        CreateTimer("SacredBoon")
+        SetTimer("SacredBoon", 0)     
+
+
+def BuffSelf():
+    if Stam("self") < 150:
+        if FindType(0xf0b,-1,'backpack'):
+            UseObject("found")
+            Pause(100)
+    elif Stam("self") < 75:
+        Cast("Divine Fury")            
+    if Hits("self") < 160:
+        if FindType(0xf0c,-1,'backpack'):
+            UseObject("found")
+            Pause(100)  
+    if Timer("Curse Weapon") > 33000 and Hits() < 220:
+        Cast("Curse Weapon")
+        SetTimer("Curse Weapon", 0)
+    elif Timer("GiftOfRenewal") > 160000 and Hits() < 150:
+        Cast("Gift of Renewal")
+        WaitForTarget(10000)
+        Target('self')
+        SetTimer("GiftOfRenewal", 0)
+    elif Timer("SacredBoon") > 22000 and Hits() < 180:
+        Msg('[cs sacredboon')
+        WaitForTarget(10000)
+        Target('self')
+        SetTimer("SacredBoon", 0)
+    elif Timer("Evasion") > 21000 and Hits() < 250:
+        Cast("Evasion")
+        SetTimer("Evasion", 0)
+    elif not SpecialMoveExists("Counter Attack") and not SpecialMoveExists("Evasion"):
+        Cast("Counter Attack")
+        SetTimer("WaitAbility", 0)
+    elif Timer("Consecrate") > 7500:
+        Cast ("Consecrate Weapon")
+        SetTimer("Consecrate", 0)
+        SetTimer("WaitAbility", 0)
+    Pause(300)            
+
+def AttackMeleeSingle(ability = None):
+    while InRange("currentEnemy", eneRange):
+        BuffSelf()
+        if not ActiveAbility() and Timer("WaitAbility") > 800 and Mana('self') > 75:
+            SetAbility(ability, "on")   
+        Attack("currentEnemy")
+
+def AttackRangeSingle(ability = None):
+    while Distance("currentEnemy") <= bowRange:
+        BuffSelf()
+        if Mana('self') >= 80: ###Mana check of 80 is to cover the cost for TripleSlash and Ignore Armor skill. Not sure if LMC comes into play.
+            if not CheckIf_TripleSlashGump_IsPressed(tripleSlashGumpID): 
+                ActivateTripleSlash()
+                if not ActiveAbility() and Timer("WaitAbility") > 800:
+                    SetAbility(ability, "on")
+        else: #if not using Triple Slash or we have less than 80 mana but at least 30 to initiate Primary bow skill
+            if Mana('self') >= 50:
+                if not ActiveAbility() and Timer("WaitAbility") > 800:
+                    SetAbility(ability, "on")
+        Pause(200)
+        #Target("currentEnemy")
+        Attack("currentEnemy")
+        Pause(750)
+        
+            
+#Function to get the Triple Slash gump to show if it's not on your screen.
+def Show_TripleSlash_Gump():
+    ClearHands('both')
+    Pause(800)
+    PlayMacro("Dress Composite")
+    
+#Function to check if Triple Slash is pressed, which means the gump button should be red!
+def CheckIf_TripleSlashGump_IsPressed(gumpID):
+    tripleSlash_IsPressed = False
+    if GumpExists(gumpID):
+        res,gump = Engine.Gumps.GetGump(gumpID)
+        Pause(150)
+        elements = gump.GumpElements
+        if elements != None: 
+            #print(elements[4].Hue)
+            eleRange = len(elements)
+            for e in range(eleRange):
+                #print(e)
+                if str(elements[e].Type) == 'gumppic' and elements[e].Hue > 0:
+                    tripleSlash_IsPressed = True
+                    break
+    return tripleSlash_IsPressed
+
+#Function to Activate Triple Slash
+def ActivateTripleSlash():
+    if Mana('self') >= 50 and Stam('self') >= 50:
+        ReplyGump(tripleSlashGumpID, 1000)
+        Pause(200)   
+
+checkTimers()
+
+# hevy cross bow
+if GetAlias("found") == bow:
+    #Search for the closes enemy with 15 tiles an set the alias for that enemy
+    myEnemy = TargetEnemies.GetEnemies(enemyNotorieties = ['Attackable', 'Enemy', 'Gray', 'Criminal', 'Murderer'], enemyMaxDistance = bowRange).FirstOrDefault()
+else:
+    #Search for the closes enemy with 15 tiles an set the alias for that enemy
+    myEnemy = TargetEnemies.GetEnemies(enemyNotorieties = ['Attackable', 'Enemy', 'Gray', 'Criminal', 'Murderer'], enemyMaxDistance = eneRange).FirstOrDefault()
+
+#print myEnemy
+
+if not myEnemy == None:
+    SetAlias("currentEnemy", myEnemy.Serial)
+    Pause(500)
+    Cast("Lightning Strike")
+    Pause(500)
+    
+if FindLayer("OneHanded"):
+    # hevy cross bow
+    if GetAlias("found") == bow:
+        AttackRangeSingle("primary")
+
+    if GetAlias("found") == doubleaxe:
+        # use secondary
+        AttackMeleeSingle("secondary")
+
+if FindLayer("TwoHanded"):
+    # hally
+    if GetAlias("found") == halberd:
+        # use primary
+        AttackMeleeSingle("primary")
+    elif GetAlias("found") == shield:
+        # use primary
+      #  AttackMelee("primary")        
+        pass        
+    else:
+        SysMessage("No Weapon Equipped!", 50)
+Pause(200)
+

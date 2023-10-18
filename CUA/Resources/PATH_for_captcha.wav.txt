@@ -1,0 +1,1 @@
+<YourClassicUOFolder>\Data\Plugins\CAssist\Sounds
