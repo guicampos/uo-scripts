@@ -1,0 +1,171 @@
+//#include targeting.oajs
+/**
+ * Description
+ * @method _pet_prefer_food
+ * @param {} pet
+ * @return 
+ */
+function _pet_prefer_food(pet)
+{
+    var animal_preferences = [
+        {
+            'pet_graphic': '0x0115',
+            'food': '0x0994',
+            'name': 'pear'
+        }, // cu sidh, pear
+        {
+            'pet_graphic': '0x02DA',
+            'food': '0x097A',
+            'name': 'fish'
+        }, // stygean Dragon, fish
+        {
+            'pet_graphic': '0x0034',
+            'food': '0x097A',
+            'name': 'fish'
+        }, // stygean Dragon, fish
+    ]
+    Orion.CharPrint(pet.Serial(), 1990, pet.Graphic())
+    preference = animal_preferences.filter(function(animal_preference)
+    {
+        return animal_preference.pet_graphic == pet.Graphic();
+    });
+
+    if (preference && preference != null && preference != undefined && preference.length > 0)
+    {
+        return preference[0]
+    }
+    else
+    {
+        return false;
+    }
+
+}
+
+/**
+ * Once every afk_delay shrink all pets and release it again, to avoid afk and/or going wild 
+ * @Shrinks and release on a timed basis.
+ * @method _pet_afk
+ * @return 
+ */
+function _pet_afk()
+{
+    var small_versions = ['0x25B3', '0x25C2']
+    var afk_delay = 300000; // 5 minutes
+    if (!Orion.TimerExists('pet afk'))
+    {
+        Orion.SetTimer('pet afk', 0);
+    }
+
+    if (Orion.Timer('pet afk') <= afk_delay)
+    {
+        Orion.Say('all srk');
+        Orion.Wait(5000);
+        small_versions.forEach(function(thing)
+        {
+            Orion.UseType(thing)
+            Orion.Wait(250);
+        });
+
+    }
+}
+
+/**
+ * Description
+ * @method _pet_feeder
+ * @return 
+ */
+function _pet_feeder()
+{
+    var feeding_delay = 180000; // 3 minutes
+    if (!Orion.TimerExists('pet feeder'))
+    {
+        Orion.SetTimer('pet feeder', 0);
+    }
+
+    if (Orion.Timer('pet feeder') <= feeding_delay) return false;
+
+    var pets = Orion.GetIgnoreList('my_pet_list').Items();
+    pets.forEach(function(pet)
+    {
+        if (Orion.FindObject(pet.Serial()) && !Orion.Contains(Orion.FindObject(pet.Serial()).Properties(), 'Wonderfully Happy'))
+        {
+            prefered_food = _pet_prefer_food(pet);
+            if (!prefered_food)
+            {
+                Orion.CharPrint(pet.Serial(), 1990, 'Cannot determine food preference for this pet.')
+            }
+            else
+            {
+                food = Orion.FindType(prefered_food.food, 'any', 'backpack')
+                if (food.length > 0)
+                {
+                    while (!Orion.Contains(Orion.FindObject(pet.Serial()).Properties(), 'Wonderfully Happy'))
+                    {
+                        Orion.MoveItemType(prefered_food.food, 'any', 'backpack', 1, pet.Serial());
+                        Orion.Wait(600);
+                        Orion.Say(pet.Comment() + ' come');
+                    }
+                }
+                else
+                {
+                    Orion.CharPrint(pet.Serial(), 1990, 'Time to feed, but no ' + prefered_food.name + ' found')
+                }
+            }
+        }
+    });
+}
+
+
+/**
+ * Description
+ * @method _pet_commander
+ * @return 
+ */
+function _pet_commander()
+{
+    var pets = Orion.GetIgnoreList('my_pet_list').Items();
+    var msg = Orion.InJournal('come|stay|stop|drop|kill|guard|srk', "self");
+    if (msg && msg.Text().length > 0)
+    {
+        full_command = msg.Text().toLowerCase();
+        splitted_command = full_command.split(' ');
+        if (splitted_command.length = 2)
+        {
+            Orion.ClearJournal();
+            target = splitted_command[0];
+            command = splitted_command[1];
+
+            if (command == 'srk')
+            {
+                pets.forEach(function(pet)
+                {
+                    if (Orion.FindObject(pet.Serial()))
+                    {
+                        Orion.CharPrint(pet.Serial(), 1990, pet.Comment());
+                        Orion.Say('all stop');
+                        Orion.Wait(400);
+                        Orion.Say('all come');
+                        Orion.Wait(400);
+                        Orion.UseType('0x1374', '0x0A62');
+                        Orion.WaitForTarget(3000);
+                        Orion.TargetObject(pet.Serial());
+                        Orion.Wait(50);
+                    }
+                });
+            }
+            else
+            {
+                Orion.WaitForTarget(2000);
+                if (Orion.HaveTarget())
+                {
+                    Orion.TargetObject(Orion.ClientLastTarget());
+
+                }
+            }
+        }
+        else
+        {
+            return false;
+        }
+    }
+}

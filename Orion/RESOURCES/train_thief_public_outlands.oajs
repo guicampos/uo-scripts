@@ -1,0 +1,297 @@
+// steal from (serial)
+const host = '0x00000000';
+// training subject (serial)
+const subject = '0x00000000';
+// steal what
+const stealGraphic = 0x097D;
+// default skill use cooldown (ms)
+const skillCooldown = 6000;
+// ressurect location
+const healerLocation = {
+    x: 1000,
+    y: 1000,
+    z: 10
+};
+// start location picked up automatically
+const startLocation = currentLocation();
+
+function Autostart()
+{
+    Orion.Print("Started");
+    background();
+}
+
+function background()
+{
+    Orion.ClearJournal();
+    while (true)
+    {
+        const player = Player.Serial();
+        switch (player)
+        {
+            case host:
+                Orion.Exec('hostBg', true);
+                break;
+            case subject:
+                Orion.Exec('subjectBg', true);
+                Orion.Exec('subjectDropBg', true);
+                break;
+        }
+        Orion.Wait(1000);
+    }
+}
+
+function hostBg()
+{
+    Orion.Print(">> Host");
+    if (Player.Hidden())
+        Orion.Say("z");
+    pickUpAuto();
+}
+
+function subjectBg()
+{
+    function skillMaxedOut(skillName)
+    {
+        return Orion.SkillValue(skillName) >= 1000;
+    }
+    Orion.Print(">> Subject");
+    ressurectIfDead();
+    if (!skillMaxedOut("Hiding") ||
+        !skillMaxedOut("Stealth"))
+    {
+        hide();
+        if (Orion.SkillValue("Hiding") >= 800)
+        {
+            stealth();
+        }
+    }
+    if (!skillMaxedOut("Snooping"))
+    {
+        snoop();
+    }
+    if (!skillMaxedOut("Stealing"))
+    {
+        steal();
+    }
+}
+
+function subjectDropBg()
+{
+    drop();
+    Orion.Wait(1000);
+}
+
+function ressurectIfDead()
+{
+    if (Player.Dead())
+    {
+        Orion.Print(">>> Ressurect in 15 minutes");
+        Orion.Wait(60 * 1000 * 15);
+        const hook = Orion.CreateGumpHook(1);
+        Orion.WaitGump(hook);
+        Orion.Print(">>> Going to healer");
+        runTo(healerLocation);
+        while (Player.Dead())
+            Orion.Wait(500);
+        Orion.CancelWaitGump();
+        Orion.Print(">>> Going back");
+        runTo(startLocation);
+    }
+}
+
+function hide()
+{
+    Orion.Print(">>> Hide");
+    retryUntilSuccess(function()
+    {
+        Orion.UseSkill("Hiding");
+        Orion.Wait(500);
+        return inJournalAndClear("You have hidden yourself well.")
+    });
+    Orion.Wait(11000);
+}
+
+function stealth()
+{
+    Orion.Print(">>> Stealth");
+    retryUntilSuccess(function()
+    {
+        Orion.UseSkill("Stealth");
+        Orion.Wait(500);
+        if (inJournalAndClear("You are not hidden well enough."))
+        {
+            return true;
+        }
+        if (inJournalAndClear("You must hide first using the Hiding skill."))
+        {
+            hide()
+            stealth();
+            return true;
+        }
+        return inJournalAndClear("You begin to move quietly.");
+    });
+    Orion.Wait(skillCooldown);
+}
+
+function snoop()
+{
+    Orion.Print(">>> Snoop");
+    const hostBackpack = Orion.ObjAtLayer('21', host);
+    if (hostBackpack)
+    {
+        retryUntilSuccess(function()
+        {
+            Orion.OpenContainer(hostBackpack.Serial());
+            Orion.Wait(500);
+            return !inJournalAndClear("You failed to peek into the container.");
+        });
+        Orion.Wait(skillCooldown * .5);
+    }
+}
+
+function steal()
+{
+    Orion.Print(">>> Steal");
+    const hostBackpack = Orion.ObjAtLayer('21', host);
+    if (hostBackpack)
+    {
+        retryUntilSuccess(function()
+        {
+            const stealObject = findFirstObjectInContainer(stealGraphic, hostBackpack.Serial());
+            if (stealObject)
+            {
+                Orion.UseSkill("Stealing");
+                Orion.WaitForTarget();
+                Orion.TargetObject(stealObject);
+                Orion.Wait(500);
+                return inJournalAndClear("You successfully steal the item.");
+            }
+            else
+            {
+                snoop();
+                return true;
+            }
+        });
+        Orion.Wait(skillCooldown);
+    }
+}
+
+function drop()
+{
+    const stealObject = findFirstObjectInContainer(stealGraphic, 'backpack');
+    if (stealObject && Orion.GetDistance(host) <= 1)
+    {
+        Orion.Print(">>> Drop");
+        Orion.DropHere(stealObject);
+    }
+    Orion.Wait(500);
+}
+
+// training helpers
+
+function currentLocation()
+{
+    return {
+        x: Player.X(),
+        y: Player.Y(),
+        z: Player.Z()
+    };
+}
+
+function runTo(location)
+{
+    do {
+        if (!Orion.IsWalking())
+        {
+            Orion.WalkTo(location.x, location.y, location.z, 0, 256, 1, 1);
+        }
+        Orion.Wait(1000);
+    } while (Player.X() != location.x && Player.Y() != location.y && Player.Z() != location.z)
+}
+
+function findFirstObjectInContainer(graphic, container)
+{
+    const objects = Orion.FindType(graphic, 0xFFFF, container);
+    if (objects.length > 0)
+        return objects[0]
+    else return false;
+}
+
+function retryIfFailed(func, failPredicate, retryDelay)
+{
+    if (!retryDelay)
+    {
+        retryDelay = 1000;
+    }
+    func();
+    Orion.Wait(500);
+    while (failPredicate())
+    {
+        Orion.Print("Fail Predicate, waiting " + retryDelay);
+        Orion.Wait(retryDelay);
+    }
+}
+
+function retryUntilSuccess(func, retryDelay)
+{
+    if (!retryDelay)
+    {
+        retryDelay = 5000;
+    }
+    var attempts = 0;
+    const maxAttempts = 10;
+
+    function hasMoreAttempts()
+    {
+        if (attempts < maxAttempts)
+        {
+            attempts = attempts + 1;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    while (hasMoreAttempts() && !func())
+    {
+        Orion.Wait(retryDelay);
+    }
+}
+
+function inJournalAndClear(pattern)
+{
+    const record = Orion.InJournal(pattern);
+    Orion.ClearJournal(pattern);
+    return record;
+}
+
+function pickUpAuto(graphic)
+{
+    const distance = 2
+    const items = Orion.FindType(graphic ? graphic : 0xFFFF, 0xFFFF, 'ground', ['fast', 'item'], distance)
+    items.forEach(function(x, i)
+    {
+        if (Orion.GetDistance(x) <= distance)
+        {
+            Orion.MoveItem(x, 0, "backpack");
+            if (i < items.length - 1)
+                Orion.Wait(100 + Orion.Random(400));
+        }
+    });
+}
+
+function walkAwayFromHostAndComeback(steps)
+{
+    const object = Orion.FindObject(host);
+    const hostOffsetX = Player.X() - object.X();
+    const hostOffsetY = Player.Y() - object.Y();
+    const awayLocation = {
+        x: Player.X() + (hostOffsetX * steps),
+        y: Player.Y() + (hostOffsetY * steps),
+        z: Player.Z()
+    };
+    runTo(awayLocation);
+    runTo(startLocation);
+}

@@ -1,0 +1,160 @@
+//#include general.oajs
+//#include travelling.oajs
+
+
+//discord's webhook URL
+var webhook_url =
+    'https://discord.com/api/webhooks/1059125785396531220/8jA03ehFdYVebG-FCAKAYKcef2NsyJ-2VYFMDa2UZ78fFWBRnLTNGcEzGQIAC7_OK-Z1';
+
+/**
+ * Description
+ * @method contracts_search_travel
+ * @return Literal
+ */
+function contracts_search_travel()
+{
+    contract_merchants.forEach(function(merchant){
+        Orion.CancelWaitGump();
+        Orion.CancelContextMenu();
+        Orion.Wait(2000);
+        if (merchant.travel_method == 'runebook')
+        {
+            Orion.Print('Recalling to ' + merchant.name)
+            runebook_serial = _runebook_find_by_name('contract', false);
+            if (!Orion.FindObject(runebook_serial))
+            {
+            	Orion.Print('Cannot find a runebook with the name contract on it');
+            	throw false;
+            }
+            _runebook_travel(runebook_serial, merchant.button, travel_spell)
+        }
+        else if (merchant.travel_method == 'personal teleport')
+        {
+            _personal_teleporter_travel(teleporter_serial, merchant.button_sequence[0], merchant
+                .button_sequence[1])
+        }
+        Orion.Wait(4000); // important wait. time between button click and reach the location.
+        Orion.WalkTo(merchant.X, merchant.Y, merchant.Z, 3, 1, 1);
+
+        while (Orion.IsWalking())
+        {
+            Orion.Wait(1)
+        }
+        if (merchant.serial != null)
+        {
+            merchantObj = Orion.FindObject(merchant.serial);
+            if (merchantObj == null || Orion.GetDistance(merchant.serial) > 3)
+            {
+                Orion.Print(1990, 'Merchant ' + merchant.name + ' not found or too distant (' + Orion
+                    .GetDistance(merchant.serial) + ')')
+                return false;
+            }
+            // So, we are at the right place and the contract merchant is here.
+            // request the context, talk, open the gump, read the info and send into discord.
+            Orion.Wait(600);
+            _check_contracts(merchant);
+            Orion.Wait(600);
+        
+        }
+
+        return true;
+    });
+
+    Orion.Print("All contracts Checked.");
+
+    return true;
+}
+
+/**
+ * Description
+ * @method _check_contracts
+ * @param {} merchant
+ * @return 
+ */
+function _check_contracts(merchant)
+{
+    contract_gump = _gump_get_by_text('Contract System');
+    if (contract_gump) contract_gump.Close();
+    Orion.RequestContextMenu(merchant.serial);
+    Orion.Wait(pulse_time*2);
+    menu = Orion.GetContextMenu();
+    Orion.Wait(pulse_time*2);
+    Orion.WaitForContextMenu();
+    Orion.Wait(pulse_time*2);
+    menu.Select(1)
+    Orion.Wait(pulse_time*2);
+    Orion.WaitForGump(3000);
+    Orion.Wait(pulse_time*5);
+    contract_gump = _gump_get_by_text('Contract System');
+
+    if (contract_gump)
+    {
+        contract_gump.TextList().forEach(function (text_line)
+        {
+			//Orion.Print('send?')
+        	var send = false;
+            if (!Orion.Contains(text_line, 'Type: ') && Orion.Contains(text_line, 'BASEFONT'))
+            {
+                contract_name = text_line.replace("<BASEFONT COLOR=#FFFFFF>", '').replace(
+                    "<\/BASEFONT>", '');
+                if (contract_name.length > 0)
+                {
+                    message = contract_name + ' is up (' + merchant.type +')';
+                    //message = '**Contract found:**: Alt: ' + Player.Name() + '   |   Type: ' +
+                    //    merchant.type + '   |   Name: ' + contract_name + '   |    Merchant: ' +
+                    //   merchant.name;
+//                        Orion.Print('contract_name: ' + contract_name)
+//                        Orion.Print('preferred_contracts.length: ' + preferred_contracts.length)
+//                        Orion.Print('contract_name.indexOf(contract_name): ' + contract_name.indexOf(contract_name))
+					/*strange, isn't it? I think this is needed because of JS conditional short circuit*/
+                    if (preferred_contracts.length > 0 && preferred_contracts.indexOf(contract_name.replace(/&/g, 'and')) > -1)  //report a favourite
+	                    send = true
+                    if (preferred_contracts.length == 0)  //report a favourite
+	                    send = true
+    
+    				if (send == true)
+                    {
+	                    if (announce_in_guild == true)
+	                    	Orion.Say('[g ' + message)
+                            //Orion.Print('send;')
+                        Orion.Exec("_discord_send_message", false, [webhook_url, message]);                       
+                    }
+
+                }
+				contract_gump.Close();
+            }
+
+        });
+    }
+}
+
+
+
+
+/**
+ * Description
+ * @method loop_contract_travel
+ * @return 
+ */
+function loop_contract_travel()
+{
+    var delay = minutes_between_travels * 60000;
+    Orion.SetTimer('timer_between_travels', delay+1);
+
+    while (true)
+    {
+         if (Orion.Timer('timer_between_travels') >= delay)
+         {
+             contracts_search_travel();
+             Orion.AddDisplayTimer('timer_between_travels', delay, 'UnderChar', 'Line|Vertical', 'next travel', 0, 0);
+             
+
+             Orion.CancelContextMenu();
+             Orion.CloseMenu('all');
+    
+             Orion.SetTimer('timer_between_travels', 0);    
+         }
+    }
+
+
+}

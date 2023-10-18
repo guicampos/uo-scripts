@@ -1,0 +1,146 @@
+//#include lib.oajs
+
+/**
+ * Description
+ * @method activateWatcher
+ * @return 
+ */
+function activateWatcher()
+{
+    if (!Orion.TimerExists('watcher_activation'))
+    {
+        Orion.SetTimer('watcher_activation', 600000);
+    }
+
+    if (Orion.Timer('watcher_activation') > 600000)
+    {
+        _watcher_activation()
+        Orion.SetTimer('watcher_activation', 0);
+        Orion.AddDisplayTimer('watcher_activation', 600000, 'AboveChar', 'line|vertical|bar', 'watcher_activation', 120, 60);
+    }
+    Orion.Wait(50);
+}
+
+/**
+ * Description
+ * @method _watcher_activation
+ * @return 
+ */
+function _watcher_activation()
+{
+    var running0 = false;
+    Devnet = Orion.FindObject('0x00231E18');
+
+    if (Devnet != null && Player.X() == 806 && Player.Y() == 1002 && Player.Z() == -83)
+    {
+
+        Orion.Step(6, running0);
+        if (Orion.ObjAtLayer('Mount') !== null)
+            Orion.Wait(running0 ? 115 : 215);
+        else
+            Orion.Wait(running0 ? 215 : 415);
+        if (Player.Direction() !== 2)
+        {
+            Orion.Step(2, true);
+            if (Orion.OptionFastRotation())
+                Orion.Wait(50);
+            else
+                Orion.Wait(100);
+        }
+        var running1 = false;
+        Orion.Step(2, running1);
+        if (Orion.ObjAtLayer('Mount') !== null)
+            Orion.Wait(running1 ? 115 : 215);
+        else
+            Orion.Wait(running1 ? 215 : 415);
+        if (Player.Direction() !== 6)
+        {
+            Orion.Turn(6);
+            if (Orion.OptionFastRotation())
+                Orion.Wait(50);
+            else
+                Orion.Wait(100);
+        }
+    }
+}
+
+
+/**
+ * Description
+ * @method loop_say_buttler
+ * @return 
+ */
+function loop_say_buttler()
+{
+
+    buttler_sayings = ["my name is Try Catch, Velland's Automated Buttler", "If you need any macro, script or programming services.", "Please reach my master's Discord at guicampos#6410", "You can also mail him in game using PM.", "Thank you and good shopping!"];
+    while (!Player.Dead())
+    {
+        Orion.Wait(250);
+        activateWatcher()
+
+        var humans = Orion.FindTypeEx(any, any, ground, 'human|live|ignoreself', 8, 'blue|green|orange', false, 'PlayerDetectorIgnoreList')
+            .filter(function(human)
+            {
+                if (!human.ProfileReceived())
+                    Orion.GetProfile(human.Serial());
+                return human.ProfileReceived();
+            });
+
+        if (humans.length > 0)
+        {
+            player = humans[0];
+            Orion.Say("Hello " + player.Name());
+            Orion.Wait(2000);
+            buttler_sayings.forEach(function(element)
+            {
+                Orion.Say(element);
+                Orion.Wait(3000);
+            });
+            Orion.AddIgnoreListObject('PlayerDetectorIgnoreList', player.Serial(), player.Name());
+            Orion.Wait(60000);
+        }
+            Orion.Wait(25);
+    }
+}
+
+/**
+ * Description
+ * @method loop_ufo_market_announcer
+ * @return 
+ */
+function loop_ufo_market_announcer()
+{
+    Orion.RemoveTimer('ufo_market_announce_timer');
+    var ufo_market_announce_timer = 7200000; // try to send a message every 2 hours 
+    //var ufo_market_announce_timer = 5000; // debug - 5 seconds
+    var phrases_list = [
+        "[trade UFO Vendor Mall, on Silver market, resources, PS, augs, MCD, gear, T-maps, glass, storage keys, quest items and more.",
+        "[trade Come to UFO Vendor Mall, under Silver Player VMs! We have Gears, EVO Dragon eggs, weapons, mirror shields and more.",
+        "[trade At UFO Vendor Mall you will find all you need to complete your tasks and contracts with reagents, ingots, maps and more!",
+        "[trade New player? We have what you need here at UFO! Buy cheap spellbooks, weapons, armors, powerscrolls and more!",
+        "[trade UFO Vendor Mall has hour glasses, tamed animal, wood, ingots, regs and many other goods for your taks and contracts.",
+        "[trade Do you like housing and decoration? Here at UFO we have decos, plants and much more for your house and garden!",
+    ];
+
+    Orion.SetTimer('ufo_market_announce_timer', ufo_market_announce_timer)
+    last_rand = 0;
+    rand = Orion.Random(1, phrases_list.length);
+    while (true)
+    {
+        if (Orion.Timer('ufo_market_announce_timer') >= ufo_market_announce_timer)
+        {
+            do {
+                rand = Orion.Random(0, phrases_list.length);
+            } while (rand == last_rand)
+            //Orion.Print(rand)
+            saywhat = phrases_list[rand]
+            //Orion.Print(saywhat)
+            Orion.Say(saywhat);
+            Orion.SetTimer('ufo_market_announce_timer', 0);
+            Orion.AddDisplayTimer('ufo_market_announce_timer', ufo_market_announce_timer, 'BellowChar', 'line|vertical|bar', 'market', 120, 120);
+            last_rand = rand;
+        }
+        Orion.Wait(50);
+    }
+}

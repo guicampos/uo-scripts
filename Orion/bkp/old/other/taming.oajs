@@ -1,0 +1,56 @@
+function TameAllAnimals(){
+TargetList = '0x00CF|0x000C'
+
+	while(true)
+	{
+		target = Orion.FindType(TargetList, 'any', 'ground', 'ignoreself|mobile|live|near|fast');
+		
+		AnimalTaming(target);
+		
+	}
+
+}
+
+function AnimalTaming(target)
+{
+    var endMsg = "anger the beast|you fail to tame";
+    var stopMsg = "cannot be tamed|accept you as master|tame already";
+    var allMsg = endMsg + "|" + stopMsg;
+    var start = Orion.Now();
+    var delay = 8000;
+
+//    if (Orion.WaitForAddObject("temp") != 1)
+//   {
+//        Orion.Print("AnimalTaming canceled");
+//       return;
+//    }
+
+    var mount = Orion.FindObject(target);
+    if (!mount) {
+    return false;
+    }
+
+    while (mount.Exists() && !Orion.InJournal(stopMsg, "", "0", any, start))
+    {
+        if (mount.Distance() > 1 || !mount.InLOS())
+        {
+            if (mount.Notoriety() < 4)
+            {
+                Orion.WalkTo(mount.X(), mount.Y(), mount.Z(), 1, 255, true);
+            }
+            else
+            {
+                Orion.Print("COME CLOSER");
+                Orion.Wait(3000);
+                continue;
+            }
+        }
+
+        start = Orion.Now();
+        Orion.CancelWaitTarget();
+        Orion.WaitTargetObject(mount.Serial());
+        Orion.UseSkill("Animal Taming");
+        Orion.WaitJournal(allMsg, start, start + delay);
+        Orion.Wait(1);
+    }
+}

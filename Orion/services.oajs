@@ -1,0 +1,231 @@
+/**
+ * Get a timestamp from the free webapi site timeapi.uo. Default timezone is US/Central (uo evo server) but you can use any from https://timeapi.io/api/TimeZone/AvailableTimeZones
+ * @method _get_date_time
+ * @param {string} timezone
+ * @return date from timeapi.io
+ */
+function _get_date_time(timezone)
+{
+    var timezone = timezone == null ? 'US/Central' : timezone;
+    response = Orion.HttpGet("https://www.timeapi.io/api/Time/current/zone?timeZone=" + timezone, '');
+    if (response && response.length > 0)
+    {
+        response = JSON.parse(response)
+        date = new Date(response.year, response.month - 1, response.day, response.hour, response.minute,
+            response.seconds)
+        return date;
+    }
+}
+
+
+/**
+ * Sends a message using Orion's http post method
+ * @method _discord_send_message
+ * @param {string} webhook_url
+ * @param {string} message
+ * @param {timestamp} timestamp
+ * @return {string} message
+ */
+function _httppost_send_message(webhook_url, message, timestamp)
+{
+    if (!message || message == undefined || message.length < 0)
+        return false;
+    if (!webhook_url || webhook_url == undefined || webhook_url.length < 0)
+        return false;
+
+    var paramText = 'content=';
+    var time = _get_date_time('US/Central').toLocaleTimeString();
+    //time = new Date(parseInt(timestamp));
+    //time = time.toLocaleTimeString();
+    response = Orion.HttpPost(webhook_url, paramText + time + '   ' + message);
+    if (response.length > 0) return response
+    else return message;
+
+}
+
+
+/**
+ * Description
+ * @method loop_in_game_to_discord
+ * @return 
+ */
+function loop_in_game_to_discord()
+{
+    var debug = "https://discord.com/api/webhooks/1048543525156950036/icZVbNPBVxwSW5kfPCjUTfuUoRhB0boVGavpiMkfnEkNU-IzCtyLwwJfAkovoLNlkZWb"
+    var discord_in_game_public = "https://discord.com/api/webhooks/1049272145894703144/tbdbsXy1QmD4ZesllNxWF-rCvqWWyzyeo0PumLj5Ci7QN92K4Z5MTYTFmPp31vqTluc8"
+    var discord_in_game_trade = "https://discord.com/api/webhooks/1049274030580043806/rjk0iBeD5xV_ThGYLD19u9OKZtpCW33xcaeRtaeSnxPbeFS-3cWkaSExR_-92iSf-JNu"
+    var discord_in_game_events = "https://discord.com/api/webhooks/1049273907963768912/53enARQbmvYNNPDgR5BWqpWAvqaoR8KxXPMkmXEw5MgljhHOSWz10PZ2-vGKzodbjGOi"
+    var discord_in_game_guild = "https://discord.com/api/webhooks/1049273812505604197/7eqzLb7V1zh8HSApu6wrjtc1ZM4p8Lb0J3ZWJvo5cy7lUqQ_uHE_3u48jvI1HDhVOZeE"
+    var discord_in_game_local = "https://discord.com/api/webhooks/1049273626614054912/D1Kl5ARQFoIsp0WWy8i0yuyGUSkRAj-A6Hp5bSPp1tIfUlgRjr4pVgsrQJBv4M1mVLHM"
+    var channels = [
+        {
+            'enabled': true,
+            'channel': 'local say',
+            'color': '0x02B2|0x0034',
+            'keywords': null,
+            'URL': discord_in_game_local
+        },
+        /*{
+            'enabled': true,
+            'channel': 'all input',
+            'color': 'any',
+            'keywords': null,
+            'URL': discord_in_game_local
+        },*/
+        {
+            'enabled': true,
+            'channel': 'guild',
+            'color': '--',
+            'keywords': '<UFO>',
+            'URL': discord_in_game_guild
+        },
+        {
+            'enabled': true,
+            'channel': 'guildBackslash',
+            'color': '0x0044|0x0120',
+            'keywords': '[Guild]',
+            'URL': discord_in_game_guild
+        },
+        //    {'enabled':true, 'channel':'guildBackslash','color':''0x0120,'keywords': '[Guild]', 'URL': discord_in_game_guild},
+        {
+            'enabled': true,
+            'channel': 'trade',
+            'color': '--',
+            'keywords': '<Trade>',
+            'URL': discord_in_game_trade
+        },
+        {
+            'enabled': true,
+            'channel': 'public',
+            'color': '--',
+            'keywords': '<Public>|<PVP>',
+            'URL': discord_in_game_public
+        },
+        //    {'enabled':true, 'channel':'public','color':'0X047E','keywords': '<Public>', 'URL': discord_in_game_public},
+        {
+            'enabled': true,
+            'channel': 'champs',
+            'color': '--',
+            'keywords': 'Champion Spawn | Champion Spawns |Champ is Active',
+            'URL': discord_in_game_events
+        },
+        {
+            'enabled': true,
+            'channel': 'events',
+            'color': '--',
+            'keywords': 'The world is saving, please wait|has found|has just started|has won|just won|The hunt for|powers of vecna|The fishing contest has started|Get fishing',
+            'URL': discord_in_game_events
+        },
+        {
+            'enabled': true,
+            'channel': 'invasions',
+            'color': '--',
+            'keywords': 'is being invaded',
+            'URL': discord_in_game_events
+        },
+        //    {'enabled':true, 'channel':'announcements','color':'0x0351','keywords': null, 'URL': discord_in_game_public},
+    ]
+    //    TextWindow.Open();
+    while (true)
+    {
+        lastMessage = Orion.LastJournalMessage();
+        var channel = false;
+
+        if (lastMessage && lastMessage != null && lastMessage.Text().length > 0)
+        {
+
+            /*            TextWindow.Print(
+                            'color:' + lastMessage.Color() + '|' +
+                            'serial:' + lastMessage.Serial() + '|' +
+                            'flags:' + lastMessage.Flags() + '|' +
+                            'time:' + lastMessage.Timer() + '|' +
+                            'text:' + lastMessage.Text()
+                        )
+            */
+            finalMessage = lastMessage.Text();
+
+            channel = channels.filter(function(channel, idx, arr)
+            {
+                var ret = {};
+                ret = (channel.enabled && (
+                    Orion.Contains(lastMessage.Text(), channel.keywords) ||
+                    Orion.Contains(lastMessage.Color(), channel.color)
+                    //                    || channel.color == 'any'
+                ));
+                return ret;
+            });
+
+            /*
+                for (var i =0; i < channels.length; i++)
+                {
+                    if (channels[i].enabled == true && Orion.Contains(lastMessage.Text(), channels[i].keywords)) 
+                    {
+                        channel = channels[i];
+                        break;
+                    }        
+                }
+                
+                if (!channel)
+                {
+                    for (var i =0; i < channels.length; i++)
+                    {
+                        if (channels[i].enabled == true && Orion.Contains(lastMessage.Color(), channels[i].color) ) 
+                        {
+                            channel = channels[i];
+                            break;
+                        }        
+                    }
+                }
+            */
+            if (!channel || channel.length < 1) channel = [
+            {
+                'enabled': false,
+                'channel': 'uncategorized',
+                'color': 'false',
+                'keywords': 'false',
+                'URL': null
+            }];
+            channel = channel[0]
+            // More filters
+            if (channel.channel == 'guildBackslash' && lastMessage.Serial() == '0xFFFFFFFF')
+                continue;
+            if (channel.channel == 'invasions' && Orion.Contains(lastMessage.Text(), 'Everything is looking fine at the moment'))
+                continue;
+
+            if (lastMessage.Serial() != '0xFFFFFFFF')
+            {
+                name = Orion.RequestName(lastMessage.Serial(), 1500);
+                if (!name || name == null)
+                {
+                    PlayerDetectorIgnoreList = Orion.GetIgnoreList('PlayerDetectorIgnoreList');
+                    nameList = PlayerDetectorIgnoreList.Items().filter(function(player)
+                    {
+                        return player.Serial() == lastMessage.Serial();
+                    });
+
+                    if (nameList.length > 0 && nameList[0].Comment().length > 0)
+                        name = nameList[0].Comment();
+                    else
+                        name = Orion.RequestName(lastMessage.Serial(), 1000);
+
+                }
+                if (channel.channel == 'guildBackslash')
+                    finalMessage = '[Guild][' + name + ']: ' + finalMessage;
+                if (channel.channel == 'local say' || channel.channel == 'all input')
+                    finalMessage = name + ': ' + finalMessage;
+            }
+
+            if (channel.enabled)
+            {
+                Orion.Exec('_httppost_send_message', false, [channel.URL, finalMessage, lastMessage.Timer().toString()]);
+                // Orion.Print('Sent:'+finalMessage + "channel:"+channel.channel) 
+                //                Orion.Wait(25);
+            }
+
+            Orion.ClearJournal();
+            lastMessage = undefined;
+        }
+        Orion.Wait(10);
+    }
+    Orion.Wait(10);
+}

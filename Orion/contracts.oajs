@@ -1,0 +1,91 @@
+//#include contracts_lib.oajs
+
+// ====================== YOU CAN EDIT THIS SECTION ===============
+// === This part is where you will configure the script. Please read the comments ===
+
+var minutes_between_travels = 25; // in minutes
+
+// your personal teleporter serial, if you're going to a place that cannot be reached by a recall rune, such as Ilshenar. Check the serial id with _info
+var teleporter_serial = '0x44825FF1';
+
+// Announce in the in-game guild chat ([g)
+var announce_in_guild = true;
+
+// Place a list of favourite contracts. If this list has any member, than only this members wlill be reported/get
+// Please put it as it is in the contract gump, with the same case and ponctuation. Case and Pontuaction!
+// e.g. 'The Kings Seat!', 'Floppy Brim!', '"Knight's Ass?", "It's Magic!", 'Hold the Line', 'Going Ape!', 'Slimey Acid!', 'Chesty!', 'Rangers Range!'
+// replace & for 'and'
+var preferred_contracts = ['Wiley Old Thing', 'Wood and Iron', 'Phantom Pain', 'Woodland Iron', 'Into Heartwood', 'Into the Palace', 'Quench a Horse', 'Out to Sea', 'Hide and Seek', 'Re-order', 'Loyalty', 'Meditative Stance', 'Soft Bones', 'Shell of Steal', 'Banished', 'Welcome to my Nightmare']
+
+// List for contracts merchants. Please edit only the button number.
+// If you want to add a new one, just repeat a block and adjust: serial, travel_mehod, button number or button_sequence and X, Y, Z coordinates.
+// The other informations (name, type) are just metadata to be displayed.
+// The button numbers don't need to be in sequence. You can place the blocks in any order, the important is the button number, like button 3, 1, 2.
+var contract_merchants = [
+{
+    'name': 'Winfrey Withers',
+    'serial': '0x00189E8C',
+    'type': 'Tailor Contracts',
+    'travel_method': 'runebook',
+    'button': 1,
+    'X': 1474,
+    'Y': 1686,
+    'Z': 0
+},
+{
+    'name': 'Joseph Woodworkers',
+    'serial': '0x0014CDE9',
+    'type': 'Carpentry Contracts',
+    'travel_method': 'runebook',
+    'button': 2,
+    'X': 553,
+    'Y': 1011,
+    'Z': 0
+},
+/*uncomment if you want to search for scribe contracts*/
+//{
+//    'name': 'Specti',
+//    'serial': '0x001F39F2',
+//    'type': 'Scribe Contracts',
+//    'travel_method': 'personal teleport',
+//    'button_sequence': [111, 204],
+//    'X': 1373,
+//    'Y': 1047,
+//    'Z': -12
+//},
+
+{
+    'name': 'Berthold',
+    'serial': '0x00189E36',
+    'type': 'Animal Contracts',
+    'travel_method': 'runebook',
+    'button': 3,
+    'X': 1291,
+    'Y': 1762,
+    'Z': 11
+}, 
+
+// Your safeplace should be the last position (button) your runebook should search.
+// Also the serial should be null, so the script knows that it shouldnt be looking for a dealer.
+{
+    'name': 'Safe Place',
+    'serial': null,
+    'type': null,
+    'travel_method': 'runebook',
+    'button': 4,
+    'X': 808,
+    'Y': 1002,
+    'Z': -83
+},]
+
+
+
+// Unimplemented / reserved
+// List of alts that will be participating on the contract rotating
+//var my_alt_list = ['Try Catch', 'PatA', 'PetA', 'PitA', 'Margaridinha']
+//
+//var inn_button = 4 // what button travels to a inn?
+//
+// var inn_xyz = '1494,1622,40' // inn stop xyz
+//var stealth_mode = true
+

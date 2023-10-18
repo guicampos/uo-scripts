@@ -1,0 +1,190 @@
+//#include lib.oajs
+
+/**
+ * Description
+ * @method _runebook_reset
+ * @param {} runebook_type
+ * @return 
+ */
+function _runebook_reset(runebook_type)
+{
+    Orion.RemoveObject(runebook_type);
+    Orion.RemoveObject("cleanRune");
+}
+
+/**
+ * Description
+ * @method _runebook_close
+ * @param {} runebook_type
+ * @return Literal
+ */
+function _runebook_close(runebook_type)
+{
+    runebook_gump = _runebook_get_gump();
+
+    if (runebook_gump != null)
+    {
+        runebook_gump.Close();
+        return true;
+    }
+    return false;
+}
+
+
+/**
+ * Description
+ * @method _runebook_check
+ * @param {} runebook_serial
+ * @return 
+ */
+function _runebook_check(runebook_serial)
+{
+
+    if (!Orion.FindObject(runebook_serial))
+    {
+        return false;
+    }
+
+}
+
+/**
+ * Description
+ * @method _runebook_open
+ * @param {} runebook_serial
+ * @return Literal
+ */
+function _runebook_open(runebook_serial)
+{
+
+    Orion.UseObject(runebook_serial);
+    return true;
+}
+
+/**
+ * Description
+ * @method _runebook_travel
+ * @param {} runebook_serial
+ * @param {} button_number
+ * @return 
+ */
+function _runebook_travel(runebook_serial, button_number)
+{
+
+    // var travel_method = (!travel_method || travel_method == undefined || travel_method < 4) ? 6 : travel_method;
+    var travel_method = 6; // always sacred journey to avoid problems
+
+    /*    if (!_runebook_check(runebook_serial))
+        {
+        	Orion.Print('Runebook ' + runebook_serial + ' not found')
+        	throw false;
+        }
+        */
+    if (!Orion.TimerExists('timer_runebook')) Orion.SetTimer('timer_runebook', 8001);
+
+    if (Orion.Timer('timer_runebook') < 8000)
+    {
+        Orion.AddDisplayTimer('waitrunebook', 8000 - Orion.Timer('timer_runebook'), 'AboveChar', 'Line|Bar',
+            'runebook wait', 0, 0, '87',
+            -1, '0xFD')
+        while (Orion.Timer('timer_runebook') < 8000)
+        {
+            Orion.Wait(1)
+        }
+    }
+    button = (button_number * travel_method) + 1
+    _runebook_open(runebook_serial);
+    Orion.Wait(1500);
+    runebookgump = Orion.GetGump('last');
+    Orion.Wait(1500);
+    button_hook = Orion.CreateGumpHook(button);
+    Orion.Wait(1500);
+    runebookgump.Select(button_hook);
+    Orion.SetTimer('timer_runebook', 0);
+}
+
+/**
+ * Description
+ * @method _runebook_find_by_name
+ * @param {} name
+ * @param {} source
+ * @return Literal
+ */
+function _runebook_find_by_name(name, source)
+{
+    runebooks = Orion.FindTypeEx('0x22C5', 'any', source, 'item', 'finddistance', '', true);
+
+    if (runebooks.length > 0)
+    {
+        for (var i = 0; i < runebooks.length; i++)
+        {
+            if (Orion.Contains(runebooks[i].Properties().toLowerCase().replace(/ /g, ''), name.toLowerCase().replace(/ /g, '')))
+            {
+                return runebooks[i].Serial();
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Description
+ * @method _personal_teleporter_travel
+ * @param {} teleporter_serial
+ * @param {} button_group
+ * @param {} button_destination
+ * @return 
+ */
+function _personal_teleporter_travel(teleporter_serial, button_group, button_destination)
+{
+    //Orion.Print('teleporter_serial, button_group, button_destination' + teleporter_serial +','+ button_group+','+ button_destination)
+    Orion.UseObject(teleporter_serial);
+    Orion.Wait(1000);
+    if (Orion.WaitForGump(3000))
+    {
+        var gump0 = Orion.GetGump('last');
+        Orion.Wait(pulse_time);
+        if ((gump0 !== null))
+        {
+            var gumpHook = Orion.CreateGumpHook(button_group);
+            Orion.Wait(pulse_time);
+            gump0.Select(gumpHook);
+            Orion.Wait(1000);
+        }
+    }
+    Orion.Wait(1000);
+    if (Orion.WaitForGump(3000))
+    {
+        var gump1 = Orion.GetGump('last');
+        Orion.Wait(pulse_time);
+        if ((gump1 !== null))
+        {
+            var gumpHook0 = Orion.CreateGumpHook(1);
+            Orion.Wait(pulse_time);
+            gumpHook0.AddCheck(button_destination, true);
+            Orion.Wait(pulse_time);
+            gump1.Select(gumpHook0);
+            Orion.Wait(1000);
+        }
+    }
+}
+
+
+/**
+ * Description
+ * @method _runebook_get_gump
+ * @return Literal
+ */
+function _runebook_get_gump()
+{
+    var runebookgump;
+    for (var i = 0; i < Orion.GumpCount(); i++)
+    {
+        runebookgump = Orion.GetGump(i);
+        if (runebookgump != null && runebookgump.ID() == '0x542832BA')
+        {
+            return runebookgump;
+        }
+    }
+
+    return null;
+}

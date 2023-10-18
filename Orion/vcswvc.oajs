@@ -1,0 +1,230 @@
+//#include vcswvc_lib.oajs
+
+
+
+// Velland's Combat System With Voice Commands - Personal Edition.
+
+// ###### Please read carefuly all comments below ###### 
+
+// Configure all here! 
+// You can edit everything here, but be careful, never use arbitrary values and pay attention to commas and other symbols.
+
+// Combat Mode: default combat mode when reseting the system
+var combatMode_default = 'automode'; 
+
+// AutoLooter: how much of a skill to be considered looting?
+var min_jewelry_skill = 13; // >= +10 mace fighting for example
+// AutoLooter: how many skills to have to consider looting?
+var qty_jewelry_skill = 2; // how many skills to grab?  swords+tactics = 2; swords+tactics+anatomy = 3, so on
+// AutoLooter: A list of skills to consider looting. You should keep this list small, putting only what you really want.
+var skill_list = 'Alchemy|Anatomy|Animal Lore|Animal Taming|Archery|Arms Lore|Begging|Blacksmithy|Bowcraft & Fletching|Bushido|Camping|Carpentry|Cartography|Chivalry|Cooking|Detecting Hidden|Discordance|Evaluating Intelligence|Fencing|Fishing|Focus|Forensic Evaluation|Glassblowing|Healing|Healing|Herding|Hiding|Imbuing|Inscription|Item Identification|Lockpicking|Lumberjacking|Mace Fighting|Magery|Masonry|Meditation|Mining|Musicianship|Mysticism|Necromancy|Ninjitsu|Parrying|Peacemaking|Poisoning|Provocation|Remove Trap|Resisting Spells|Snooping|Spellweaving|Spirit Speak|Stealing|Stealth|Swordsmanship|Tactics|Tailoring|Taste Identification|Throwing|Tinkering|Tracking|Veterinary|Wrestling';
+
+
+//Auto Bandage Self
+var bandage_graphic = '0x0E21' // should be the same for all types of bandages
+var bandage_color = '0x0025' // '0x0000' for the regular, white ones. 0x0025 is the magical everlasting bandages
+var hits_limit = 90 //this is %, not absolute value
+var bandageSelfDelay = 4000; // your bandage timer
+//Auto Bandage Friends
+var bandageFriendDelay = 2000; // bandage timer for friends. Should be 2 seconds when you have 140+ dex
+var bandageRessDelay = 8000; // ressurrection friends delay
+
+// A few adjectives for yourself, so your script can greet(or curse) yourself as you deserve.
+var adjective_list = ['Saviour of Sosaria', 'Love of My Life', 'Friend', 'My Eye Candy', Player.Name(), "Bananas",];
+
+
+// **********************************************************************
+// * FEATURES CONFIGURATIONS
+// * You can edit your main features here.
+// * Change it's default value, conditionals, dress codes, functions, cooldowns, and specially the toggle voice command.
+// * Do not change internal metadata as type or func
+// * As of version 1.0 you can even add new features just by creating a new (full) block.
+// ** Try to add the wither spell! (hint: it's a '_common_cast' feature)
+// **********************************************************************
+
+features = [
+    { // A feature block starts on the first {
+        'name': 'cmode',
+        'command': '.cm',
+        'defaultv': 'on',
+        'type': 'combatmode',
+        'ability': 'Secondary',
+        'range': 1,
+        'dress': 'championset'
+    }, //and ends with {,
+    {
+        'name': 'smode',
+        'command': '.sm',
+        'defaultv': 'on',
+        'type': 'combatmode',
+        'ability': 'Lightning Strike',
+        'range': 1,
+        'dress': 'singleset'
+    },
+    {
+        'name': 'automode',
+        'command': '.am',
+        'defaultv': 'on',
+        'type': 'combatmode',
+        'range': 1,
+        'dress': 'championset'
+    },
+    {
+        'name': 'rmode',
+        'command': '.rm',
+        'defaultv': 'on',
+        'type': 'combatmode',
+        'ability': 'Primary',
+        'range': 12,
+        'dress': 'rangedset'
+    },
+    {
+        'name': 'Consecrate Weapon',
+        'command': '.acw',
+        'defaultv': 'on',
+        'type': 'auxspells',
+        'spellname': 'Consecrate Weapon',
+        'mana': '8',
+        'cooldown': 7000,
+        'recovery': 500,
+        'has_target': null,
+        'func': "_common_cast"
+    },
+    {
+        'name': 'Divine Fury',
+        'command': '.adf',
+        'defaultv': 'on',
+        'type': 'auxspells',
+        'spellname': 'Divine Fury',
+        'mana': '12',
+        'cooldown': 17000,
+        'recovery': 500,
+        'has_target': null,
+        'func': '_common_cast',
+        'condition': "Player.Stam() < 130"
+    },
+    {
+        'name': 'Enemy of one',
+        'command': '.aeoo',
+        'defaultv': 'off',
+        'type': 'auxspells',
+        'spellname': 'Enemy of One',
+        'mana': '30',
+        'cooldown': 60000,
+        'recovery': 600,
+        'has_target': null,
+        'func': '_common_cast',
+    },
+    {
+        'name': 'Confidence',
+        'command': '.acd',
+        'defaultv': 'on',
+        'type': 'auxspells',
+        'spellname': 'Confidence',
+        'mana': '10',
+        'cooldown': 10000,
+        'recovery': 500,
+        'has_target': null,
+        'func': '_common_cast'
+    },
+    {
+        'name': 'Evasion',
+        'command': '.aev',
+        'defaultv': 'on',
+        'type': 'auxspells',
+        'spellname': 'Evasion',
+        'mana': '12',
+        'cooldown': 22000,
+        'recovery': 500,
+        'has_target': null,
+        'func': '_common_cast'
+    },
+    {
+        'name': 'Counter Attack',
+        'command': '.aca',
+        'defaultv': 'on',
+        'type': 'auxspells',
+        'spellname': 'Counter Attack',
+        'mana': '12',
+        'cooldown': 8000,
+        'recovery': 500,
+        'has_target': null,
+        'func': '_common_cast'
+    },
+    {
+        'name': 'autoLooter',
+        'command': '.atl',
+        'defaultv': 'on',
+        'type': 'automation'
+    },
+    {
+        'name': 'autoBandageSelf',
+        'command': '.abs',
+        'defaultv': 'on',
+        'type': 'automation'
+    },
+    {
+        'name': 'autoBandageFriends',
+        'command': '.abf',
+        'defaultv': 'on',
+        'type': 'automation'
+    },
+    {
+        'name': 'getGold',
+        'command': '.gg',
+        'defaultv': 'off',
+        'func': 'getGold',
+        'type': 'automation'
+    },
+    {
+        'name': 'auto Honor',
+        'command': '.aho',
+        'defaultv': 'off',
+        'type': 'automation',
+        'func': 'loop_auto_honor'
+    },
+    {
+        'name': 'Triple Slash',
+        'command': '.tps',
+        'defaultv': 'off',
+        'type': 'automation'
+    },
+    {
+        'name': 'reload',
+        'command': '.reload',
+        'defaultv': 'off',
+        'func': 'reload_globals',
+        'type': 'setup'
+    },
+    {
+        'name': 'status',
+        'command': '.status',
+        'defaultv': 'off',
+        'func': 'status_bar_show',
+        'type': 'setup'
+    }, 
+    {
+        'name': 'counters',
+        'command': '.counters',
+        'defaultv': 'on',
+        'func': 'showStatistics',
+        'type': 'setup'
+    }, 
+    {
+        'name': 'Auto Claim',
+        'command': '.acm',
+        'defaultv': 'off',
+        'type': 'automation'
+    }
+];
+
+// Other Variables and configurations.
+
+// Configure the gump positioning. This is very personal and depends on your screen resolutuion.
+var gumps_configurations = {
+'features_gump_x': 1200,
+'features_gump_y': -100,
+'statistics_gump_x':  120,
+'statistics_gump_y': -80
+}
+

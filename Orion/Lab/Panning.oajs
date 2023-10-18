@@ -1,0 +1,45 @@
+// Pans a tile of water
+
+var Vars = {
+	"px"				: Player.X,
+	"py"				: Player.Y,
+	"pz"				: Player.Z,
+	"oset"			: 1, //Panning radius offset. Change for higher or lower distance. Max = 1
+	"ox"				: ('px' + 'oset'),
+	"oy"				: ('py' + 'oset'),
+	"oz"				: ('pz' - 5),
+	"epan"			: "0x09D7",
+	"fpans"		: "0x09D8",
+};
+
+function PanStart(){
+
+	while(!Player.Dead()){
+		if(Orion.ScriptRunning('FishStart') <= 1){
+			Orion.UseObject(['self'])		//Dismount is mounted.
+			for (var tarX = -Vars['oset']; tarX <= Vars['oset']; tarX++){
+         		for (var tarY = -Vars['oset']; tarY <= Vars['oset']; tarY++){
+		//var WatArr = Orion.GetTilesInRect('water', vars['px'], vars['py'], vars['pz'], vars['ox'], vars['oy'], vars['oz'])
+		//.forEach (watarr) {
+					Orion.UseType(Vars['fpans'])
+         			Pan(tarX,tarY)
+             }
+         }
+		}//if running
+		else{
+			Orion.ToggleScript('FishStart')	//Prevents multiple script instances.
+		}//else running
+	}	//while
+}	//FishStart
+
+function Pan(x,y){
+	Orion.UseType(Vars['epan'])
+	Orion.WaitJournal('What water do you', Orion.Now(), Orion.Now()+1000, 'me|sys');
+	//Orion.TargetTile('tar')
+	Orion.TargetTileRelative('water', x, y, (-10 + Player.Z()));
+	var result = Orion.WaitJournal('You pan a while|You pull out|You need to|Target cannot|You can|There don|You are already', Orion.Now(), (Orion.Now() + 9000), 'me|sys');
+	if(result && result.FindTextID()==6){
+		Orion.Wait(1000);
+		break;
+	}
+}	//Fish

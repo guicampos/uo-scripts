@@ -1,0 +1,190 @@
+var beekeep_graphic = '0x091A';
+var beehive_tool_graphic = '0x09F5';
+
+var ms_in_1_minute = 60000;
+
+/**
+ * Check the health of beekeeps by reading it's properties
+ * @method beeekeep_check_health
+ * @return 
+ */
+function beeekeep_check_health()
+{
+	Orion.ClearFakeMapObjects();
+    // find the object by type. The Ex returns a list of found objects, not only serials.
+	var hives = Orion.FindTypeEx(beekeep_graphic, '0x0000', ground, 'item', 30);
+
+	// Javascript ES5(2015) filter implementation. Now we have a list of non_thriving_hives
+    var non_thriving_hives = hives.filter(function(hive){
+			return (Orion.Contains(hive.Properties(), 'Thriving BeeHive') != true)
+	});
+
+    // and a list of thriving_hives
+	var thriving_hives = hives.filter(function(hive){
+			return (Orion.Contains(hive.Properties(), 'Thriving BeeHive') == true)
+	});
+	  
+	// so we can place a Fake Object on top of the original hive to visually know what are the non_thriving_hives by placing a client-side equal graphic (a beehive) but with another color, forEach non_thriving_hives.
+    // The fake beehive will be visible for 5 minutes.
+    non_thriving_hives.forEach(function(hive){
+		   Orion.CharPrint(hive.Serial(), 1990, '!')
+           // red - not healthy
+		   Orion.AddFakeMapObject(hive.Serial(), 2330, 2399, hive.X(), hive.Y(), hive.Z(), ms_in_1_minute * 5);
+	});
+    
+    // Use the same technique to place a green beehive forEach thriving_hives
+    thriving_hives.forEach(function(hive){
+        //green - healthy
+        Orion.AddFakeMapObject(hive.Serial(), 2330, 1272, hive.X(), hive.Y(), hive.Z(), ms_in_1_minute * 5);
+    });
+}
+
+
+/**
+ * Harvests beehives for wax and honey
+ * @method beehive_harvest
+ * @return 
+ */
+function beehive_harvest()
+{
+
+    var beehive_tool = Orion.FindType(beehive_tool_graphic, '0x0000', backpack, 'fast|item')
+	var hives = Orion.FindTypeEx(beekeep_graphic, '0x0000', ground, 'item', 4);
+    
+    if (beehive_tool.length < 1 )
+    {
+        Orion.Print("No beehive tool found inside your backpack.");
+        return false;
+    }
+    
+    if (hives.length > 0)
+    {
+    
+        for (var i = 0; i < hives.length; i++)
+        {
+            beehive = hives[i];
+           
+            // Do harvest while don't see the end of product messages
+            
+            // Wax
+            Orion.Print('Harvesting Wax!');
+            Orion.CharPrint(52,beehive.Serial(),'.');
+//            	TextWindow.Open()
+//            	TextWindow.Print(Orion.LastJournalMessage().Text() +' '+ Orion.LastJournalMessage().Flags())
+            while (!Orion.InJournal('excess wax in', 'item'))
+			{
+				harvest_wax(beehive.Serial());
+			}
+            
+            
+            // Honey
+            Orion.Print('Harvesting Honey!');
+            Orion.CharPrint(32,beehive.Serial(),'.');
+            
+            while (! Orion.InJournal('enough honey', 'item'))
+			{
+				harvest_honey(beehive.Serial());
+			}
+
+            
+            Orion.ClearJournal();
+           
+           //grey - Harvested
+            Orion.AddFakeMapObject(beehive.Serial(), 2330, 92, beehive.X(), beehive.Y(), beehive.Z(), ms_in_1_minute * 5);
+            
+            
+        }
+
+    }
+}
+
+/**
+ * Harvests wax from a target beehive
+ * @method harvest_wax
+ * @param {object serial number} beehive_serial
+ * @return 
+ */
+
+// This was created using the macro to script feature from Orion. I won't comment it out as it's an auto generated code; 
+/**
+ * Description
+ * @method harvest_wax
+ * @param {} beehive_serial
+ * @return 
+ */
+function harvest_wax(beehive_serial)
+{
+	Orion.UseObject(beehive_serial);
+	if (Orion.WaitForGump(10000))
+	{
+		var gump0 = Orion.GetGump('last');
+		if ((gump0 !== null) && (!gump0.Replayed()) && (gump0.ID() === '0x5AE9082C'))
+		{
+			gump0.Select(Orion.CreateGumpHook(1));
+			Orion.Wait(300);
+		}
+	}
+	if (Orion.WaitForGump(10000))
+	{
+		var gump1 = Orion.GetGump('last');
+		if ((gump1 !== null) && (!gump1.Replayed()) && (gump1.ID() === '0x02FFF12E'))
+		{
+			gump1.Select(Orion.CreateGumpHook(3));
+			Orion.Wait(300);
+		}
+	}
+    
+    gump0.Close();
+    gump1.Close();
+}
+
+
+
+/**
+ * Harvests honey from a target beehive
+ * @method harvest_honey
+ * @param {object serial number} beehive_serial
+ * @return 
+ */
+// This was created using the macro to script feature from Orion. I won't comment it out as it's an auto generated code; 
+/**
+ * Description
+ * @method harvest_honey
+ * @param {} beehive_serial
+ * @return 
+ */
+function harvest_honey(beehive_serial)
+{
+	Orion.UseObject(beehive_serial);
+	if (Orion.WaitForGump(10000))
+	{
+		var gump0 = Orion.GetGump('last');
+		if ((gump0 !== null) && (!gump0.Replayed()) && (gump0.ID() === '0x5AE9082C'))
+		{
+			gump0.Select(Orion.CreateGumpHook(1));
+			Orion.Wait(300);
+		}
+	}
+	if (Orion.WaitForGump(10000))
+	{
+		var gump1 = Orion.GetGump('last');
+		if ((gump1 !== null) && (!gump1.Replayed()) && (gump1.ID() === '0x02FFF12E'))
+		{
+			gump1.Select(Orion.CreateGumpHook(1));
+			Orion.Wait(300);
+		}
+	}
+	if (Orion.WaitForGump(10000))
+	{
+		var gump2 = Orion.GetGump('last');
+		if ((gump2 !== null) && (!gump2.Replayed()) && (gump2.ID() === '0x02FFF12E'))
+		{
+			gump2.Select(Orion.CreateGumpHook(0));
+			Orion.Wait(300);
+		}
+	}
+    
+    gump0.Close();
+    gump1.Close();
+    gump2.Close();
+}

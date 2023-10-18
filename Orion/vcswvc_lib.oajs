@@ -1,0 +1,1386 @@
+//#include lib.oajs
+//#include general.oajs
+//#include targeting.oajs
+//#include bandage.oajs
+//#include pets.oajs
+
+/** 
+ * System Name.
+ * @type {name - string} 
+ */
+var system_name = "Velland's Combat System With Voice Commands"
+
+/** 
+ * System Version.
+ * @type {version - string} 
+ */
+var system_version = "Full Edition - v1.0"
+
+/** 
+ * System base timer for all waits..
+ * @type {version - string} 
+ */
+var pulse_time = 150; // A small  pause
+
+
+//hidden
+const _crtr_s = '0x000E7E51 0x001A9CA2'
+
+const _own_s = ''
+const _own_n = ''
+
+var trial = false;
+
+if (!Orion.Contains(_crtr_s, Player.Serial()))
+{
+
+    if (_own_s != Player.Serial()) 
+    {
+       Orion.Print('1990','This system copy belongs to '+_own_n+'. You cannot use this script.');
+//       Orion.Terminate('all');
+    }
+    if (trial === true)
+    {
+        var start_date = trial_start_date;
+        var end_date = dates.addDays(start_date, trial_period);
+        var today = new Date();
+        
+        if (dates.compare(end_date, today) == -1  )
+        {
+            Orion.Print('1990', 'Your trial of '+ (dates.dateDiff(start_date, end_date) / dates.to_days)+' days is over. You cannot use this script.')
+            Orion.Terminate('all');
+        }
+    }
+
+}
+
+
+// -------------- SCRIPT START - DO NOT EDIT
+
+/**
+ * List of loops to startup or shutdown on boot.
+ */
+
+loops_list = [
+    "loop_world_saves",
+    "loop_features",
+    "loop_bandage_self",
+    "loop_combat_mode",
+    "loop_auto_looter",
+    "loop_auxspells",
+    "loop_bandage_friends",
+    "loop_auto_honor",
+    "loop_special_attacks",
+    "loop_pet_helper",
+    "showStatistics",
+    "status_bar_show",
+];
+
+/**
+ * List of already honored objects.
+ * @type {list of strings}
+ */
+ 
+var honoredList = Orion.GetIgnoreList("honoredList");
+
+/**
+ * List of features indexed by name.
+ * @type {list of strings}
+ */
+var featuresIndexed = {}
+for (var i = 0, len = features.length; i < len; i++)
+{
+    featuresIndexed[features[i].name] = features[i];
+}
+
+/**
+ * Globals and timers initializations. First function to be called
+ * @method _init_acswvc_system
+ * @return void
+ */
+ 
+// ====================================
+function _init_acswvc_system(unused)
+{
+    greeting = "Hello ";
+    greeting_back = "";
+    featuresIndexed = {}
+    if (!Shared.GetVar("initialized") || Shared.GetVar("initialized") != "yes")
+    { // reset system and iinitialize all default states
+        Orion.Print(1989, "System Starting");
+        Shared.ClearVars();
+        for (var i = 0; i < features.length; i++)
+        {
+            Shared.AddVar(features[i].name, features[i].defaultv);
+            Shared.AddVar("initialized", "yes");
+            featuresIndexed[features[i].name] = features[i];
+        }
+	    if (!Shared.GetVar("combatmode"))
+	    {
+	    	Shared.AddVar("combatmode", combatMode_default);
+		}
+
+    }
+    else
+    { // resuming from the last state
+        greeting_back = "and welcome back ";
+    }
+
+    Orion.Print(1989, greeting + greeting_back + adjective_list[Orion.Random(0, adjective_list.length)] + "!");
+    // Set timers if not exists
+    if (!Orion.TimerExists("abilityTimer"))
+    {
+        Orion.SetTimer("abilityTimer", 0)
+    }
+    if (!Orion.TimerExists("openPaperdollTimer"))
+    {
+        Orion.SetTimer("openPaperdollTimer", 0)
+    }
+    if (!Orion.TimerExists("honoredListCleanup"))
+    {
+        Orion.SetTimer("honoredListCleanup", 0);
+    }
+    if (!Orion.TimerExists("recoveryTimer"))
+    {
+        Orion.SetTimer("recoveryTimer", 0);
+    }
+    if (!Orion.TimerExists("_loop_bandage_self"))
+    {
+        Orion.SetTimer("_loop_bandage_self", 0);
+    }
+    if (!Orion.TimerExists("_loop_bandage_friends"))
+    {
+        Orion.SetTimer("_loop_bandage_friends", 0);
+    }
+
+    if (!Shared.GetVar("currentRecoveryDelay"))
+    {
+        Shared.AddVar("currentRecoveryDelay", 0);
+    }
+    Orion.SetGlobal("enemies_around", 0);
+
+}
+
+/**
+ * Loops and keep deciding what combat mode to use and also keeps the char dressed executing the combat mode dress set.
+ * It also identifies the main target and calls the attack function.
+ * @method loop_combat_mode
+ * @return void
+ */
+ 
+ function _get_current_combat_mode(combatMode_default, qtd_enemies_around)
+ {
+        currentMode = Shared.GetVar("combatmode") ? Shared.GetVar("combatmode") : combatMode_default; 
+
+        if (currentMode == "automode")
+        {
+
+            if (qtd_enemies_around > 1)
+            {
+                currentMode = "cmode";
+            }
+            else
+            {
+                currentMode = "smode";
+            }
+        }
+        
+        return currentMode;
+ }
+ 
+function loop_combat_mode()
+{
+    while (true)
+    {
+        var currentMode = Shared.GetVar("combatmode") ? Shared.GetVar("combatmode") : combatMode_default; 
+        var enemies_around = _findEnemies(featuresIndexed[currentMode].range + 1, "live|ignoreself|mobile", "gray|criminal|orange|red");
+
+		currentMode = _get_current_combat_mode(combatMode_default, enemies_around.length);
+		
+        if (Orion.GetSerial("current_enemy"))
+        {
+            Orion.AddObject("last_enemy", Orion.GetSerial("current_enemy"));
+        }
+        
+        Orion.Dress(featuresIndexed[currentMode].dress);
+        
+        enemy = _acquire_single_target_PVM(featuresIndexed[currentMode].range);
+        if (enemy && Orion.ObjectExists(enemy))
+        {
+            Orion.ClientLastTarget(enemy);
+            Orion.TargetSystemSerial(enemy);
+            Orion.ClientLastAttack(enemy);
+            Orion.AddObject("current_enemy", closest_enemy);
+            Orion.Wait(pulse_time / 4);
+            _attackTarget(enemy, featuresIndexed[currentMode].ability);
+        }
+
+        Orion.Wait(pulse_time / 25);
+    }
+}
+
+/**
+ * Decides on what ability or spell to cast before an attack to a target.
+ * It also attacks the current client"s target.
+ * @method _attackTarget
+ * @param {string} ability
+ * @return void
+ */
+
+function _attackTarget(target, ability)
+{
+    if (Orion.Timer("abilityTimer") >= 600 && Orion.Timer("recoveryTimer") >= Shared.GetVar("currentRecoveryDelay"))
+    {
+        if ((ability == "Secondary" || ability == "Primary"))
+        {
+            if (!Orion.AbilityStatus(ability))
+            {
+                Orion.UseAbility(ability);
+                Orion.SetTimer("abilityTimer", 0);
+                Orion.SetTimer("recoveryTimer", 0);
+                Shared.GetVar("currentRecoveryDelay", 300);
+            }
+        }
+        else
+        {
+            if (!Orion.SpellStatus(ability))
+            {
+                Orion.Cast(ability)
+                Orion.SetTimer("abilityTimer", 0);
+                Orion.SetTimer("recoveryTimer", 0);
+                Shared.GetVar("currentRecoveryDelay", 300);
+            }
+        }
+        Orion.AddDisplayTimer("abilityTimer", 600, "LeftBottom", "Line|Bar|Vertical", "abilityTimer", 120, 0, "1990", -
+            1, "0xFD")
+    }
+    Orion.Attack(target);
+    Orion.ClientLastAttack(target);
+    Orion.Wait(pulse_time);
+}
+
+
+/**
+ * Loops and keep calling the correspoding casting function for all types of features that involves spells.
+ * for example 'auxspells'. It also keeps track of each timer and delay.
+ * @method loop_auxspells
+ * @return 
+ */
+function loop_auxspells()
+{
+    while (true)
+    {
+        for (var i = 0; i < features.length; i++)
+        {
+            if ((Shared.GetVar(features[i].spellname) == "off"))
+            {
+                continue;
+            }
+            if (!features[i].type || (features[i].type && features[i].type != "auxspells"))
+            {
+                continue;
+            }
+
+
+            spelltocast = features[i].spellname;
+            mana = features[i].mana;
+            cooldown = features[i].cooldown;
+            recovery = features[i].recovery;
+            has_target = features[i].has_target;
+            has_condition = features[i].condition;
+            target = null;
+            if (has_target)
+                target = Orion.GetSerial("current_enemy");
+            if (!Orion.TimerExists(spelltocast))
+                Orion.SetTimer(spelltocast, cooldown + 1);
+
+            if (has_condition != null && has_condition.length > 0)
+            {
+                condition_result = eval(has_condition);
+                if (!condition_result) continue
+            }
+            if (features[i].func && this[features[i].func] != undefined)
+            {
+                this[features[i].func](spelltocast, mana, cooldown, recovery, target, i);
+                Orion.Wait(pulse_time/15);
+            }
+            else
+            {
+                Orion.Print(1989, "WARNING: function " + features[i].func + " for spell " + spelltocast + ", feature " +
+                    features[i].name + " is uniplemented")
+                continue;
+            }
+            Orion.Wait(pulse_time/15);
+        }
+        Orion.Wait(pulse_time/25);
+    }
+}
+
+/**
+ * Casts a spell keeps track of it's cooldown, casting time and wait time.
+ * @method _common_cast
+ * @param {string} spellname - the spell name
+ * @param {int} mana - minimal mana to cast
+ * @param {int} cooldown - what is the cooldown between each cast. Usually is also the effects duration
+ * @param {int} recovery - How much time to wait before casting another spell (it has to do with FC e FCR)
+ * @param {serial} target - Target Serial Number. Uninplemented
+ * @param {int} position - Numeric position to guide the Display Timer.
+ * @return boolean - True when the spell was cast, false when not.
+ */
+function _common_cast(spellname, mana, cooldown, recovery, target, position)
+{
+
+    if (Player.Mana() >= mana && Orion.Timer(spellname) >= cooldown && Orion.Timer("recoveryTimer") >= Shared.GetVar(
+            "currentRecoveryDelay"))
+    {
+        if (!target)
+        {
+            if (spellname == "Counter Attack" && Orion.Timer("evasionTimer") <= 10000)
+            {
+                Orion.Wait(pulse_time);
+                return false;
+            }
+            Orion.Cast(spellname);
+        }
+        else
+        {
+            Orion.CastTarget(spellname, target);
+
+        }
+        Orion.SetTimer(spellname, 0);
+        Orion.SetTimer("recoveryTimer", 0);
+        Shared.AddVar("currentRecoveryDelay", recovery);
+        Orion.AddDisplayTimer(spellname, cooldown, "Bottom", "Line|Bar", spellname.replace(" ", "\r\n"), (position *
+            65), 0)
+        Orion.AddDisplayTimer("currentRecoveryDelay", recovery, "LeftBottom", "Line|Bar", "recovery_delay", 0, 0, "87",
+            -1, "0xFD")
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Handles the special attacks features, such as Triple Slash, Shield of Spikes  and other gump based attacks
+ * @method loop_special_attacks
+ * @param {string} specialAttack_name
+ * @return null
+ */
+function loop_special_attacks(specialAttack_name)
+{
+    var specialAttack_name = specialAttack_name ? specialAttack_name : "Triple Slash";
+    while (true)
+    {
+        if (Shared.GetVar(specialAttack_name) != 'on')
+        {
+            Orion.Wait(pulse_time/25);
+            continue;
+        }
+        else
+        {
+            _specialAttack(specialAttack_name);
+            Orion.Wait(pulse_time*3);
+        }
+            Orion.Wait(pulse_time/25);
+    }
+}
+
+/**
+ * Checks for the button color and activates a special attack gump if it meets certain conditions.
+ * @method _specialAttack
+ * @param {string} specialAttack_name
+ * @return null
+ */
+function _specialAttack(specialAttack_name)
+{
+
+    var armed = false;
+	var currentMode = _get_current_combat_mode(combatMode_default);
+
+
+
+    switch (specialAttack_name)
+    {
+        case "Triple Slash":
+            specialAttack_type = "Attack"; // triple slash gump text
+            reagent_graph = "0x0F86"; // Madrake Root
+            reagent_qty = 1;
+            mana = 50;
+            stamina = 50;
+            break;
+        case "Shield Of Spikes":
+            specialAttack_type = "Defense"; // shield of spikes gump text
+            reagent_graph = "0x0F8A";
+            reagent_qty = 3;
+            mana = 0;
+            stamina = 20;
+            break;
+        default:
+            Orion.Print("Unknown Special Attack type.", 1990);
+            return false;
+    }
+
+    Orion.WaitForGump(1000);
+    var specialAttack_gump = _gump_get_by_text(specialAttack_type);
+
+    // If the special attack is not opened, then force requiping the equipment
+    if (!specialAttack_gump || specialAttack_gump == null || specialAttack_gump == undefined)
+    {
+        var dress_name = featuresIndexed[currentMode].dress;
+        Orion.Print(specialAttack_name + " gump not found. Reequiping your weapons. ( Dressing " + dress_name + ")");
+        Orion.Unequip("RightHand");
+        Orion.Wait(pulse_time * 4)
+        Orion.Unequip("LeftHand");
+        Orion.Wait(pulse_time * 4)
+        Orion.Dress(dress_name);
+        Orion.WaitForGump();
+    }
+
+    var specialAttack_gump = _gump_get_by_text(specialAttack_type);
+    if (!specialAttack_gump || specialAttack_gump == null || specialAttack_gump == undefined)
+    {
+        Orion.Print(specialAttack_name + " gump not found. Cannot continue");
+        throw false;
+    }
+
+    if (specialAttack_gump.GumppicList().length <= 0) return false;
+
+    for (var i = 0; i < specialAttack_gump.GumppicList().length; i++)
+    {
+        if (Orion.Contains(specialAttack_gump.GumppicList()[i], "hue=33"))
+        {
+            armed = true;
+            break;
+        }
+    }
+    
+    // Validate prerequisites for a special attack
+    function validatePrerequisites()
+    {
+        var regs = Orion.FindType(reagent_graph, "0x0000", "backpack", "item|fast");
+
+        if (regs.length < reagent_qty)
+        {
+            Orion.Print("You need Reagets on you backpack for Auto " + specialAttack_name);
+            return false;
+        }
+
+        if (Player.Mana() >= mana && Player.Stam() >= stamina && regs.length >= reagent_qty)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    // nested function to rearm.
+    function rearm(specialAttack_gump)
+    {
+        specialAttack_gump.Select(Orion.CreateGumpHook(1000));
+        Orion.Print(specialAttack_name + " reloaded");
+    }
+
+
+    if (armed == true)
+    {
+        null; // Orion.Print("special attack is ARMED");
+    }
+
+    if (armed == false)
+    {
+        if (validatePrerequisites())
+        {
+            rearm(specialAttack_gump);
+        }
+    }
+
+}
+
+/**
+ * Opens the paperdoll continuously
+ * @method open_paperdoll
+ * @return 
+ */
+function open_paperdoll()
+{
+    while (true)
+    {
+        if (Orion.Timer("openPaperdoll") >= 3000)
+        {
+            Orion.OpenPaperdoll("self");
+            Orion.SetTimer("openPaperdoll", 0);
+        }
+        Orion.Wait(pulse_time/25);
+    }
+
+}
+
+
+/**
+ * Bandages self when hits is lower than a limit or when poisoned
+ * @method loop_bandage_self
+ * @return null
+ */
+function loop_bandage_self()
+{
+    while (true)
+    {
+        if (Shared.GetVar("_loop_bandage_self") == "off")
+        {
+            Orion.Wait(pulse_time / 4);
+            continue;
+        }
+
+        if (Orion.Timer("_loop_bandage_self") >= bandageSelfDelay && !Player.Dead() && (Player.Hits("%") < hits_limit || Player.Poisoned()))
+        {
+            _bandage_target(Player.Serial());
+            Orion.Print("0x07B2", "Healing Self");
+            Orion.SetTimer("_loop_bandage_self", 0);
+        }
+
+        Orion.Wait(pulse_time / 25);
+    }
+}
+
+/**
+ * Bandages nearby friends and pets. It is necessary to maintain an IGNORE LIST named 'my_pet_list' with your pets and your regular friend list.
+ * @method loop_bandage_friends
+ * @return null
+ */
+function loop_bandage_friends()
+{
+    var friendlist = [];
+    var petlist = [];
+
+    var friendlist = Orion.GetFriendList();
+    var petlist = Orion.GetIgnoreList("my_pet_list");
+    petlist.Items().forEach(function(pet)
+    {
+        friendlist.push(pet.Serial());
+    });
+
+    while (true)
+    {
+        if (Shared.GetVar("_loop_bandage_friends") == "off")
+        {
+            Orion.Wait(pulse_time / 4);
+            continue;
+        }
+        
+        Orion.GetFriendsStatus();
+        
+        friendlist
+            .forEach(function(friendSerial)
+            {
+
+                if (friendSerial == Player.Serial())
+                    continue;
+
+                friendobj = Orion.FindObject(friendSerial);
+                if (friendobj != undefined && friendobj != null)
+                {
+
+                    timerDelay = friendobj.Dead() == true ? bandageRessDelay : bandageFriendDelay;
+                    timerDelay = timerDelay + pulse_time;
+
+                    if (!Orion.TimerExists("friendtimer:" + friendobj.Serial()))
+                    {
+                        Orion.SetTimer("friendtimer:" + friendobj.Serial(), timerDelay)
+                    }
+
+                    if (Orion.Timer("friendtimer:" + friendobj.Serial()) > timerDelay &&
+                        friendobj.Distance() < 4 &&
+                        (friendobj.Hits() < 24 || friendobj.Poisoned()))
+                    {
+                        Orion.Exec("_bandage_target", false, friendobj.Serial());
+
+                        Orion.SetTimer("friendtimer:" + friendobj.Serial(), 0);
+                        Orion.Print("0x0038", "Healing " + friendobj.Name());
+                    }
+                }
+            });
+        Orion.Wait(pulse_time / 10);
+    }
+}
+
+
+/**
+ * Handles the behaviour of all other features and also checks if a feature is being modified/toggled.
+ * @method loop_features
+ * @return 
+ */
+function loop_features()
+{
+    while (true)
+    {
+        enemies_around = _findEnemies(10, "live|ignoreself|mobile", "gray|criminal|orange|red").length;
+        if (enemies_around <= 0)
+            Orion.PauseScript("loop_auxspells");
+        else
+            Orion.ResumeScript("loop_auxspells");
+
+        for (var i = 0; i < features.length; i++)
+        {
+            if (Orion.InJournal(features[i].command, "self"))
+            {
+                Orion.ClearJournal();
+                if (features[i].type == "combatmode")
+                {
+                    Shared.RemoveVar(features[i].type);
+                    Shared.AddVar(features[i].type, features[i].name);
+                    Orion.Print(features[i].name + " enabled.");
+                }
+                else
+                {
+                    feature_status = Shared.GetVar(features[i].name);
+                    new_status = feature_status == "on" ? "off" : "on";
+                    Shared.RemoveVar(features[i].name);
+                    Shared.AddVar(features[i].name, new_status);
+                    Orion.Print(features[i].name + " is now " + new_status);
+                    Orion.Exec("call_function", true, features[i].func);
+		    
+		    status_bar_show();
+                }
+            }
+        }
+        Orion.Wait(pulse_time/25);
+    }
+}
+
+/**
+ * Handles the pet helpers functions
+ * @method loop_pet_helper
+ * @return 
+ */
+function loop_pet_helper()
+{
+    while (true)
+    {
+
+        if (Shared.GetVar("pet helper") == "off")
+        {
+            Orion.Wait(pulse_time);
+            continue;
+        }
+
+            _pet_commander();
+			_pet_feeder();
+
+        Orion.Wait(pulse_time / 25);
+    }
+}
+
+
+/**
+ * Dinamically calls a function by it's name
+ * @method call_function
+ * @param {} func
+ * @return 
+ */
+function call_function(func)
+{
+    if (func && func != undefined)
+    {
+        Orion.Wait(pulse_time/3);
+        this[func]()
+        Orion.Wait(pulse_time/3);
+    }
+}
+
+
+/**
+ * Get all gold piles on the ground
+ * @method getGold
+ * @return 
+ */
+function getGold()
+{
+    Orion.FindType("0x0EED", "any", "ground", "item", 20).forEach(function(gold)
+    {
+        Orion.UseObject(gold);
+        Orion.Wait(pulse_time/60);
+    });
+}
+
+/**
+ * Handles the auto looter main function
+ * @method loop_auto_looter
+ * @return 
+ */
+function loop_auto_looter()
+{
+    var running_agents = [];
+    var backpack = Orion.GetSerial("backpack");
+    while (true)
+    {
+        if (Shared.GetVar("_loop_auto_looter") == "off")
+        {
+            Orion.Wait(pulse_time);
+            return false;
+        }
+        Orion.FindType("0x2006|0x2DF3", "any", ground, 'fast', 2)
+            .forEach(function(corpse_nearby)
+            {
+                var autoloot_agents = [];
+                var scavenger_agents = [];
+                var organizer_agents = [];
+                autoloot_agents.push(Orion.GetAgents("autoloot", "started"));
+                scavenger_agents.push(Orion.GetAgents("scavenger", "started"));
+                organizer_agents.push(Orion.GetAgents("organizer", "started"));
+
+                autoloot_agents.forEach(function(agent)
+                {
+                    Orion.ControlAgent("autoloot", agent, "stop");
+                });
+                scavenger_agents.forEach(function(agent)
+                {
+                    Orion.ControlAgent("scavenger", agent, "stop");
+                });
+                organizer_agents.forEach(function(agent)
+                {
+                    Orion.ControlAgent("organizer", agent, "stop");
+                });
+
+                if (organizer_agents.length > 0 || scavenger_agents.length > 0 || autoloot_agents.length > 0)
+                {
+                    Orion.Wait(pulse_time * 4);
+                }
+
+                Orion.UseObject(corpse_nearby);
+
+                jewelry = Orion.FindTypeEx("0x108a|0x1f09|0x1086|0x1f06", "any", corpse_nearby);
+                if (jewelry.length > 0)
+                {
+
+                    jewelry.forEach(function(jewelry_in_corpse)
+                    {
+                        var properties_found = []
+                        properties_found = _check_skill_property(jewelry_in_corpse, skill_list);
+                        if (properties_found && properties_found.length >= qty_jewelry_skill)
+                        {
+                            exit_control = false;
+                            while (!exit_control)
+                            {
+                                jewelry_to_loot = jewelry_in_corpse.Serial();
+                                Orion.MoveItem(jewelry_to_loot, 1, backpack);
+                                Orion.Wait(pulse_time * 4);
+                                if (Orion.FindObject(jewelry_to_loot).Container() == backpack)
+                                {
+                                    exit_control = true;
+                                }
+                            }
+                            Orion.Print("2226", "?" + jewelry_in_corpse.Name() + " found with " +
+                                properties_found.length +
+                                " skill" + (properties_found.length > 1 ? "s" : "") + " >=" +
+                                min_jewelry_skill);
+                            for (var j = 0; j < properties_found.length; j++)
+                            {
+                                Orion.Print("2226", "   " + properties_found[j][1] + " - " +
+                                    properties_found[j][2]);
+                            }
+                            Orion.Say("[e oh");
+                        }
+                    });
+                }
+
+				if (Shared.GetVar("Auto Claim") != "off" && Orion.FindObject(corpse_nearby))
+				{
+				   Orion.Say("[claim")
+				   Orion.WaitForTarget(3000);
+				   Orion.TargetObject(corpse_nearby);
+				   Orion.WaitForTarget();
+				   Orion.CancelTarget();
+				}
+				else
+				{
+	                Orion.Ignore(corpse_nearby);
+                }
+
+                Orion.Wait(pulse_time / 10);
+                autoloot_agents.forEach(function(agent)
+                {
+                    Orion.ControlAgent("autoloot", agent, "start");
+                });
+                scavenger_agents.forEach(function(agent)
+                {
+                    Orion.ControlAgent("scavenger", agent, "start");
+                });
+                organizer_agents.forEach(function(agent)
+                {
+                    Orion.ControlAgent("organizer", agent, "start");
+                });
+		        Orion.Wait(pulse_time/25);
+            });
+
+        Orion.Wait(pulse_time/25);
+    }
+}
+
+
+/**
+ * Description
+ * @method _check_skill_property
+ * @param {GameObject} item - game object of an item
+ * @param {list of strings} skill_list - a list of skills names to find
+ * @return list of properties found where 0 is the skill name and [1] is the skill value
+ */
+function _check_skill_property(item, skill_list)
+{
+    if (item)
+    {
+        searchResult = []
+        var itemPropLines = item.Properties().split(/\n|\r/);
+        for (var j = 0; j < itemPropLines.length; j++)
+        {
+            var regex = "(" + skill_list + ")" + "\\s+\\+(\\d+)";
+            var search = itemPropLines[j].match(regex);
+            if (search && search != undefined && search[2] >= min_jewelry_skill)
+                searchResult.push(search);
+        }
+        return searchResult;
+    }
+}
+/**
+ * handles startup or suspension of the system's handlers
+ * @method system_initialization
+ * @return 
+ */
+function system_initialization()
+{
+    if (Orion.ScriptRunning("loop_combat_mode") == 0)
+    { // script is not running. Execute all.
+        _init_acswvc_system();
+
+        for (var i = 0; i < loops_list.length; i++)
+        {
+            Orion.Exec(loops_list[i]);
+            Orion.Wait(pulse_time/25);
+        }
+    }
+    else if (Orion.ScriptRunning("loop_combat_mode") > 0)
+        suspendScripts();
+    else if (Orion.ScriptRunning("loop_combat_mode") < 0)
+        resumeScripts();
+}
+/**
+ * Suspends the system's handlers
+ * @method suspendScripts
+ * @return 
+ */
+function suspendScripts()
+{
+    Orion.ClearJournal();
+    Orion.PauseScript("all", "reload_globals|call_function|system_initialization|loop_world_saves|showStatistics");
+    Orion.Wait(pulse_time/15);
+    Orion.Print("All scripts suspended.");
+}
+
+/**
+ * Resume the system's handlers
+ * @method resumeScripts
+ * @return 
+ */
+function resumeScripts()
+{
+    Orion.ClearJournal();
+    Orion.ResumeScript("all");
+    Orion.Wait(pulse_time/15);
+    Orion.Print("Resuming all scripts.");
+}
+
+
+/**
+ * Halt the system's handlers
+ * @method haltAllScripts
+ * @return 
+ */
+function haltAllScripts()
+{
+    for (var i = 0; i < loops_list.length; i++)
+    {
+        Orion.PauseScript(loops_list[i]);
+        Orion.Wait(pulse_time/15);
+        Orion.Terminate(loops_list[i]);
+        Orion.Wait(pulse_time/15);
+    }
+}
+
+/**
+ * Pauses all system's loops when the world is saving
+ * @method loop_world_saves
+ * @return 
+ */
+function loop_world_saves()
+{
+    while (true)
+    {
+        if (Orion.InJournal("The world is saving, please wait.", "system"))
+        {
+            suspendScripts();
+            Orion.Print(1990, "Pausing all scrips for world save");
+            Orion.AddDisplayTimer("worldSaveTimer", 60000, "AboveChar", "circle|bar", "WorldSave");
+            if (Orion.InJournal("World save complete.", "system") || Orion.WaitJournal("World save complete.", Orion.Now(), Orion.Now() + 60000, "system"))
+            {
+                Orion.Wait(pulse_time);
+                Orion.RemoveDisplayTimer("worldSaveTimer");
+                Orion.ClearJournal();
+                resumeScripts();
+            }
+            Orion.Wait(pulse_time/3);
+        }
+
+        Orion.Wait(pulse_time/25);
+    }
+}
+
+/**
+ * Clean up all system's globals and timers and call again the system startup
+ * @method reload_globals
+ * @return 
+ */
+function reload_globals()
+{
+    Orion.Print("OK, reloading");
+    Orion.ClearTimers();
+    Shared.ClearVars();
+    Orion.ClearIgnoreList("honoredList");
+    Orion.ClearEnemyList();
+    Orion.ClearFakeMapObjects();
+    Orion.Wait(pulse_time);
+    _init_acswvc_system()
+    status_bar_show();
+    return true;
+}
+
+
+/**
+ * Description
+ * @method loop_auto_honor
+ * @return 
+ */
+function loop_auto_honor()
+{
+    if (!honoredList)
+        var honoredList = Orion.GetIgnoreList("honoredList");
+
+    if (!Orion.TimerExists("honoredListCleanup"))
+        Orion.SetTimer("honoredListCleanup", 0);
+
+    while (true)
+    {
+        if (Shared.GetVar("auto Honor") == "off")
+        {
+            Orion.Wait(pulse_time);
+            return false;
+        }
+        if (Orion.Timer("honoredListCleanup") > 60000)
+        {
+            Orion.ClearIgnoreList("honoredList");
+            Orion.AddDisplayTimer("honoredListCleanup", 60000, "LeftBottom", "Line|Bar|Vertical", "honor cleanup", 75,
+                0, "87", -1, "0xFD")
+            Orion.SetTimer("honoredListCleanup", 0);
+        }
+        _searchHonor();
+        Orion.Wait(pulse_time/25);
+    }
+}
+
+/**
+ * Description
+ * @method _listHonored
+ * @return 
+ */
+function _listHonored(unused)
+{
+    if (!honoredList)
+        var honoredList = Orion.GetIgnoreList("honoredList");
+
+    list_items = honoredList.Items()
+    resultlist = []
+    for (i = 0; i < list_items.length; i++)
+    {
+        if (list_items[i] || list_items[i] != null || list_items[i] != undefined)
+            resultlist.push(list_items[i].Serial())
+
+    }
+    return resultlist;
+}
+/**
+ * Description
+ * @method _searchHonor
+ * @return 
+ */
+function _searchHonor(unused)
+{
+    var targets = Orion.FindTypeEx(any, any, "ground", "live|ignoreself|mobile|inlos", 6, "gray|criminal|orange|red");
+    honoredList = _listHonored()
+    for (i = 0; i < targets.length; i++)
+    {
+        if (targets[i].Hits("%") <= 0)
+        {
+            Orion.GetStatus(targets[i].Serial());
+            Orion.Wait(pulse_time);
+        }
+        if (honoredList.contains(targets[i].Serial()) != true && targets[i].Hits("%") == 100 && Orion.InLOS(targets[i]
+                .Serial()))
+        {
+            _applyHonor(targets[i]);
+        }
+    }
+}
+/**
+ * Description
+ * @method _applyHonor
+ * @param {} target
+ * @return 
+ */
+function _applyHonor(target)
+{
+    if (!target || target == undefined)
+        return false;
+
+    if (!honoredList)
+        var honoredList = Orion.GetIgnoreList("honoredList");
+
+    Orion.InvokeVirtue("Honor");
+    Orion.WaitTargetObject(target.Serial());
+    list_items = honoredList.Items()
+    list_items.push(new IgnoreListItem("any", "any", target.Serial(), target.Name()))
+    honoredList.SetItems(list_items);
+    Orion.AddHighlightCharacter(target.Serial(), "0x513");
+    Orion.UpdateIgnoreList(honoredList);
+    Orion.Wait(pulse_time*7);
+}
+
+/**
+ * Description
+ * @method status_bar_show
+ * @return 
+ */
+function status_bar_show()
+{
+    // Create new custom gump with serial 15
+    var gump = Orion.CreateCustomGump(15);
+    var column_size = 47;
+    var line_size = 25;
+
+    // This gump will be no closible by a right mouse click
+    gump.SetNoClose(false);
+
+    // Clear gump cpntents (for rebuilds)
+    gump.Clear();
+    var sortedFeatures = features.sort(_getSortOrder("name")).filter(function(feature)
+    {
+        if (!Orion.Contains(feature.type, "combatmode|setup"))
+            return feature;
+
+    });
+    // Set callback function
+    gump.SetCallback("_statusBar_callbacks");
+
+	var gump_x_size = (sortedFeatures.length) * column_size;
+	var gump_y_size = line_size*3;
+
+	if (Orion.GetGlobal("showDetails") == "true")
+	{
+		gump_x_size =  30 * column_size;
+		gump_y_size = 650;
+	}
+
+    gump.AddHtmlGump(666, gumps_configurations.features_gump_x, gumps_configurations.features_gump_y, gump_x_size, gump_y_size, "3500", 1, 1);
+    gump.Select("htmlgump", 666);
+	
+    var itemSerial = 1;
+    x = 25;
+    y = 15;
+    stepx = column_size/2;  // new column
+    stepy = line_size; // new line 
+
+    gump.AddText(x, y, 1990, "Hello " + _own_n);
+    gump.AddText(x+(6+_own_n.length)*11, y, 2213, "Currena Combat Mode: " + Shared.GetVar("combatmode"));
+
+   
+    y += line_size; // new line
+
+    // Checkboxes and radio buttons section
+    gump.AddGroup(1);
+    for (var i = 0; i < sortedFeatures.length; i++)
+    {
+        if (sortedFeatures[i].type != "combatmode" && sortedFeatures[i].type != "setup")
+        {
+            feature_name = sortedFeatures[i].name;
+            feature_status = Shared.GetVar(sortedFeatures[i].name) == "on" ? 1 : 0;
+            feature_color = Shared.GetVar(sortedFeatures[i].name) == "on" ? 1426 : 1653;
+            feature_command = sortedFeatures[i].command;
+            check_serial = i + 1;
+
+            if (feature_status == 1)
+                gump.AddButton(check_serial, x, y, "0x2C89", "0x2C89", "0x2C89", "0", 1);
+            else
+                gump.AddButton(check_serial, x, y, "0x2C93", "0x2C93", "0x2C93", "0", 1);
+            x += 17;
+            gump.AddText(x, y-5, 0, feature_command);
+            x += stepx;
+        }
+
+    }
+
+    details_serial = 150;
+    gump.AddButton(details_serial, x, 35, "0x26AF", "0x26AF", "0x26AF", "0", "0x26B2", "0x26B2", 0, 1);
+    
+    if (Orion.GetGlobal("showDetails") == "true")
+    {
+//            gump.AddHtmlGump(6661, 0, 50, 1350, 650, "3500", 1, 1);
+ //           gump.Select("htmlgump", 6661);
+            var stepx = 130;
+            var stepy = 25;
+            var x = column_size/2;
+		    y += line_size; // new line
+
+            gump.AddText(x, y, "0", "<b>Feature</b>");
+            x += 130
+            gump.AddText(x, y, "0", "Command");
+            x += 70
+            gump.AddText(x, y, "0", "Type");
+            x += 75
+            gump.AddText(x, y, "0", "Status");
+            x += 60
+            gump.AddText(x, y, "0", "Full data");
+            x = 15
+
+
+            var sortedFeatures = features.sort(_getSortOrder("name")).forEach(function(feature)
+            {
+                y += stepy
+                x = 25
+                gump.AddText(x, y, "0", "<big>" + feature.name.substring(0, 15) + "</big>");
+                x += 130
+                gump.AddText(x, y, "0", "<small>" + feature.command + "</small>");
+                x += 70
+                gump.AddText(x, y, "0", "<small>" + feature.type + "</small>");
+                x += 75
+                gump.AddText(x, y, Shared.GetVar(feature.name) == "on" ? 1426 : 1653, Shared.GetVar(feature.name));
+                x += 60
+                gump.AddText(x, y, "0", "<small>" + JSON.stringify(feature).replace(/[""{}]+/g, "").replace(/,/g, "|")+"<small>");
+                x += stepx
+
+            });
+
+    }
+    // Reset container for new items to gump
+    gump.Select("gump");
+    // Commit gump changes and update it in client
+    gump.Update();
+}
+/**
+ * Description
+ * @method _statusBar_callbacks
+ * @param {} unused
+ * @return 
+ */
+function _statusBar_callbacks(unused)
+{
+    var i = CustomGumpResponse.ReturnCode();
+
+    var showDetails = false;
+    if (i == 0)
+    {
+        return true;
+    }
+
+    if (i < 150)
+    {
+        i = i - 1; // index adjustment
+        var sortedFeatures = features.sort(_getSortOrder("name")).filter(function(feature)
+        {
+            if (!Orion.Contains(feature.type, "combatmode|setup"))
+                return feature;
+
+        });
+        feature_name = sortedFeatures[i].name;
+        feature_status = Shared.GetVar(feature_name);
+
+        new_status = feature_status == "on" ? "off" : "on";
+        Shared.RemoveVar(feature_name);
+        Shared.AddVar(feature_name, new_status);
+        Orion.Print(feature_name + " is now " + new_status);
+    }
+
+    if (i == 150 && Orion.GetGlobal("showDetails") != "true")
+        Orion.SetGlobal("showDetails", "true");
+    else
+        Orion.SetGlobal("showDetails", "false");
+
+    status_bar_show();
+
+}
+
+
+/**
+ * Description
+ * @method showStatistics
+ * @return 
+ */
+function showStatistics()
+{
+    var dps = 0;
+    var highestdps = 0;
+
+    var lastMessage = null;
+    var pastMessage = null;
+    var damage_text = [];
+    _statistics_start()
+    while (true)
+    {
+        dps = 0;
+
+        lastMessage = Orion.LastJournalMessage();
+        pastMessage = lastMessage;
+        while (pastMessage && pastMessage.Timer() > Orion.Now() - 1000)
+        {
+            if (pastMessage.Serial() == "0xFFFFFFFF" && Orion.Contains(pastMessage.Text(), "damageecho") && !Orion.Contains(pastMessage.Text(), Player.Serial()))
+            {
+                //Damage parsing.
+                damage_text = pastMessage.Text().match(/^damageecho:\s\w*=\w*\s\w*=(\d*)/i);
+                //Adding damage.
+                dps += parseInt(damage_text[1]);
+            }
+
+            //Check for dps update.
+            if (dps > highestdps)
+            {
+                //Update dps.
+                highestdps = dps;
+            }
+
+            pastMessage = pastMessage.PrevMessage();
+        }
+
+        _statistics_gump(dps, highestdps);
+
+        Orion.Wait(pulse_time);
+    }
+}
+
+/**
+ * Description
+ * @method _statistics_gump
+ * @param {} dps
+ * @param {} highestdps
+ * @return 
+ */
+
+function _statistics_gump(dps, highestdps)
+{
+    var gump = Orion.CreateCustomGump(1001);
+    gump.Clear();
+
+    var x = gumps_configurations.statistics_gump_x;
+    var y = gumps_configurations.statistics_gump_y;
+
+    //Set background.
+    //gump.AddHtmlGump(1, x, y, 130, 150, "0x1400", 1, 0);
+
+    //Display.
+    gump.AddText(x + 10, y + 10, "0x0035", "DPS: " + dps);
+    gump.AddText(x + 10, y + 30, "0x0035", "DPS Record: " + highestdps + ".");
+    gump.AddText(x + 10, y + 50, "0x0035", "Gold: " + _gold_to_string());
+    gump.AddText(x + 10, y + 70, "0x0035", "Rate: " + _statistics_gold_rate_to_string());
+
+    gump.AddButton(1, x + 10, y + 110, "0x00F9", "0x00F7", "0x00F8", 0, 1, 1);
+    gump.AddButton(2, x + 80, y + 110, "0x00F9", "0x00F7", "0x00F8", 1652, 1, 1);
+    gump.AddText(x + 10, y + 130, "0x0035", "Elapsed Time: " + _timer_to_string(Orion.Timer("runTime")));
+
+    gump.SetCallback("_statistics_callbacks");
+
+
+    gump.Update();
+}
+
+/**
+ * Description
+ * @method _statistics_callbacks
+ * @return 
+ */
+function _statistics_callbacks()
+{
+    if (CustomGumpResponse.ReturnCode() == 1)
+    {
+        _statistics_start();
+    }
+    else if ([0, 2].indexOf(CustomGumpResponse.ReturnCode()) > -1)
+    {
+        _statistics_stop();
+    }
+}
+
+
+
+/**
+ * Description
+ * @method _statistics_gold_rate_to_string
+ * @param {} gold
+ * @param {} timer
+ * @return BinaryExpression
+ */
+function _statistics_gold_rate_to_string(gold, timer)
+{
+    var hours = 0;
+    if (timer)
+    {
+        hours = timer;
+    }
+    else if (Orion.TimerExists("runTime"))
+    {
+        hours = Orion.Timer("runTime") / (60 * 60 * 1000);
+    }
+
+    var gold_value = 0;
+    if (gold)
+    {
+        gold_value = gold;
+    }
+    else if (_gold_read_from_ledger() - Shared.GetVar("startGold", 0) > 0)
+    {
+        gold_value = _gold_read_from_ledger() - Shared.GetVar("startGold", 0);
+    }
+
+    var rate = 0;
+    if (hours > 0)
+    {
+        rate = gold_value / hours;
+    }
+
+    return _gold_to_string(rate) + "/hour";
+}
+
+/**
+ * Description
+ * @method _statistics_start
+ * @return 
+ */
+function _statistics_start()
+{
+    Shared.AddVar("startGold", _gold_read_from_ledger());
+    Shared.AddVar("timeWasted", 0);
+    Orion.SetTimer("runTime");
+    Orion.SetTimer("wastedTime");
+
+    Orion.Print("Timer started.");
+}
+
+/**
+ * Description
+ * @method _statistics_stop
+ * @return 
+ */
+function _statistics_stop()
+{
+    Orion.RemoveTimer("runTime");
+    Orion.RemoveTimer("wastedTime");
+    Shared.RemoveVar("startGold");
+    Shared.RemoveVar("timeWasted");
+
+    Orion.Print("Timer stopped.");
+}
+
+

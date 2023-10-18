@@ -1,0 +1,69 @@
+/*Note: lower numbers means faster throws */
+var potion_min_throw_time = 2800;
+var my_average_ping = 170
+
+// Acquice a target. In this case, the lasttarget, but can alter this to find a target on the screen
+function _acquire_target()
+{
+	// check 'Sallos.Acquire' help
+	return  Sallos.Acquire();
+}
+
+// 'Pulls the granade pin'
+function _potion_pin_puller(potion_graphic, potion_color)
+{
+	// quickly get the first explosion potion we find. Alert and quit if no potion is found.
+	explosion_potion = Orion.FindType(potion_graphic, potion_color, 'backpack', 'item|fast', 'finddistance', '', true);
+	// when using the 'fast' flag only an object will be returned. So no need to iterate on a list in this case.
+	//next if is an excessive check but useful to make sure we have a valid granade.
+	if (explosion_potion && Orion.FindObject(explosion_potion))
+	{
+		// Pull the pin and start to count!
+		Orion.UseObject(explosion_potion);
+		Orion.WaitForTarget(1500); 
+	} 
+	else // else if there is no potion
+	{
+			Orion.Print(1990, 'No Explosion Potions found on your backpack.');	
+			return false
+	}
+	
+}
+
+// Count and wait
+function _potion_countdown()
+{
+	// Wait for a simple formula where distance and ping makes you throw faster.
+		waitfor = potion_min_throw_time - (my_average_ping) - (Orion.GetDistance(target) * 10) ;
+		Orion.Wait(waitfor);
+}
+
+// throw by targeting an object
+function _potion_throw(target)
+{
+	//I HOPE THIS **** DROPS DEAD! MUAHAHAHAHA
+	Orion.TargetObject(target);
+}
+
+// main function. I doesnt have the '_' before it's name, so it's easy to find on the main list.
+// it has the main checks and calls to other functions.
+function potion_thrower()
+{
+	// get the target.
+	target = _acquire_target();
+	if (!target)
+	{
+		Orion.Print(1990, 'No target to throw a granade at.');
+		return false;
+	}
+
+	Orion.CharPrint(target, 1990, 'Target');
+	
+	// pull the pin!
+	_potion_pin_puller('0x0F0D', '0x0000');
+	// now we wait. 
+	_potion_countdown();
+	//now we throw away on someone
+	_potion_throw(target);
+	Orion.Print('Waited for ' + waitfor);
+}

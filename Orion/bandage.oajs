@@ -1,0 +1,24 @@
+// a base function that does only one job: apply the bandages on a target
+/**
+ * Description
+ * @method _bandage_target
+ * @param {} target
+ * @return 
+ */
+function _bandage_target(target)
+{
+    // when the player is the target is much easier to use bandages. We don't need a target, because the target is YOU!
+    if (target == Player.Serial())
+    {
+        Orion.BandageSelf(bandage_color);
+
+    }
+    else
+    {
+        Orion.UseType(bandage_graphic, bandage_color, 'backpack');
+        Orion.WaitForTarget();
+        Orion.Print(target)
+        Orion.TargetObject(target);
+    }
+
+}

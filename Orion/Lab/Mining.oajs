@@ -1,0 +1,127 @@
+// Script for Mining.
+
+
+var config = {
+   "maxWeight"        : (Player.MaxWeight()-20), //Max Weight to unload
+   "shovel"          : "0x0F39", //Pickaxe type(pickaxe, shovel etc)
+   "ore"            : "0x19B9|0x19B8|0x19BA",
+   "forge"            : "0x0FB1",
+   "forgeScanDistance" : 20,
+   "toolQty"          : 1,        //To keep in bag
+   "tileOffset"       : 1,     // Radius to dig (X+-2, Y+-2)
+};
+
+function mining_start()
+{   
+   if(Player.WarMode())
+      Player.WarMode(false)
+
+   Orion.Print("Initialization...");
+   
+   while(!Player.Dead())
+   {  
+         //Orion.Print('[i] Point '+i);      
+         //Orion.WalkTo(minePoints[i]["x"],minePoints[i]["y"], minePoints[i]["z"],0);
+         for (var x = -config['tileOffset']; x <= config['tileOffset']; x++)
+         {
+            for (var y = -config['tileOffset']; y <= config['tileOffset']; y++)
+            {
+               mine(x,y);
+            }
+         }
+   }
+}
+
+function mine(x,y)
+{
+   //Orion.Print("[i] Mining at offset X+"+x+" Y+"+y);
+   while(!Player.Dead())
+   {
+       if(checkTool())
+       {
+          if(Player.Weight() >= config['maxWeight'] )
+             smelt();
+             //Player.X(),Player.Y(),Player.Z()
+
+          if(Orion.ValidateTargetTileRelative('mine', x, y))
+          {
+             if(Orion.HaveTarget())
+                Orion.CancelWaitTarget();
+             
+             Orion.UseType(config['shovel']);   
+             Orion.WaitJournal('Where do you wish', Orion.Now(), Orion.Now()+2000, 'me|sys');
+            Orion.TargetTileRelative('mine', x, y, Player.Z());                          
+             var result = Orion.WaitJournal('You put some|You loosen some|There is no metal|Try mining|is too far|no line of|seen|You carefully extract', Orion.Now(), (Orion.Now() + 7000), 'me|sys');          
+             if(result && result.FindTextID()==2)
+             {
+                Orion.Print("[i] Tile depleted");
+                Orion.Wait(500);
+                break;
+             }             
+
+          }else{
+             break;
+          }       
+       }else{ //Not enough tools
+          break;
+       }
+   //Main Loop
+   }
+}
+function smelt(){
+   //Orion.Print("[i] Smelting");
+   var forgeSerial = Orion.FindType(config['forge'],-1, 'backpack');
+   //,-1,'ground','', config['forgeScanDistance']
+   if(forgeSerial)
+   {
+      var forge = Orion.FindObject(forgeSerial);
+      if(forge)
+      {         
+         //if(Orion.WalkTo(forge.X(),forge.Y(),forge.Z(),1))
+         //{
+            var ores = Orion.FindType(config['ore'],-1, 'backpack');
+            if(ores && ores.length > 0)
+            {
+               ores.forEach(function(items){
+                  Orion.UseType(config['ore']);
+                  Orion.WaitJournal("Select the forge", Orion.Now(), Orion.Now()+1000, 'me|sys');
+                  Orion.TargetObject(forgeSerial);
+                  Orion.WaitJournal("You burn away|You smelt", Orion.Now(), Orion.Now()+1000, 'me|sys');
+                  Orion.Wait(500);
+               });
+               	Orion.UseObject('0x429EE721');
+					if (Orion.WaitForGump(1000)){
+						var gump0 = Orion.GetGump('last');
+						if ((gump0 !== null) && (!gump0.Replayed()) && (gump0.ID() === '0x06ABCE12')){
+							gump0.Select(Orion.CreateGumpHook(31));
+							Orion.Wait(100);
+						}
+					}
+					if (Orion.WaitForGump(1000)){
+						var gump1 = Orion.GetGump('last');
+						if ((gump1 !== null) && (!gump1.Replayed()) && (gump1.ID() === '0x06ABCE12')){
+							gump1.Select(Orion.CreateGumpHook(0));
+							Orion.Wait(100);
+						}
+					}
+               //Back to spot
+              // Orion.WalkTo(x,y,z,0);
+            }
+         //}
+      }
+   }
+}
+function checkTool()
+{   
+   var tools = Orion.FindType(config['shovel'], -1);
+   if(tools && tools.length >= config['toolQty'])
+   {
+      //Orion.Print("[i] There is "+tools.length+" tools left");
+      return true;
+   }else{
+      Orion.Print("[e] Not enough tools");      
+      Orion.PlayWav("Alarm");
+      Orion.PauseScript();            
+      return false;
+   }
+}

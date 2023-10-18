@@ -1,0 +1,75 @@
+//#include lib.oajs
+/**
+ * Description
+ * @method tameAnimals
+ * @return 
+ */
+function tameAnimals()
+{
+    TargetList1 = '0x00E7|0x00D8' // cow
+    TargetList2 = '0x00D0' //chicken
+    TargetList3 = '0x0030' // scorpion
+    TargetList4 = '0x004A'; // imp
+    TargetList5 = '0x003B|0x000C'; // dragon
+    TargetList6 = '0x0076' // boura
+    TargetList = TargetList6;
+    while (true)
+    {
+        target = Orion.FindType(TargetList, 'any', 'ground', 'ignoreself|mobile|live|near|inlos', 8)[0];
+        Orion.AddHighlightCharacter(target, '1990');
+        _useSkill_animal_taming(target);
+        Orion.Wait(pulse_time);
+    }
+}
+
+/**
+ * Description
+ * @method _useSkill_animal_taming
+ * @param {} target
+ * @return 
+ */
+function _useSkill_animal_taming(target)
+{
+    var endMsg = "anger the beast|you fail to tame";
+    var stopMsg = "cannot be tamed|accept you as master|tame already";
+    var allMsg = endMsg + "|" + stopMsg;
+    var start = Orion.Now();
+    var delay = 5000;
+    //    if (Orion.WaitForAddObject("temp") != 1)
+    //   {
+    //        Orion.Print("AnimalTaming canceled");
+    //       return;
+    //    }
+    var mount = Orion.FindObject(target);
+    if (!mount)
+        return false;
+
+    while (mount.Exists() && !Orion.InJournal(stopMsg, "", "0", any, start))
+    {
+        Orion.Follow(target);
+        start = Orion.Now();
+
+        mobs = Orion.FindTypeEx(TargetList, 'any', 'ground', 'ignoreself|mobile|live', 10);
+        for (var i = 0; i < mobs.length; i++)
+        {
+            if (mobs[i].Notoriety() < 4)
+            {
+                Orion.CharPrint(mobs[i].Serial(), 1990, 'this');
+                Orion.Say('All Stop');
+                Orion.UseObject('0x42268E80')
+                Orion.WaitForTarget(1500);
+                Orion.Wait(1000);
+                Orion.TargetObject(mobs[i].Serial())
+                break;
+            }
+        }
+        //		Orion.UseSkillTarget('Peacemaking', mount.Serial());
+
+        Orion.Wait(pulse_time);
+        Orion.WaitTargetObject(mount.Serial());
+        Orion.UseSkill("Animal Taming");
+        Orion.WaitJournal(allMsg, start, start + delay);
+        Orion.Wait(pulse_time);
+        Orion.CancelTarget();
+    }
+}

@@ -1,0 +1,320 @@
+//#include lib.oajs
+
+/**
+ * Description
+ * @method _gump_get_by_text
+ * @param {} text
+ * @return Literal
+ */
+function _gump_get_by_text(text)
+{
+
+    var count = Orion.GumpCount();
+
+    if (!count)
+    {
+        return null;
+    }
+
+    for (var i = count - 1; i >= 0; i--)
+    {
+        var gump = Orion.GetGump(i);
+        if (gump && Orion.GumpExists("generic", gump.Serial(), gump.ID()))
+        {
+
+            for (var j = 0; j < gump.TextList().length; j++)
+            {
+                if (Orion.Contains(gump.Text(j), text))
+                    return gump;
+            }
+        }
+
+    }
+
+    return null;
+}
+
+/**
+ * Description
+ * @method activate_all_keys
+ * @return 
+ */
+function activate_all_keys()
+{
+    // Order by most used/needed. Don't worry if you don't have a key. The script will ignore it.
+    storageKeyArray = [
+        {
+            'graphic': "0x0F9D",
+            'name': "Tailor Store",
+            'color': "0x0044"
+        },
+        {
+            'graphic': "0x2FEA",
+            'name': "Gem Storage",
+            'color': "0x0482"
+        },
+        {
+            'graphic': "0x0FBE",
+            'name': "Scribe's Tome",
+            'color': "0x0000"
+        },
+        {
+            'graphic': "0x18DE",
+            'name': "Reagent Keys",
+            'color': "0x0021"
+        },
+        {
+            'graphic': "0x14EE",
+            'name': "Treasure Hunter's Storage",
+            'color': "0x0745"
+        },
+        {
+            'graphic': "0x2259",
+            'name': "Ultimate Power Scroll Book",
+            'color': "0x0481"
+        },
+        {
+            'graphic': "0x1EBA",
+            'name': "Runic Tool Box",
+            'color': "0x0041"
+        },
+        {
+            'graphic': "0x1EBB",
+            'name': "Tool Box",
+            'color': "0x002D"
+        },
+        {
+            'graphic': "0x176B",
+            'name': "Jeweler's Keys",
+            'color': "0x0482"
+        },
+        {
+            'graphic': "0x1BD9",
+            'name': "Wood Storage",
+            'color': "0x0058"
+        },
+        {
+            'graphic': "0x177C",
+            'name': "Stone Storage",
+            'color': "0x0489"
+        },
+        {
+            'graphic': "0x1BE8",
+            'name': "Ingot Keys",
+            'color': "0x0014"
+        },
+        {
+            'graphic': "0x185E",
+            'name': "Potion Storage",
+            'color': "0x0030"
+        },
+        {
+            'graphic': "0x11C6",
+            'name': "Evo Key",
+            'color': "0x0501"
+        },
+
+
+    ];
+
+    for (i = 0; i < storageKeyArray.length; i++)
+    {
+        keyinfo = storageKeyArray[i];
+        keystorage = Orion.FindType(keyinfo.graphic, keyinfo.color, 'backpack', 'item|fast');
+        if (keystorage && keystorage != undefined)
+        {
+            Orion.RequestContextMenu(keystorage);
+            Orion.WaitContextMenuID(keystorage, 2);
+            Orion.CharPrint(keystorage, -1, keyinfo.name);
+            if (Orion.WaitForGump(pulse_time*5))
+            {
+                var gump0 = Orion.GetGump('last');
+                if ((gump0 !== null) && (!gump0.Replayed()) && (gump0.ID() === '0x06ABCE12'))
+                    gump0.Select(Orion.CreateGumpHook(0));
+
+            }
+            Orion.Wait(pulse_time*2);
+            Orion.CancelContextMenu();
+        }
+    }
+}
+
+/**
+ * Description
+ * @method afkCheck
+ * @return 
+ */
+function afkCheck()
+{
+    while (true)
+    {
+        while (_gump_get_by_text("AFK Captcha") != null)
+        {
+            Orion.Print("Captcha!");
+            Orion.CharPrint("self", 1990, "Captcha!");
+            Orion.Sound(1341);
+            Orion.Wait(pulse_time*3);
+            Orion.Sound(519);
+            Orion.Wait(pulse_time*3);
+            Orion.Sound(1634);
+            Orion.Wait(pulse_time*30);
+        }
+        Orion.Wait(pulse_time/2);
+    }
+
+}
+
+
+/**
+ * Description
+ * @method _gump_get_elements
+ * @param {} gump
+ * @return ObjectExpression
+ */
+function _gump_get_elements(gump)
+{
+    var gump = getRunebookGump();
+    var buttonlist = [];
+    var gumppiclist = [];
+    var textlist = [];
+    var xmfhtmlgumplist = [];
+    var croppedtextlist = [];
+    gump.CommandList().forEach(function(command)
+    {
+        command = command.trim();
+        if (command.split(' ')[0] == 'text') textlist.push(command)
+        if (command.split(' ')[0] == 'button') buttonlist.push(command)
+        if (command.split(' ')[0] == 'croppedtext') croppedtextlist.push(command)
+        if (command.split(' ')[0] == 'xmfhtmlgump') xmfhtmlgumplist.push(command)
+        if (command.split(' ')[0] == 'gumppic') gumppiclist.push(command)
+    });
+
+    return {
+        'buttons': buttonlist,
+        'gumppic': gumppiclist,
+        'text': textlist,
+        'xmfhtmlgump': xmfhtmlgumplist,
+        'croppedtext': croppedtextlist
+    }
+}
+
+/**
+ * Description
+ * @method clear_fake_objects
+ * @return 
+ */
+function clear_fake_objects()
+{
+    Orion.ClearHighlightCharacters();
+    Orion.ClearFakeMapObjects();
+    Orion.RemoveHighlightArea('all');
+    Orion.RemoveDisplayTimer('all');
+    Orion.Print('Fake objects cleared.');
+}
+
+
+/**
+ * Get a timestamp from the free webapi site timeapi.uo. Default timezone is US/Central (uo evo server) but you can use any from https://timeapi.io/api/TimeZone/AvailableTimeZones
+ * @method _get_date_time
+ * @param {string} timezone
+ * @return date from timeapi.io
+ */
+function _get_date_time(timezone)
+{
+    var timezone = timezone == null ? 'US/Central' : timezone;
+    response = Orion.HttpGet("https://www.timeapi.io/api/Time/current/zone?timeZone=" + timezone, '');
+    if (response && response.length > 0)
+    {
+        response = JSON.parse(response)
+        date = new Date(response.year, response.month - 1, response.day, response.hour, response.minute,
+            response.seconds)
+        return date;
+    }
+}
+
+
+/**
+ * Description
+ * @method _discord_send_message
+ * @param {} webhook_url
+ * @param {} message
+ * @param {} timestamp
+ * @return 
+ */
+function _discord_send_message(webhook_url, message, timestamp)
+{
+    if (!message || message == undefined || message.length < 0)
+        return false;
+    if (!webhook_url || webhook_url == undefined || webhook_url.length < 0)
+        return false;
+
+    var paramText = 'content=';
+    var time = _get_date_time('US/Central').toLocaleTimeString();
+    //time = new Date(parseInt(timestamp));
+    //time = time.toLocaleTimeString();
+    response = Orion.HttpPost(webhook_url, paramText + time + '   ' + message);
+    if (response.length > 0) return response
+    else return message;
+
+}
+
+/**
+ * Reads the gold value inside your gold ledger.
+ * @method _gold_read_from_ledger
+ * @return {int} the gold amount on the gold ledger 
+ */
+function _gold_read_from_ledger()
+{
+    var gold_int = 0;
+    var result = Orion.FindTypeEx('0x1E22', '0x084D', backpack, 'item|fast');
+    if (result.length > 0)
+    {
+        gold_ledger = result[0];
+        properties = gold_ledger.Properties().replace(/,/g, '').replace(/Gold/g, '')
+        gold_text = properties.match(/Value:\s(\d*)/i);
+        gold_int = parseInt(gold_text[1]);
+
+        return gold_int;
+    }
+
+}
+
+
+/**
+ * Description
+ * @method _timer_to_string
+ * @param {} timer
+ * @return time_string
+ */
+function _timer_to_string(timer)
+{
+    var timer_value = 0;
+    if (timer)
+    {
+        timer_value = timer;
+    }
+
+    time_string = '';
+    var hours = 0;
+    if (timer_value >= 60 * 60 * 1000)
+    {
+        hours = parseInt(timer_value / (60 * 60 * 1000));
+    }
+    time_string += _number_to_string(hours) + ':';
+
+    var mins = 0;
+    if (timer_value >= 60 * 1000)
+    {
+        mins = parseInt(timer_value / (60 * 1000)) % 60;
+    }
+    time_string += _number_to_string(mins) + ':';
+
+    var secs = 0;
+    if (timer_value >= 1000)
+    {
+        secs = parseInt(timer_value / 1000) % 60;
+    }
+    time_string += _number_to_string(secs);
+
+    return time_string;
+}

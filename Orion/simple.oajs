@@ -1,0 +1,109 @@
+//Append a '_' in front of basic or 'internal' functions to keep our code and functions list organized.
+// Also, you can call ANY Orion script function ingame by appending a '_' in front of if.
+// Like typing _functioname.
+// for example, you can start your autobandage loop by typing _loop_bandage_self in the game chat.
+
+//* START
+
+// a base function that does only one job: apply the bandages on a target
+function _bandage_target(target)
+{
+    // when the player is the target is much easier to use bandages. We don't need a target, because the target is YOU!
+    if (target == Player.Serial())
+    {
+        Orion.BandageSelf();
+    }
+    // if the target is another player (or even a pet), we can handle the usage of a bandage inside an ELSE block just after this IF.
+    // This is not the scope for this simple healing function tutorial.
+}
+
+// A function to decide when to use the bandage. In this case only decide for yourself.
+function _decide_bandage_self()
+{
+    // Some limits to guide our decisions
+    var bandage_self_timer = 4000;
+    var hits_limit_pct = 85;
+    
+    // Creating a timer and initalizating it's start value
+    // in javascript '!' means NOT, '&&' means AND and '||' means OR
+    if (! Orion.TimerExists('autoBandageSelf'))
+        Orion.SetTimer('autoBandageSelf', bandage_self_timer);
+
+    // Use the bandages if
+    // it is time to use the bandages again AND
+    // We are poisoned OR
+    // Our hit points are lower than hits_limit_pct% 
+    if (Orion.Timer('autoBandageSelf') >= bandage_self_timer 
+        && (Player.Hits('%') < hits_limit_pct || Player.Poisoned()))
+    {
+        // Call the bandage procedure for ourself and reset the timer
+        _bandage_target(Player.Serial());
+        Orion.SetTimer('autoBandageSelf', 0);
+    }
+}
+
+// a simple while loop so we don't have to call the decision function manually
+function loop_bandage_self()
+{
+    // check decision to bandage self every 50 milliseconds
+    while (! Player.Dead() )
+    {
+        _decide_bandage_self();
+        Orion.Wait(50); // This Wait inside while loops is important to avoid cpu flooding.
+    }
+}
+
+
+
+function simple_sampire()
+{
+
+	while (!Player.Dead())
+	{
+        if (Player.Name() != 'MInus') return false;
+        //small pause
+		Orion.Wait(50);
+        // check or create timers
+        if (! Orion.TimerExists('Consecrate Weapon'))
+            Orion.SetTimer('Consecrate Weapon', 0);
+        if (! Orion.TimerExists('Divine Fury'))
+            Orion.SetTimer('Divine Fury', 0);
+		if (! Orion.TimerExists('autoBandageSelf'))
+			Orion.SetTimer('autoBandageSelf', 0);
+            
+        if (Orion.Timer('autoBandageSelf') >= 4000 
+            && Player.Hits('%') < 85)
+        {
+            Orion.BandageSelf();
+            Orion.SetTimer('autoBandageSelf', 0);
+        }
+        
+		//check for buffs and timed divine
+		if (!Orion.BuffExists('Divine Fury') && Orion.Timer('Divine Fury') > 17000)
+		{
+			Orion.Cast('Divine Fury');	
+			Orion.SetTimer('Divine Fury', 0);
+		}
+	
+        //timed consecrate weapon
+		if (Orion.Timer('Consecrate Weapon') > 9000)
+		{
+			Orion.Cast('Consecrate Weapon');
+			Orion.Wait(1200);
+ 			Orion.SetTimer('Consecrate Weapon', 0);
+		}
+        Orion.Wait(400);
+		//whirlwind attack
+		if (!Orion.AbilityStatus('Secondary'))
+		{
+			Orion.UseAbility('Secondary');
+			Orion.Wait(300);
+		}
+
+        //targeting
+        closest_enemy = Orion.FindType(any, any, 'ground', "live|ignoreself|mobile|fast|near", 10, "gray|criminal|orange|red");
+        Orion.Attack(closest_enemy);
+	}
+
+
+}

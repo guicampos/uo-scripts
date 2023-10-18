@@ -1,0 +1,16 @@
+//#include tmaps_lib.oajs
+
+//************************************************ 
+//* Velland's automatic tmap identifier and transporter
+//* This is it. Yes. Only this. Choose where is a source of tmaps near you.
+//*        # ground when reading from a public rune library such as UFO or NEW. 
+//*       # backpack if you carry a tmap library with you.
+//* Then execute the function 'loop_tmap' and open a valid FELUCA tmap.
+//* It looks like magic but it's not. I did the long work of mapping a list of coordinates/runebook button, so I could read Orion's native OCR tmap identification and find the correct book from the list. And then a little 600 lines Orion/javascript code.
+//*         # The list of coordinates/runebook buttons is protected, but I can share if you share your script idea.
+//*  If you use and like this system please leave it a signal at discord and consider donating ed or gold coins to keep me motivated!
+//* Velland/guicampos#6410
+//************************************************ 
+
+
+var runebooks_source = backpack // or backpack

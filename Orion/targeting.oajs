@@ -1,0 +1,39 @@
+//#include lib.oajs
+
+/**
+ * Description
+ * @method _findEnemies
+ * @param {} searchrange
+ * @param {} findflag
+ * @param {} notoriety
+ * @param {} graphics
+ * @param {} colors
+ * @return mobs
+ */
+function _findEnemies(searchrange, findflag, notoriety,graphics,colors)
+{
+   var graphics = graphics ? graphics : 'any';
+   var colors = colors ? colors : 'any';
+    if (!searchrange)
+        searchrange = 10;
+    var mobs = Orion.FindType(graphics, colors, 'ground', findflag, searchrange, notoriety);
+    return mobs;
+}
+
+/**
+ * Description
+ * @method _acquire_single_target_PVM
+ * @param {} range
+ * @return 
+ */
+function _acquire_single_target_PVM(range)
+{
+	//,"!0x0190|!0x0191"
+    closest_enemy = _findEnemies(range, "live|ignoreself|mobile|fast|near", "gray|criminal|orange|red");
+    if (closest_enemy && Orion.ObjectExists(closest_enemy))
+    {
+        return closest_enemy;
+    }
+
+    Orion.Wait(pulse_time);
+}
