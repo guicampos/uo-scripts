@@ -1,0 +1,375 @@
+///////////////////////////////////////////////////////
+/////////SLAPPYS TINKER BOD FILLER/////////////////////
+///////////////////////////////////////////////////////
+
+//Initial set up of macro
+if not @findobject 'MasterBook'
+  sysmsg "please Select the Master BOD book"
+  promptalias 'MasterBook'
+endif
+if not @findobject 'Done'
+  sysmsg "Selecte completed BOD bag destination"
+  promptalias 'Done'
+endif
+if not @findobject 'uncompleted'
+  sysmsg "select uncompleted BOD Destination"
+  promptalias 'uncompleted'
+endif
+//activate tinker bod to use
+if @findtype 0x2258 20 'backpack'
+  @setalias 'BOD' 'found'
+  useobject! 'BOD'
+  waitforgump 0x29d02f02 15000
+  //combine
+  if not targetexists 'server'
+    replygump 0x29d02f02 2
+    waitforgump 0x29d02f02 15000
+    waitfortarget 5000
+  endif
+  //use tinker tools
+  if @findtype 0x1eb8  'backpack'
+    @usetype 0x1eb8 'backpack'
+    //set ore type or wood type
+    //space for checking type of resource
+    //ex. if @ingump (serial) 'crafted with dull copper'
+    //
+    //
+    //future use for resource types
+    //
+    //craft
+    while targetexists 'server'
+      //look in gump for item to create
+      //ex for future input
+      //if @ingump (serial) (text)
+      //the gump commands to create said item
+      //pause 75
+      //@tartgettype! (serial) 'any' 'backpack'
+      //continue on adding more items using else if
+      if @ingump 0x29d02f02 'skinning knife'
+        replygump 0x38920abd 22
+        waitforgump 0x38920abd 15000
+        replygump 0x38920abd 79
+        waitforgump 0x38920abd 15000
+        pause 750
+        @targettype! 0xec4 'any' 'backpack'
+
+      elseif @ingump 0x29d02f02 'saw'
+        replygump 0x38920abd 8
+        waitforgump 0x38920abd 15000
+        replygump 0x38920abd 51
+        waitforgump 0x38920abd 15000
+        pause 750
+        @targettype! 0x1034 'any' 'backpack'
+
+
+
+   ////////////////////////////bod gump
+      elseif @ingump 0x29d02f02 'pen and ink'
+
+
+       //categories 
+        replygump 0x38920abd 8
+        waitforgump 0x38920abd 15000
+        // this is selections
+        replygump 0x38920abd 156
+        waitforgump 0x38920abd 15000
+        pause 750
+        @targettype! 0xfbf 'any' 'backpack'
+      else
+
+elseif @ingump 0x29d02f02 'pewter mug'
+replygump 0x38920abd 22
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 72
+waitforgump 0x38920abd 15000
+pause 750
+ @targettype! 0xfff 'any' 'backpack'
+      else
+
+
+
+ elseif @ingump 0x29d02f02 'tongs'
+replygump 0x38920abd 8
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 86
+waitforgump 0x38920abd 15000
+pause 750
+ @targettype! 0xfbb 'any' 'backpack'
+      else
+
+
+elseif @ingump 0x29d02f02 'smoothing plane'
+replygump 0x38920abd 1
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 16
+waitforgump 0x38920abd 15000
+
+ @targettype! 0x1032 'any' 'backpack'
+      else
+
+elseif @ingump 0x29d02f02 'plate'
+replygump 0x38920abd 22
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 23
+waitforgump 0x38920abd 15000
+
+ @targettype! 0x9d7 'any' 'backpack'
+      else
+
+
+
+
+elseif @ingump 0x29d02f02 'SPYGLASS'
+replygump 0x38920abd 29
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 37
+waitforgump 0x38920abd 15000
+ @targettype! 0x14f5 'any' 'backpack'
+      else
+
+
+elseif @ingump 0x29d02f02 'CANDELABRA'
+replygump 0x38920abd 29
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 9
+waitforgump 0x38920abd 15000
+ @targettype! 0xa27 'any' 'backpack'
+      else
+
+
+elseif @ingump 0x29d02f02 'HEAT STAND'
+replygump 0x38920abd 29
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 51
+waitforgump 0x38920abd 15000
+ @targettype! 0x1849 'any' 'backpack'
+      else
+
+
+elseif @ingump 0x29d02f02 'GLOBE'
+replygump 0x38920abd 29
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 30
+waitforgump 0x38920abd 15000
+ @targettype! 0x1047 'any' 'backpack'
+      else
+
+
+elseif @ingump 0x29d02f02 'CLEAVER'
+replygump 0x38920abd 22
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 44
+waitforgump 0x38920abd 15000
+ @targettype! 0xec3 'any' 'backpack'
+      else
+
+elseif @ingump 0x29d02f02 'SKINING KINFE'
+replygump 0x38920abd 22
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 79
+waitforgump 0x38920abd 15000
+ @targettype! 0xec4 'any' 'backpack'
+
+      else
+elseif @ingump 0x29d02f02 'MOLDING PLANE'
+replygump 0x38920abd 1
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 9
+waitforgump 0x38920abd 15000
+ @targettype! 0x102c 'any' 'backpack'
+      else
+
+elseif @ingump 0x29d02f02 'PICKAXE'
+replygump 0x38920abd 8
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 114
+waitforgump 0x38920abd 15000
+ @targettype! 0xe86'any' 'backpack'
+      else
+
+
+elseif @ingump 0x29d02f02 'LANTERN'
+replygump 0x38920abd 29
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 44
+waitforgump 0x38920abd 15000
+ @targettype! 0xa25 'any' 'backpack'
+      else
+
+
+elseif @ingump 0x29d02f02 'JOINTING PLANE'
+replygump 0x38920abd 1
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 2
+waitforgump 0x38920abd 15000
+ @targettype! 0x1030 'any' 'backpack'
+      else
+
+
+elseif @ingump 0x29d02f02 'INSHAVE'
+replygump 0x38920abd 8
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 107
+waitforgump 0x38920abd 15000
+ @targettype! 0x10e6 'any' 'backpack'
+      else
+
+
+elseif @ingump 0x29d02f02 'HAMMER'
+replygump 0x38920abd 8
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 79
+waitforgump 0x38920abd 15000
+ @targettype! 0x102a 'any' 'backpack'
+      else
+
+
+
+elseif @ingump 0x29d02f02 'FROE'
+replygump 0x38920abd 8
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 65
+waitforgump 0x38920abd 15000
+ @targettype! 0x10e5 'any' 'backpack'
+      else
+
+
+elseif @ingump 0x29d02f02 'DRAW KNIFE'
+replygump 0x38920abd 8
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 37
+waitforgump 0x38920abd 15000
+ @targettype! 0x10e4 'any' 'backpack'
+      else
+
+
+elseif @ingump 0x29d02f02 'FLOUR SIFTER'
+replygump 0x38920abd 8
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 135
+waitforgump 0x38920abd 15000
+ @targettype! 0x103e 'any' 'backpack'
+      else
+
+
+
+elseif @ingump 0x29d02f02 'BARREL TAP'
+replygump 0x38920abd 15
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 16
+waitforgump 0x38920abd 15000
+ @targettype! 0x1004 'any' 'backpack'
+      else
+
+
+
+
+
+elseif @ingump 0x29d02f02 'DOVETAIL SAW'
+replygump 0x38920abd 8
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 58
+waitforgump 0x38920abd 15000
+ @targettype! 0x1028 'any' 'backpack'
+      else
+
+
+elseif @ingump 0x29d02f02 'SAW'
+replygump 0x38920abd 8
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 51
+waitforgump 0x38920abd 15000
+ @targettype! 0x1034 'any' 'backpack'
+      else
+
+
+
+elseif @ingump 0x29d02f02 'ROLLING PIN'
+replygump 0x38920abd 1
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 37
+waitforgump 0x38920abd 15000
+ @targettype! 0x1043 'any' 'backpack'
+      else
+
+
+elseif @ingump 0x29d02f02 'SCORP'
+replygump 0x38920abd 8
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 16
+waitforgump 0x38920abd 15000
+ @targettype! 0x10e7 'any' 'backpack'
+      else
+
+
+
+
+
+///////////////////
+elseif @ingump 0x29d02f02 'pickaxe'
+replygump 0x38920abd 8
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 114
+waitforgump 0x38920abd 15000
+
+ @targettype! 0xe86 'any' 'backpack'
+      else
+
+
+
+elseif @ingump 0x29d02f02 'GOBLET'
+replygump 0x38920abd 22
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 65
+waitforgump 0x38920abd 15000
+ @targettype! 0x99a 'any' 'backpack'
+      else
+
+
+
+
+
+///////////////////////////////
+
+elseif @ingump 0x29d02f02 'BUTCHER KNIFE'
+replygump 0x38920abd 22
+waitforgump 0x38920abd 15000
+replygump 0x38920abd 2
+waitforgump 0x38920abd 15000
+
+ @targettype! 0x13f6 'any' 'backpack'
+      else
+
+
+/////////////////////////////////////
+        //BOD not set up
+        @canceltarget
+        @moveitem! 'bod' 'uncompleted'
+      endif
+      if @ingump 0x38920abd 'failed'
+        pause 1000
+        continue
+      endif
+      pause 500
+    endwhile
+    if not targetexists 'server'
+      @moveitem! 'bod' 'Done'
+    endif
+    //if no tinker tools found
+  else
+    sysmsg 'Out of tinker tools' 25
+    @canceltarget
+    stop
+  endif
+else @findalias 'masterbook'
+  useobject 'masterbook'
+  waitforgump 0x6abce12 15000
+  replygump 0x6abce12 5
+  pause 250
+  replygump 0xb2f21f1a 100
+  pause 1500
+  replay
+  if not @findtype 0x2258 20 'backpack'
+    break
+  endif
+endif

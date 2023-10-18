@@ -1,0 +1,5686 @@
+                        ;=================================================================
+; Script Name: TrailMyx's Advanced CLAw (Complete Looting Assistant)
+; Author: TrailMyx
+; Version: 0.783
+; Shard OSI / FS: OSI / FS OK
+; Revision Date: 9/29/2007
+; Purpose: Simply the Fastest and Best autolooter in the UOniverse!
+; Globals:
+; Special Thanks:
+;   Cerveza the UO master!
+;   gen2000 - SA Imbuing ingredients and SA Items for quest/crafting
+; Beta testers:  Bookwyrm, MissyMoose, Gimlet, Cake2, Hoby.  Thanks!
+; Bug testers: Khameleon
+;
+;=================================================================
+; Disclaimer:  By running this script, you are accepting the contents of this licence agreement.
+; This script is only authorized to be distributed on www.scriptuo.com.  If you purchase this script,
+; acquire it from another website, it is not considered an authorized copy and should be deleted
+; immediately.
+; You hold the author, TrailMyx, and the distribution site www.scriptuo.com not liable for any loss of
+; items, accounts, monitary or time losses associated with the use of this script.  Furthermore, you promise
+; not to distribute or sell this script to anyone without the express permission of the author, Trailmyx.
+; Violation of the contents of this agreement will result in one of the following: litigation, www.scriptuo.com
+; account termination, discimination of bad karma for your next life, and most definitely causing a black mark
+; placed on your soul.
+;
+; I worked very hard to bring this script to you, so please use it responisibily and
+; respectfully.  If you have any questions, please reach me at trailmyx2@scriptuo.com.
+; (c) 2007 TrailMyx, All rights reserved.
+;
+; Thanks to quickd and Khameleon for the spellweaving scroll suggestion and info!
+; Thanks to Nobama for the Shame items information
+; Thanks again to Khameleon for all the good suggestions!
+; Thanks to computerdave for jewelry suggestion
+; Thanks to kabuto1 for blue container handing suggestion
+;===================================================================
+set %version v0.783
+set %title TrailMyx's , #SPC , Advanced , #SPC , CLAw , #SPC , LITE , #SPC , %version , #SPC , - , #SPC , #CHARNAME
+set %os_type WINXP
+str del #OSVER 1 2
+str left #STRRES 1
+if #STRRES > 5
+  set %os_type VISTA
+
+gosub showEUOMenu2 ; Initialization screen
+set %enable_unravel #TRUE
+set %enable_mods_count #TRUE
+set %use_history #TRUE ; #FALSE - History tab will always be blank; #TRUE - History populated
+set %stealthdd #FALSE
+
+
+set !TM_HEAL #FALSE
+gosub SetupGumps
+gosub SetupNames
+set %pane_font_size 7
+gosub InitializeVersion
+gosub showEUOMenu1
+gosub InitializeScript
+gosub SetLooterIdle
+gosub TM_DragDrop_Initialize
+;===================================================================
+; User Configuration:
+set %userweightmax 600
+set %use_exevents #TRUE
+set %exevent_drag 1 ; also used for normal event drags/drops
+set %exevent_drop 15 ; also used for normal event drags/drops
+set %container_delay 20
+set %override_weight_check #TRUE
+set %force_ground_looting #FALSE
+set %use_antirules #false
+set %forum_type SMF ; SMF or PHPBB - Set this to allow the script to format [list][/list] properly for either SMF or PHPBB forums.
+; -- Do not edit below this line! --
+;===================================================================
+set %ignored_containers
+set %hidden_containers_current
+set %hidden_containers_old
+if %use_exevents = #FALSE
+  set %global_destination #BACKPACKID
+
+gosub SetForumType %forum_type
+
+finditem %global_destination C_ , #BACKPACKID
+if #FINDKIND = -1
+{
+  set %global_destination #BACKPACKID
+  display ok I cannot find your loot pack, defaulting to your backpack
+  menu Font Size 8
+  menu Font BGColor BtnFace
+  menu delete EUOButtonLootPack
+  menu Button EUOButtonLootPack 568 148 67 25 Set Loot
+}
+
+set %low_count 10000
+set %high_count 0
+set %avg_window 5
+;-------------------------------------------------------------------------------
+;----------------------------------  Main Loop  --------------------------------
+;-------------------------------------------------------------------------------
+mainloop1:
+  menu get EUOCheckstealthdd
+  set %stealthdd #MENURES
+  if #CHARGHOST = yes
+  {
+    menu set EUOCheckBoxHideBodies #FALSE
+    goto mainloop1
+  }
+menu get EUOCheckBoxHideBodies
+if #MENURES = #TRUE && !TM_loot_in_progress = #FALSE
+{
+  finditem YFM G
+  if #FINDID in %hidden_containers_current || #FINDID in %hidden_containers_old
+  {
+    hideitem #FINDID
+  }
+}
+gosub HandleItemLoggingToHistory
+gosub CheckHotKey
+gosub VerifyLootCheckmarks
+gosub CheckHotKey
+gosub ManageIgnoreList
+gosub CheckHotKey
+gosub HandleExternalInterface
+gosub CheckHotKey
+if #MENUBUTTON <> N/A
+  gosub HandleButtons
+gosub CheckHotKey
+gosub RefreshStatsPane
+namespace copy TM_HEAL from global TM_healer
+if !TM_HEAL = #FALSE
+{
+  gosub CheckHotKey
+  if %targetkey = #TRUE
+  {
+    gosub HandleTargeted
+    set %targetkey #FALSE
+  }
+
+  gosub CheckHotKey
+
+  namespace copy TM_loot_enable from global TM_loot
+  gosub StandingStill
+  if #LLIFTEDKIND = 0 && #TARGCURS = 0 && !TM_loot_enable = #TRUE && %script_pause = #FALSE && #RESULT = #TRUE
+  {
+    if H notin #CHARSTATUS || !TM_MODE <> N/A ; always loot when hidden when external interface is detected.
+    {
+      namespace copy TM_eval_request from global TM_loot
+      menu get EUOCheckBoxAutomatic
+      if %lootarea = #TRUE || #MENURES = #TRUE || !TM_eval_request = #TRUE
+        gosub HandleCorpses
+      set %lootarea #FALSE
+    }
+  }
+
+  gosub CheckHotKey
+  menu get EUOCheckBoxGround
+  if ( ( #LLIFTEDKIND = 0 && #TARGCURS = 0 && %script_pause = #FALSE ) && ( #MENURES = #TRUE || %force_ground_looting = #TRUE ) )
+    gosub HandleGroundTargets
+
+  gosub CheckHotKey
+  if %stealthdd = #TRUE
+    gosub TM_DragDrop_Execute
+}
+goto mainloop1
+;-------------------------------------------------------------------------------
+;-----------------------------  Support Subroutines  ---------------------------
+;-------------------------------------------------------------------------------
+sub StandingStill
+  namespace push
+  namespace local STILL
+
+  set !newpos #CHARPOSX , #CHARPOSY , #CHARPOSZ
+  if !newpos <> !oldpos || !move_timer = N/A
+  {
+    set !delay 1
+    set !oldpos !newpos
+    set !still #FALSE
+    set !move_timer #SCNT + !delay
+  }
+  if #SCNT > !move_timer
+  {
+    if !oldpos = !newpos
+    {
+      set !still #TRUE
+    }
+    else
+    {
+      set !oldpos !newpos
+      set !move_timer #SCNT + !delay
+    }
+  }
+  set #RESULT !still
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub CheckHotKey
+  menu get EUOEditKey1
+  onhotkey #MENURES ALT
+    set %targetkey #TRUE
+  menu get EUOEditKey2
+  onhotkey #MENURES ALT
+    set %lootarea #TRUE
+return
+;-------------------------------------------------------------------------------
+sub RefreshStatsPane
+  if #SCNT > %display_update
+  {
+    set %display_update #SCNT + 10 ; 10 second update interval
+    if %right_pane = STATS && %left_window_zoom = #FALSE
+      gosub ChangeRightPane STATS FORCE
+  }
+return
+;-------------------------------------------------------------------------------
+sub HandleExternalInterface
+  namespace copy TM_mode from global TM_loot
+  if !TM_MODE <> N/A
+    gosub ExternalSetup
+
+  namespace copy TM_ping from global TM_loot
+  if !TM_ping = PING  ;------------------------- looter being pinged to be used, adjust behavior
+  {
+    set !TM_ping PONG
+    set %runtimeLPC 10
+    set %exevent_drag 10
+    set %exevent_drop 20 ; slow down for interfacing script
+    namespace copy TM_ping to global TM_loot
+  }
+return
+;-------------------------------------------------------------------------------
+sub VerifyLootCheckmarks
+  if %EUOCheckBoxAutomatic = #TRUE && %EUOCheckBoxGround = #TRUE
+  {
+    set %EUOCheckBoxAutomatic #FALSE
+    set %EUOCheckBoxGround #FALSE
+    menu set EUOCheckBoxAutomatic %EUOCheckBoxAutomatic
+    menu set EUOCheckBoxGround  %EUOCheckBoxGround
+  }
+  menu get EUOCheckBoxAutomatic
+  if #MENURES <> %EUOCheckBoxAutomatic
+  {
+    if #MENURES = #TRUE
+    {
+      set %EUOCheckBoxGround #FALSE
+      menu set EUOCheckBoxGround #FALSE
+    }
+    set %EUOCheckBoxAutomatic #MENURES
+  }
+  menu get EUOCheckBoxGround
+  if #MENURES <> %EUOCheckBoxGround
+  {
+    if #MENURES = #TRUE
+    {
+      set %EUOCheckBoxAutomatic #FALSE
+      menu set EUOCheckBoxAutomatic #FALSE
+    }
+    set %EUOCheckBoxGround #MENURES
+  }
+return
+;-------------------------------------------------------------------------------
+sub HandleTargeted
+  repeat
+    namespace copy TM_HEAL from global TM_healer
+    if !TM_HEAL = #TRUE
+      wait 20
+  until !TM_HEAL <> #TRUE && #LLIFTEDKIND = 0 && #TargCurs <> 1 && A notin #CHARSTATUS
+  set !TM_loot_in_progress #TRUE
+  namespace copy TM_loot_in_progress to global TM_loot
+  set %eval_items 0
+  set #TARGCURS 1
+  repeat
+  until #TARGCURS = 0
+  set %loot_time #SCNT2
+  set %items_looted 0
+  gosub OpenContainer #LTARGETID
+  set %source #RESULT
+  if %source <> #TRUE
+  {
+    set #LPC 5000
+    set %targeted_mode #TRUE
+set %ignored_containers
+set %hidden_containers_current
+set %hidden_containers_old
+    gosub SetLooterActive
+    gosub ProceedAndLoot %source
+    gosub UpdateLootInfo
+    gosub UpdateEvaluationInfo
+    gosub CheckForBagOfSending
+    gosub SetLooterIdle
+  }
+  set !TM_loot_in_progress #FALSE
+  namespace copy TM_loot_in_progress to global TM_loot
+return
+;-------------------------------------------------------------------------------
+sub HandleGroundTargets
+  repeat
+    namespace copy TM_HEAL from global TM_healer
+    if !TM_HEAL = #TRUE
+      wait 20
+  until !TM_HEAL <> #TRUE && #LLIFTEDKIND = 0 && #TargCurs <> 1 && A notin #CHARSTATUS
+  set #LPC 1000
+  gosub ScanContainerForMatch NULL GROUND
+  namespace copy loot_list from local SCFN
+  if !loot_list <> #TRUE
+  {
+    set %loot_time #SCNT2
+    menu set EUOStatus Looting ground items...
+    gosub SetLooterActive
+    set !TM_loot_in_progress #TRUE
+    namespace copy TM_loot_in_progress to global TM_loot
+    menu get EUOCheckPreview
+    if #MENURES <> #TRUE
+    {
+      if %use_history = #TRUE
+      {
+        gosub AddItemsToList HISTORY !loot_list
+        if %right_pane = HISTORY
+          gosub DrawHistoryPane
+      }
+      gosub TM_LootList !loot_list GROUND %global_destination
+    }
+    else
+    {
+      gosub AddItemsToList PREVIEW !loot_list
+      if %right_pane = PREVIEW
+        gosub DrawPreviewPane
+    }
+    set !TM_loot_in_progress #FALSE
+    namespace copy TM_loot_in_progress to global TM_loot
+    menu set EUOStatus Ground looting complete!
+    gosub SetLooterIdle
+    gosub CheckForBagOfSending
+    gosub UpdateLootInfo
+  }
+  set #LPC 100
+return
+;-------------------------------------------------------------------------------
+sub HandleCorpses
+  repeat
+    namespace copy TM_HEAL from global TM_healer
+    if !TM_HEAL = #TRUE
+      wait 20
+  until !TM_HEAL <> #TRUE && #LLIFTEDKIND = 0 && #TargCurs <> 1 && A notin #CHARSTATUS
+  set %forgettime #SCNT
+  set %eval_items 0
+  set %loot_time #SCNT2
+  set %items_looted 0
+loop2:
+  if %override_weight_check = #FALSE
+  {
+    if ( ( #WEIGHT > ( #MAXWEIGHT - 10 ) ) || ( #WEIGHT > %overweight_config ) )
+    {
+      menu set EUOStatus You are nearly overweight!
+      set !TM_loot_in_progress #FALSE
+      namespace copy TM_loot_in_progress to global TM_loot
+      return
+    }
+  }
+  namespace copy TM_HEAL_REQUEST from global TM_healer
+  if !TM_HEAL_REQUEST = #TRUE
+  {
+    set !TM_loot_in_progress #FALSE
+    namespace copy TM_loot_in_progress to global TM_loot
+    return
+  }
+  if !TM_eval_request = #TRUE
+  {
+    namespace copy TM_eval_source from global TM_loot
+    namespace copy TM_eval_destination from global TM_loot
+    set %container !TM_eval_source
+    set %global_destination !TM_eval_destination
+  }
+  else
+  {
+    set %container YFM
+  }
+  finditem %container G_2
+  if #FINDKIND <> -1
+  {
+    wait 5
+    finditem #FINDID G_2
+  }
+  else
+  {
+    finditem %container C_ , #BACKPACKID
+  }
+  if ( #FINDKIND <> -1 && ( #FINDID notin %hidden_containers_current && #FINDID notin %hidden_containers_old ) ) || !TM_eval_request = #TRUE
+  {
+    set #LPC 10000
+    set !TM_loot_in_progress #TRUE
+    namespace copy TM_loot_in_progress to global TM_loot
+    set %oldltargetid #LTARGETID
+    set %oldlobjectid #LOBJECTID
+    set %oldltargetkind #LTARGETKIND
+    set %lootarea #TRUE
+    set %targeted_mode #FALSE
+    gosub SetLooterActive
+    menu set EUOStatus Looting...
+    if !TM_eval_request = #TRUE
+      set %body !TM_eval_source
+    else
+      set %body #FINDID
+    set #LTARGETID %body
+    set #LOBJECTID %body
+    menu get EUOCheckBoxCarve ; to carve or not to carve.....
+    if #MENURES = #TRUE && %carvetool <> N/A
+    {
+      set #LOBJECTID %carvetool ; #LTARGETID already set
+      set #LTARGETKIND 1
+      event macro 17 0
+      target 3s
+      event macro 22 0
+      set #LOBJECTID %body
+      wait 20
+    }
+    if !TM_eval_request <> #TRUE
+      gosub OpenContainer %body
+    else
+      set #RESULT %body
+    if #RESULT = #TRUE || #RESULT = #FALSE ; no error
+    {
+      if #RESULT = #TRUE ; fatal error opening body, don't try again.
+        gosub HandleContainerIgnore
+    }
+    else
+    {
+      gosub ProceedAndLoot #RESULT
+      gosub HandleContainerIgnore
+    }
+
+    gosub CheckForBagOfSending
+    set #NEXTCPOSX 15
+    set #NEXTCPOSY 396
+    set #LTARGETID %oldltargetid
+    set #LOBJECTID %oldlobjectid
+    set #LTARGETKIND %oldltargetkind
+    if !TM_eval_request <> #TRUE
+      goto loop2
+  }
+  if %lootarea = #TRUE
+  {
+    menu get EUOCheckBoxSound
+    if #MENURES = #TRUE
+      sound  ; *bonk* when search is done!
+    gosub UpdateLootInfo
+    gosub UpdateEvaluationInfo
+    gosub SetLooterIdle
+  }
+  if !TM_eval_request = #TRUE
+  {
+    wait 10
+    set !TM_eval_request #FALSE
+    namespace copy TM_eval_request to global TM_loot
+    ignoreitem reset %ignoreitem_ptr
+  }
+  set !TM_loot_in_progress #FALSE
+  namespace copy TM_loot_in_progress to global TM_loot
+  set #LPC 100
+return
+;-------------------------------------------------------------------------------
+sub ManageIgnoreList
+  if #SCNT > %ignoreitem_timer
+  {
+    if %ignoreitem_ptr = LIST1
+    {
+      set %ignoreitem_ptr LIST2
+    }
+    else
+    {
+      set %ignoreitem_ptr LIST1
+    }
+    ignoreitem reset %ignoreitem_ptr
+    set %hidden_containers_old %hidden_containers_current
+    set %hidden_containers_current
+    set %ignoreitem_timer #SCNT + 600 ; 10 minutes between
+    set %ignored_containers
+  }
+return
+;-------------------------------------------------------------------------------
+sub HandleContainerIgnore
+  menu get EUOCheckBoxHideBodies
+  if #MENURES = #TRUE && !TM_loot_in_progress = #FALSE
+  {
+    if %body notin %hidden_containers_current && %body notin %hidden_containers_old
+    {
+      set %hidden_containers_current %hidden_containers_current , _ , %body
+    }
+    hideitem %body
+  }
+  else
+  {
+    ignoreitem %body %ignoreitem_ptr
+  }
+return
+;-------------------------------------------------------------------------------
+sub HandleItemLoggingToHistory
+  menu get EUOListLeftPane
+  if ( ( %forcecheck = #TRUE || #MENURES <> %leftpane_rulespos ) && ( %left_pane = RULES ) )
+  {
+    set %tempmenures #MENURES
+    namespace push
+    namespace local RULES
+    if %leftpane_rulespos <> 0 ; && %forcecheck <> #TRUE
+    {
+      menu get EUOCheckBoxLogItem
+      set %ptr %leftpane_rulespos - 1
+      set %ptr RULEITEM , %ptr ; retrieve the rule number of old selection
+      set %ptr ! . %ptr
+      set %ptr % . %ptr
+      if %log . %ptr <> #MENURES
+      {
+        set %log . %ptr #MENURES
+      }
+    }
+    set %leftpane_rulespos %tempmenures
+    set %ptr %leftpane_rulespos - 1
+    set %ptr RULEITEM , %ptr ; retrieve the rule number of new selection
+    set %ptr ! . %ptr
+    set %ptr % . %ptr
+    if %log . %ptr = #TRUE || %ptr = #TRUE
+      menu set EUOCheckBoxLogItem #TRUE
+    else
+      menu set EUOCheckBoxLogItem #FALSE
+    namespace pop
+    menu get EUOCheckBoxLogItem
+    set %log_check_state #MENURES
+    set %forcecheck #FALSE
+  }
+  menu get EUOListLeftPane
+  if #MENURES <> %leftpane_activepos && %left_pane = ACTIVE
+  {
+    set %leftpane_activepos #MENURES
+  }
+  menu get EUOListRightPane
+  if #MENURES <> %rightpane_activepos && %right_pane = ACTIVE
+  {
+    set %rightpane_activepos #MENURES
+  }
+  menu get EUOCheckBoxLogItem
+  if #MENURES <> %log_check_state && %left_pane = RULES
+  {
+    set %log_check_state #MENURES
+    if %leftpane_rulespos <> 0
+      set %forcecheck #TRUE
+  }
+return
+;-------------------------------------------------------------------------------
+sub SetForumType
+  if %1 = SMF
+  {
+    menu delete EUOButtonForum
+    menu Font BGColor BtnFace
+    menu Button EUOButtonForum 588 220 40 21 SMF
+    set %forum_type SMF
+    set %list_start [li]
+    set %list_end [/li]
+    set #MENUBUTTON N/A
+  }
+  if %1 = PHPBB
+  {
+    menu delete EUOButtonForum
+    menu Font BGColor BtnFace
+    menu Button EUOButtonForum 588 220 40 21 PHPBB
+    set %forum_type PHPBB
+    set %list_start [*]
+    set %list_end #SPC
+    set #MENUBUTTON N/A
+  }
+return
+;-------------------------------------------------------------------------------
+sub HandleForumType
+  if #MENUBUTTON = EUOButtonForum
+  {
+    set #MENUBUTTON N/A
+    if %forum_type = SMF
+      gosub SetForumType PHPBB
+    else
+      gosub SetForumType SMF
+  }
+return
+;-------------------------------------------------------------------------------
+sub HandleButtons
+  gosub HandleAdvancedCLAwFull
+  gosub HandleForumType
+  if #MENUBUTTON = EUOButtonSmaller
+  {
+    set #MENUBUTTON N/A
+    if %pane_font_size > 7
+      set %pane_font_size %pane_font_size - 1
+    gosub ChangeLeftPane %left_pane FORCE
+    if %left_window_zoom = #FALSE
+      gosub ChangeRightPane %right_pane FORCE
+  }
+
+  if #MENUBUTTON = EUOButtonLarger
+  {
+    set #MENUBUTTON N/A
+    if %pane_font_size < 12
+      set %pane_font_size %pane_font_size + 1
+    gosub ChangeLeftPane %left_pane FORCE
+    if %left_window_zoom = #FALSE
+      gosub ChangeRightPane %right_pane FORCE
+  }
+
+  if #MENUBUTTON = EUOButtonItemAttribLogic
+  {
+    set #MENUBUTTON N/A
+    gosub ChangeButtonState %button1 EUOButtonItemAttribLogic 244 248 31 21
+    set %button1 #RESULT
+  }
+  if #MENUBUTTON = EUOButtonSkillIntensityLogic
+  {
+    set #MENUBUTTON N/A
+    gosub ChangeButtonState %button2 EUOButtonSkillIntensityLogic 244 272 31 21
+    set %button2 #RESULT
+  }
+  if #MENUBUTTON = EUOButtonTalismanLogic
+  {
+    set #MENUBUTTON N/A
+    gosub ChangeButtonState %button3 EUOButtonTalismanLogic 244 296 31 21
+    set %button3 #RESULT
+  }
+  if #MENUBUTTON = EUOButtonUserLogic
+  {
+    set #MENUBUTTON N/A
+    gosub ChangeButtonState %button4 EUOButtonUserLogic 244 320 31 21
+    set %button4 #RESULT
+  }
+  if #MENUBUTTON = EUOButtonItemAttribOK
+  {
+    set #MENUBUTTON N/A
+    gosub HandleOKWithVal EUOComboItemAttrib START_ITEM_ATTRIBUTES %button1 EUOEditItemAttrib
+  }
+  if #MENUBUTTON = EUOButtonSkillIntensityOK
+  {
+    set #MENUBUTTON N/A
+    gosub HandleOKWithVal EUOComboSkillIntensity START_SKILLS %button2 EUOEditSkillIntensity
+  }
+  if #MENUBUTTON = EUOButtonTalismanOK
+  {
+    set #MENUBUTTON N/A
+    gosub HandleOKWithVal EUOComboTalisman START_TALISMAN %button3 EUOEditTalisman
+  }
+  if #MENUBUTTON = EUOButtonUserOK
+  {
+    set #MENUBUTTON N/A
+    namespace copy user_name_count from local USERNAMES
+    if !user_name_count > 0
+      gosub HandleOKWithVal EUOComboUser START_USER_SEARCH %button4 EUOEditUserDefinedIntensity
+  }
+  if #MENUBUTTON = EUOButtonSpecificItemOK
+  {
+    set #MENUBUTTON N/A
+    gosub HandleOKWithVal EUOComboSpecificItems START_SPECIFIC_ITEMS N/A N/A
+  }
+  if #MENUBUTTON = EUOButtonSlayerOK
+  {
+    set #MENUBUTTON N/A
+    gosub HandleOKWithVal EUOComboSlayer START_SLAYER_WEAPONS N/A N/A
+  }
+
+  if #MENUBUTTON = EUOButtonDelete && %left_pane = RULES ; Delete rule
+  {
+    set #MENUBUTTON N/A
+    gosub DeleteRule
+  }
+
+  if #MENUBUTTON = EUOButtonClear ; Clear all rules
+  {
+    display yesno Are you sure you want to clear your rules list?
+    if #DISPRES = yes
+    {
+      gosub ClearAllRules
+      gosub ClearActiveRulesList
+    }
+    set #MENUBUTTON N/A
+  }
+
+  if #MENUBUTTON = EUOButtonActiveClear ; Clear all active rules
+  {
+    display yesno Are you sure you want to clear your active rules list?
+    if #DISPRES = yes
+      gosub ClearActiveRulesList
+    set #MENUBUTTON N/A
+  }
+
+  if #MENUBUTTON = EUOButtonLeftArrow && %right_pane = HISTORY ; Previous button
+  {
+    set #MENUBUTTON N/A
+    gosub GotoPrevListItem HISTORY
+  }
+
+  if #MENUBUTTON = EUOButtonRightArrow && %right_pane = HISTORY ; Next button
+  {
+    set #MENUBUTTON N/A
+    gosub GotoNextListItem HISTORY
+  }
+
+  if #MENUBUTTON = EUOButtonLeftArrow && %right_pane = PREVIEW ; Previous button
+  {
+    set #MENUBUTTON N/A
+    gosub GotoPrevListItem PREVIEW
+  }
+
+  if #MENUBUTTON = EUOButtonRightArrow && %right_pane = PREVIEW ; Next button
+  {
+    set #MENUBUTTON N/A
+    gosub GotoNextListItem PREVIEW
+  }
+
+  if #MENUBUTTON = EUOButtonLoadSetup ; Load button
+  {
+    set #MENUBUTTON N/A
+    gosub LoadSetup
+  }
+
+  if #MENUBUTTON = EUOButtonSaveSetup ; Save button
+  {
+    set #MENUBUTTON N/A
+    gosub SaveSetup
+  }
+
+  if #MENUBUTTON = EUOButtonDrop ; Drop button
+  {
+    set #MENUBUTTON N/A
+    gosub DropIndexedItem HISTORY
+  }
+
+  if #MENUBUTTON = EUOButtonRightActive
+  {
+    set #MENUBUTTON N/A
+    gosub ChangeRightPane ACTIVE NULL
+  }
+
+
+  if #MENUBUTTON = EUOButtonLeftActive
+  {
+    set #MENUBUTTON N/A
+    gosub ChangeLeftPane ACTIVE NULL
+  }
+
+  if #MENUBUTTON = EUOButtonAddActiveRule
+  {
+    set #LPC 10000
+    set #MENUBUTTON N/A
+    gosub ChangeRightPane ACTIVE NULL
+    gosub AddNewMultiActiveRule ACTIVE
+    set !temp #RESULT
+    gosub ReDrawActiveRules
+    menu list select EUOListRightPane !temp
+    set #LPC 100
+  }
+
+  if #MENUBUTTON = EUOButtonActiveDelete
+  {
+    set #MENUBUTTON N/A
+    gosub DeleteMultiActiveRule EUOListRightPane ACTIVE
+  }
+
+  if #MENUBUTTON = EUOButtonDelete && %left_pane = ACTIVE
+  {
+    set #MENUBUTTON N/A
+    gosub DeleteMultiActiveRule EUOListLeftPane
+  }
+
+  if #MENUBUTTON = EUOButtonLeftRules
+  {
+    set #MENUBUTTON N/A
+    gosub ChangeLeftPane RULES NULL
+  }
+
+  if #MENUBUTTON = EUOButtonHistory
+  {
+    set #MENUBUTTON N/A
+    gosub ChangeRightPane HISTORY NULL
+  }
+
+  if #MENUBUTTON = EUOButtonUserEntryOK ; User Entry OK button
+  {
+    set #MENUBUTTON N/A
+    gosub AddUserDefinedName
+    set %result #RESULT
+    gosub DrawUserDefinedNames
+    gosub DrawComboBox EUOComboUser START_USER_SEARCH END_USER_SEARCH 68 320 173
+    menu combo select EUOComboUser %result
+  }
+
+  if #MENUBUTTON = EUOButtonUserEntryDEL ; User Entry OK button
+  {
+    set #MENUBUTTON N/A
+    gosub DeleteUserDefinedName
+    gosub DrawUserDefinedNames
+    gosub DrawComboBox EUOComboUser START_USER_SEARCH END_USER_SEARCH 68 320 173
+    menu combo select EUOComboUser 1
+  }
+
+  if #MENUBUTTON = EUOButtonLootPack ; Loot Pack button
+  {
+    set #MENUBUTTON N/A
+    display yesno Are you sure you want to set/reset your loot pack?
+    if #DISPRES = yes
+    {
+      if %global_destination <> #BACKPACKID
+      {
+        set %global_destination #BACKPACKID
+        set %lootpack %global_destination
+        menu Font Size 8
+        menu Font BGColor BtnFace
+        menu delete EUOButtonLootPack
+        menu Button EUOButtonLootPack 568 148 67 25 Set Loot
+      }
+      else
+      {
+        set #TARGCURS 1
+        repeat
+        until #TARGCURS = 0
+        set %global_destination #LTARGETID
+        set %lootpack %global_destination
+        menu Font Size 8
+        menu Font BGColor BtnFace
+        menu delete EUOButtonLootPack
+        menu Button EUOButtonLootPack 568 148 67 25 UnSet Loot
+      }
+    }
+  }
+
+  if #MENUBUTTON in EUOButtonPause_EUOButtonLittlePause ; Pause button
+  {
+    set #MENUBUTTON N/A
+    menu Font BGColor BtnFace
+    if %script_pause = #FALSE
+    {
+      menu Font Size 8
+      menu delete EUOButtonPause
+      menu delete EUOButtonLittlePause
+      menu Button EUOButtonPause 568 116 67 25 Unpause
+      menu Font Size 7
+      menu Button EUOButtonLittlePause 612 4 19 17 U
+      menu set EUOStatus Paused...
+      set %script_pause #TRUE
+    }
+    else
+    {
+      menu Font Size 8
+      menu delete EUOButtonPause
+      menu delete EUOButtonLittlePause
+      menu Button EUOButtonPause 568 116 67 25 Pause
+      menu Font Size 7
+      menu Button EUOButtonLittlePause 612 4 19 17 P
+      menu set EUOStatus Looter active.
+      set %script_pause #FALSE
+    }
+  }
+
+  if #MENUBUTTON = EUOButtonMinMax ; Minimize/Maximize
+  {
+    set #MENUBUTTON N/A
+    if %window_size = MAXIMUM
+    {
+      menu Window Size 652 28
+      set %window_size MINIMUM
+    }
+    else
+    {
+      menu Window Size 652 421
+      set %window_size MAXIMUM
+    }
+  }
+
+  if #MENUBUTTON = EUOButtonStats
+  {
+    set #MENUBUTTON N/A
+    gosub ChangeRightPane STATS NULL
+  }
+  if #MENUBUTTON = EUOButtonList
+  {
+    set #MENUBUTTON N/A
+    menu set EUOStatus [list] , %forum_str , [/list]
+  }
+
+  if %DEBUG = #TRUE
+  {
+    namespace copy RULE* from local RULES
+    namespace copy active_rule_index from local RULES
+    namespace copy omit_rule_index from local RULES
+    namespace copy omit_rule_index from local RULES
+    namespace copy container_timer from local SCFN
+    namespace copy rule_counter from local SCFN
+  }
+return
+;-------------------------------------------------------------------------------
+;----------------------  Configuration/Initialization  -------------------------
+;-------------------------------------------------------------------------------
+sub InitializeScript
+  if %version_type = N/A
+  {
+    menu delete EUOButtonAND
+    menu delete EUOButtonOR
+    menu delete EUOButtonNOT
+    menu delete EUOButtonRuleOK
+    menu delete EUOButtonActiveDelete
+    menu delete EUOButtonActiveClear
+    menu delete EUOButtonPreview
+    menu delete EUOButtonActive
+    menu delete EUOButtonNewRule
+    menu delete EUOButtonLeftMinMax
+    menu delete EUOCheckPreview
+    menu delete EUOCheckTurbo
+    menu delete EUOButtonOmit
+  }
+  menu delete EUOButtonAND
+  menu delete EUOButtonOR
+  menu delete EUOButtonNOT
+  menu delete EUOButtonRuleOK
+  menu delete EUOButtonActiveDelete
+  menu delete EUOButtonActiveClear
+  menu delete EUOLabelLeftTitle
+  menu delete EUOButtonKeep
+  menu delete EUOButtonPreviewCLR
+
+  set %right_pane HISTORY ; HISTORY, PREVIEW, ACTIVE
+  set %left_pane RULES ; ACTIVE, RULES
+  set %window_size MAXIMUM ; Minimum
+  set %rule_entry_mode #FALSE
+  set %left_window_zoom #FALSE
+
+  set %id_user
+  set %id_gold POF_
+  set %id_gems UVF_NVF_RVF_HVF_EVF_BVF_VVF_GVF_ZVF_VUF_OVF_FVF_
+  set %id_magery_regs WZF_MZF_RZF_KZF_KUF_JZF_SZF_JUF__
+  set %id_necro_regs TZF_DUF_IUF_YZF_UZF_
+  set %id_tmaps SVH_XVH_ ; osi & RunUO
+  set %id_nets UDF_
+  set %id_bandage ZLF_
+  set %id_solen_items TTO_GMF_IJG_OKF_ ; ; Zoogi Fungus, pet balls, bracelet of binding , picnic basket
+  set %id_archery_arrows RWF_ ; Arrows
+  set %id_archery_bolts LNK_ ; Bolts
+  set %id_hides DEG_EEG_
+  set %id_scales STO_
+  set %id_feathers VLK_
+  set %id_daemon_bones OZF_
+  set %id_bones OJK_XIK_SJK_IJK_TJK_BJK_UJK_DJK_MJK_AJK_LJK_FJK_RJ_K_EJK_ZIK_YIK_JJK_GJK_KJK_HJK_
+  set %id_meat VRD_PUD_ ; ribs, birds
+  set %id_ML_items SY_QY_PY_JWS_DWS_GWS_FWS_EWS_LWS_RWS_SWS_QWS_XOF_CGM_FIL_XVK_QCK_OWK_  ; ML ITEMS
+  set %c_1 NXL_QXL_PXL_AYL_ZXL_CYL_BYL_WXL_      ; 1st circle magery
+  set %c_2 VXL_YXL_XXL_IYL_HYL_KYL_JYL_EYL_      ; 2nd circle magery
+  set %c_3 DYL_GYL_FYL_STL_RTL_UTL_TTL_OTL_      ; 3rd circle magery
+  set %c_4 NTL_QTL_PTL_AUL_ZTL_CUL_BUL_WTL_      ; 4th circle magery
+  set %c_5 VTL_YTL_XTL_IUL_HUL_KUL_JUL_EUL_      ; 5th circle magery
+  set %c_6 DUL_GUL_FUL_QUL_PUL_SUL_RUL_MUL_      ; 6th circle magery
+  set %c_7 LUL_OUL_NUL_YUL_XUL_AVL_ZUL_UUL_      ; 7th circle magery
+  set %c_8 TUL_WUL_VUL_GVL_FVL_IVL_HVL_CVL_      ; 8th circle magery
+  set %id_magery_scrolls %c_1 , %c_2 , %c_3 , %c_4 , %c_5 , %c_6 , %c_7 , %c_8
+  set %id_necro_scrolls KYM_QYM_WYM_SYM_PYM_NYM_TYM_HYM_VYM_UYM_RYM_MYM_LYM_JYM_IYM_OYM_CZM_
+  set %id_spellweaving_scrolls OCR_JCR_DCR_ZBR_FCR_LCR_GCR_ICR_NCR_UCR_KCR_CCR_HCR_ACR_BCR_ ; still need summon fiend
+  set %id_colored_nets UDF_ ; gosub GrabOddColoredItem %body %container UDF 0 ; Colored Special fishing nets
+  set %id_MIB HTD_ ; gosub GrabItemAndName %body %container HTD message ; MIBs
+  set %id_SA_Ingredients BUI_TPE_ODHB_KZGB_EZGB_DZGB_TDHB_SDHB_MDHB_TCHB_UDHB_HDHB_WKR_ICHB_XYGB_
+  +YCHB_XCHB_TKR_NDHB_ZYGB_VKR_WLF_YYGB_AZGB_UCHB_JDHB_WCHB_QDHB_JZGB_IDHB_ZIY_CDHB_UWS_AXS_TWS_FXS_WVS_ZWS_GXS_WWS_
+  set %id_SA_Misc_Items SCHB_OFF_NDHB_RDHB_QZG_UZG_KVI_MDI_SKR_STO_QKR_XIY_HDHB_XTO_SPS_SJG_AZF_GJG_LZF_HXM_PKR_MSG_LEJ_RCHB_
+  set %id_mysticism_scrolls UJR_TJR_EKR_DKR_GKR_FKR_ZJR_AKR_CKR_BKR_MKR_LKR_OKR_NKR_IKR_HKR_
+
+  set %id_main_pack_items %id_gold , %id_bandage , %id_hides , %id_MIB , %id_bones , %id_scales , %id_daemon_bones , %id_archery_arrows , %id_archery_bolts , %id_feathers
+  set %id_Shame_Items LJY_AFZ_GXS_TWS_VWS_UWS_WWS_ZWS_AXS_FXS_ ; Shame Crystals, Saltpeter/Sand/Powder/Etc, mining gems (Thanks Nobama)
+  set %id_Jewelry CWL_HJG_IJG_LWL_UJG_
+
+  for %i % . START_SPECIFIC_ITEMS % . END_SPECIFIC_ITEMS
+  {
+    set %index %i - % . START_SPECIFIC_ITEMS ; 0 - SPECIFIC_ITEMS list size
+    if %i = % . Gold
+      set %id . %index %id_gold
+    if %i = % . Magery_Scrolls
+      set %id . %index %id_magery_scrolls
+    if %i = % . Necro_Scrolls
+      set %id . %index %id_necro_scrolls
+    if %i = % . Spellweaving_Scrolls
+      set %id . %index %id_spellweaving_scrolls
+    if %i = % . Mysticism_Scrolls
+      set %id . %index %id_mysticism_scrolls
+    if %i = % . Gems
+      set %id . %index %id_gems
+    if %i = % . Magery_Reagents
+      set %id . %index %id_magery_regs
+    if %i = % . Necro_Reagents
+      set %id . %index %id_necro_regs
+    if %i = % . Treasure_Maps
+      set %id . %index %id_tmaps
+    if %i = % . Arrows
+      set %id . %index %id_archery_arrows
+    if %i = % . Bolts
+      set %id . %index %id_archery_bolts
+    if %i = % . Hides
+      set %id . %index %id_hides
+    if %i = % . Scales
+      set %id . %index %id_scales
+    if %i = % . Feathers
+      set %id . %index %id_feathers
+    if %i = % . Meat
+      set %id . %index %id_meat
+    if %i = % . Daemon_Bones
+      set %id . %index %id_daemon_bones
+    if %i = % . Bones
+      set %id . %index %id_bones
+    if %i = % . Solen_Items
+      set %id . %index %id_solen_items
+    if %i = % . Bandages
+      set %id . %index %id_bandage
+    if %i = % . ML_Items
+      set %id . %index %id_ML_items
+    if %i = % . SA_Ingredients
+      set %id . %index %id_SA_Ingredients
+    if %i = % . SA_Misc_Items
+      set %id . %index %id_SA_Misc_Items
+    if %i = % . Special_Nets
+      set %id . %index %id_colored_nets
+    if %i = % . Colored_Nets
+      set %id . %index %id_colored_nets
+    if %i = % . MIBs
+      set %id . %index %id_MIB
+    if %i = % . Shame_Items
+      set %id . %index %id_Shame_Items
+    if %i = % . Jewelry
+      set %id . %index %id_Jewelry
+  }
+  namespace push
+  namespace global TM_loot
+  set !TM_initialized #TRUE
+  set !TM_loot_enable #TRUE
+  set !TM_loot_in_progress #FALSE
+  set !TM_loot_success #FALSE ; item successfully found and looted
+  set !TM_loot_artifact_success #FALSE ; artifact found and looted
+  set !TM_eval_request #FALSE
+  set !TM_artifact_index 0
+  set !TM_ping N/A
+  set !TM_MODE N/A
+  namespace pop
+
+  gosub DrawComboBox EUOComboItemAttrib START_ITEM_ATTRIBUTES END_ITEM_ATTRIBUTES 68 248 173
+  gosub DrawComboBox EUOComboSkillIntensity START_SKILLS END_SKILLS 68 272 173
+  gosub DrawComboBox EUOComboSpecificItems START_SPECIFIC_ITEMS END_SPECIFIC_ITEMS 428 248 173
+  gosub DrawComboBox EUOComboTalisman START_TALISMAN END_TALISMAN 68 296 173
+  gosub DrawComboBox EUOComboSlayer START_SLAYER_WEAPONS END_SLAYER_WEAPONS 428 272 173
+
+  gosub TM_AdvJournalSync DRAG 10000
+  set %exevent_drag 10
+  set %exevent_drop 20
+  set %overweight_config 420
+  set %BOS_ITEMS POF     ; change this to send these items via bag of sending
+  set %weightwarn #FALSE
+  set %script_pause #FALSE
+  set %running_gold_count 0
+  set %gold_count 0
+
+  set #LPC 100
+
+  set %button1 0 ; >= = <= < > N/A
+  set %button2 0
+  set %button3 0
+  set %button4 0
+  set #MENUBUTTON N/A
+  set %total_items_looted 0
+  set %total_items_evaluated 0
+  set %global_destination #BACKPACKID
+
+  finditem WSF_TSF_HFR C_ , #BACKPACKID ; look for dagger / butcher's war cleaver
+  if #FINDKIND <> -1
+    set %carvetool #FINDID
+
+  finditem JAG_KAG C_ , #BACKPACKID ; look for scissors
+  if #FINDKIND <> -1
+    set %scissors #FINDID
+  else
+    menu set EUOStatus Warning, no scissors found.
+
+  set %root_directory C:\
+  if %os_type = VISTA
+    set %root_directory #CURPATH
+
+  gosub AddUnderscore #CHARNAME
+  set %charname #RESULT
+  gosub AddUnderscore #SHARD
+  set %configfile %root_directory , #RESULT , _ , %charname , _aclawlite.txt
+  call %configfile  ; set %setupfile c:\setup.txt
+  if %setupfile <> N/A
+  {
+    menu set EUOEditSetupFile %setupfile
+    gosub LoadSetup
+  }
+  else
+  {
+    menu set EUOStatus No configuration file found.
+    if %os_type = VISTA
+    {
+      menu get EUOEditSetupFile %setupfile
+      set #STRRES #MENURES
+      if :\ in #STRRES
+        str del #STRRES 1 3
+      menu set EUOEditSetupFile #STRRES
+    }
+  }
+
+  gosub DrawUserDefinedNames
+  gosub DrawComboBox EUOComboUser START_USER_SEARCH END_USER_SEARCH 68 320 173
+  if %global_destination <> #BACKPACKID
+  {
+    menu Font Size 8
+    menu Font BGColor BtnFace
+    menu delete EUOButtonLootPack
+    menu Button EUOButtonLootPack 568 148 67 25 UnSet Loot
+  }
+  finditem %global_destination *
+  if #FINDKIND = -1
+  {
+    display ok I cannot find your loot pack, you will need to reset it.
+    set %global_destination #BACKPACKID
+    menu Font Size 8
+    menu Font BGColor BtnFace
+    menu delete EUOButtonLootPack
+    menu Button EUOButtonLootPack 568 148 67 25 Set Loot
+  }
+  gosub ChangeRightPane ACTIVE FORCE
+
+  set %ignoreitem_ptr LIST1
+  set %ignoreitem_timer #SCNT + 600 ; 10 minutes
+  set %program_start #SCNT
+  set %last_loot_time #SCNT
+  set %average_loot_time 0
+  set %display_update #SCNT
+  set %leftpane_rulespos 0
+  set %leftpane_activepos 0
+  set %rightpane_activepos 0
+  set %log_check_state #FALSE
+  menu get EUOCheckBoxAutomatic
+  set %EUOCheckBoxAutomatic #MENURES
+  menu get EUOCheckBoxGround
+  set %EUOCheckBoxGround #MENURES
+  set %override_save_check #FALSE ; always check before saving
+return
+;-------------------------------------------------------------------------------
+sub SetupNames
+  namespace push
+  namespace local SN
+  set #LPC 10000
+  ;------------------------ Item Attributes
+  ;Attrib$yes$max_intensity$min_intensity$max_value$min_value
+  ;no$all$jwl$wep$shd$arm
+  ;lower requirements not working.
+  ;j = jewel
+  ;a = armor
+  ;w = weapon
+  ;n = none
+  ;y = all
+  set %name START_ITEM_ATTRIBUTES$no$
+  set %name %name , Unravel_Value$no$
+  set %name %name , Sum_of_Maximum$no$    ; version 781
+  set %name %name , Mods_Count$no$    ; version 781
+  set %name %name , Self_Repair$no$
+  set %name %name , Faster_Casting$a$140$140$1$1$
+  set %name %name , Faster_Cast_Recovery$a$120$39$3$1$
+  set %name %name , Swing_Speed_Increase$a$110$17$30$5$
+  set %name %name , Damage_Increase$jw$100$4$25$1$100$2$50$1$
+  set %name %name , Hit_Chance_Increase$a$130$7$15$1$
+  set %name %name , Hit_Dispel$a$100$4$50$2$
+  set %name %name , Hit_Lightning$a$140$5$50$2$
+  set %name %name , Hit_Magic_Arrow$a$120$4$50$2$
+  set %name %name , Hit_Fireball$a$140$5$50$2$
+  set %name %name , Hit_Harm$a$110$4$50$2$
+  set %name %name , Hit_Life_Leech$a$110$4$50$2$
+  set %name %name , Hit_Mana_Leech$a$110$4$50$2$
+  set %name %name , Hit_Stamina_Leech$a$100$4$50$2$
+  set %name %name , Hit_Physical_Area$a$110$4$50$2$
+  set %name %name , Hit_Fire_Area$a$110$4$50$2$
+  set %name %name , Hit_Cold_Area$a$110$4$50$2$
+  set %name %name , Hit_Poison_Area$a$110$4$50$2$
+  set %name %name , Hit_Energy_Area$a$110$4$50$2$
+  set %name %name , Hit_Lower_Defense$a$130$5$50$2$
+  set %name %name , Hit_Lower_Attack$a$110$4$50$2$
+  set %name %name , Physical_Damage$no$
+  set %name %name , Fire_Damage$no$
+  set %name %name , Cold_Damage$no$
+  set %name %name , Poison_Damage$no$
+  set %name %name , Energy_Damage$no$
+  set %name %name , Hit_Point_Increase$a$110$22$5$1$
+  set %name %name , Mana_Increase$a$110$13$8$1$
+  set %name %name , Stamina_Increase$a$110$13$8$1$
+  set %name %name , Defense_Chance_Increase$a$110$6$15$1$
+  set %name %name , Lower_Mana_Cost$a$110$13$8$1$
+  set %name %name , Lower_Reagent_Cost$a$100$5$20$1$
+  set %name %name , Lower_Requirements$a$100$10$20$1$
+  set %name %name , Spell_Damage_Increase$a$100$8$12$1$
+  set %name %name , Luck$a$100$1$100$1$
+  set %name %name , Mana_Regeneration$a$100$50$2$1$
+  set %name %name , Stamina_Regeneration$a$100$33$3$1$
+  set %name %name , Hit_Point_Regeneration$a$100$50$2$1$
+  set %name %name , Reflect_Physical_Damage$a$100$6$15$1$
+  set %name %name , Physical_Resist$ja$100$6$15$1$100$1$1$1$
+  set %name %name , Fire_Resist$ja$100$6$15$1$100$1$1$1$
+  set %name %name , Cold_Resist$ja$100$6$15$1$100$1$1$1$
+  set %name %name , Poison_Resist$ja$100$6$15$1$100$1$1$1$
+  set %name %name , Energy_Resist$ja$100$6$15$1$100$1$1$1$
+  set %name %name , Sum_of_Resists$no$
+  set %name %name , Any_Resist$no$
+  set %name %name , Strength_Bonus$a$110$13$8$1$
+  set %name %name , Dexterity_Bonus$a$110$13$8$1$
+  set %name %name , Intelligence_Bonus$a$110$13$8$1$
+  set %name %name , Sum_of_STR_DEX_INT$no$
+  set %name %name , Mage_Armor$a$140$0$0$0$
+  set %name %name , Spell_Channeling$a$100$0$0$0$
+  set %name %name , Use_Best_Weapon_Skill$a$140$0$0$0$
+  set %name %name , Balanced$a$150$0$0$0$
+  set %name %name , Velocity$a$140$2$50$11$
+  set %name %name , Mage_Weapon$a$100$0$0$0$
+  set %name %name , Night_Sight$a$100$0$0$0$
+  set %name %name , Enhance_Potions$a$100$20$25$5$
+  set %name %name , One_Handed_Weapon$no$
+  set %name %name , Two_Handed_Weapon$no$
+  set %name %name , Skill_Required__Fencing$no$
+  set %name %name , Skill_Required__Swordsmanship$no$
+  set %name %name , Skill_Required__Archery$no$
+  set %name %name , Skill_Required__Mace_Fighting$no$
+  set %name %name , END_ITEM_ATTRIBUTES$no$
+  ;------------------------ Skills
+  set %name %name , START_SKILLS$no$
+  set %name %name , Any_Skill$no$
+  set %name %name , Sum_of_Skills$no$
+  set %name %name , Anatomy$a$140$8$15$1$
+  set %name %name , Animal_Lore$a$140$8$15$1$
+  set %name %name , Animal_Taming$a$140$8$15$1$
+  set %name %name , Archery$a$140$8$15$1$
+  set %name %name , Bushido$a$140$8$15$1$
+  set %name %name , Chivalry$a$140$8$15$1$
+  set %name %name , Evaluating_Intelligence$a$140$8$15$1$
+  set %name %name , Fencing$a$140$8$15$1$
+  set %name %name , Focus$a$140$8$15$1$
+  set %name %name , Discordance$a$140$8$15$1$
+  set %name %name , Healing$a$140$8$15$1$
+  set %name %name , Mace_Fighting$a$140$8$15$1$
+  set %name %name , Magery$a$140$8$15$1$
+  set %name %name , Magic_Resistance$a$140$8$15$1$
+  set %name %name , Meditation$a$140$8$15$1$
+  set %name %name , Musicianship$a$140$8$15$1$
+  set %name %name , Mysticism$a$140$8$15$1$
+  set %name %name , Necromancy$a$140$8$15$1$
+  set %name %name , Ninjitsu$a$140$8$15$1$
+  set %name %name , Parrying$a$140$8$15$1$
+  set %name %name , Peacemaking$a$140$8$15$1$
+  set %name %name , Provocation$a$140$8$15$1$
+  set %name %name , Resisting_Spells$a$140$8$15$1$
+  set %name %name , Spirit_Speak$a$140$8$15$1$
+  set %name %name , Stealing$a$140$8$15$1$
+  set %name %name , Stealth$a$140$8$15$1$
+  set %name %name , Swordsmanship$a$140$8$15$1$
+  set %name %name , Tactics$a$140$8$15$1$
+  set %name %name , Throwing$a$140$8$15$1$
+  set %name %name , Veterinary$a$140$8$15$1$
+  set %name %name , Wrestling$a$140$8$15$1$
+  set %name %name , END_SKILLS$a$140$8$15$1$
+  ;------------------------ Talisman
+  set %name %name , START_TALISMAN$no$
+  set %name %name , Any_Killer_Talisman$no$
+  set %name %name , Any_Protection_Talisman$no$
+  set %name %name , Any_Exceptional_Bonus_Talisman$no$
+  set %name %name , Any_Bonus_Talisman$no$
+  set %name %name , Talisman_of_Ingots_Summoning$no$
+  set %name %name , Talisman_of_Clean_Bandage_Summoning$no$
+  set %name %name , Alchemy_Exceptional_Bonus$no$
+  set %name %name , Blacksmithing_Exceptional_Bonus$no$
+  set %name %name , Carpentry_Exceptional_Bonus$no$
+  set %name %name , Cartography_Exceptional_Bonus$no$
+  set %name %name , Fletching_Exceptional_Bonus$no$
+  set %name %name , Inscription_Exceptional_Bonus$no$
+  set %name %name , Masonry_Exceptional_Bonus$no$
+  set %name %name , Tailoring_Exceptional_Bonus$no$
+  set %name %name , Tinkering_Exceptional_Bonus$no$
+  set %name %name , Cooking_Exceptional_Bonus$no$
+  set %name %name , Alchemy_Bonus$no$
+  set %name %name , Blacksmithing_Bonus$no$
+  set %name %name , Carpentry_Bonus$no$
+  set %name %name , Cartography_Bonus$no$
+  set %name %name , Fletching_Bonus$no$
+  set %name %name , Inscription_Bonus$no$
+  set %name %name , Masonry_Bonus$no$
+  set %name %name , Tailoring_Bonus$no$
+  set %name %name , Tinkering_Bonus$no$
+  set %name %name , Cooking_Bonus$no$
+  set %name %name , END_TALISMAN$no$
+  ;------------------------ Specific Items
+  set %name %name , START_SPECIFIC_ITEMS$no$
+  set %name %name , Gold$no$
+  set %name %name , Magery_Scrolls$no$
+  set %name %name , Necro_Scrolls$no$
+  set %name %name , Spellweaving_Scrolls$no$
+  set %name %name , Mysticism_Scrolls$no$
+  set %name %name , Gems$no$
+  set %name %name , Magery_Reagents$no$
+  set %name %name , Necro_Reagents$no$
+  set %name %name , Treasure_Maps$no$
+  set %name %name , Arrows$no$
+  set %name %name , Bolts$no$
+  set %name %name , Hides$no$
+  set %name %name , Scales$no$
+  set %name %name , Feathers$no$
+  set %name %name , Meat$no$
+  set %name %name , Daemon_Bones$no$
+  set %name %name , Bones$no$
+  set %name %name , Solen_Items$no$
+  set %name %name , Bandages$no$
+  set %name %name , ML_Items$no$
+  set %name %name , SA_Ingredients$no$
+  set %name %name , SA_Misc_Items$no$
+  set %name %name , Special_Nets$no$
+  set %name %name , Colored_Nets$no$
+  set %name %name , MIBs$no$
+  set %name %name , Shame_Items$no$
+  set %name %name , Jewelry$no$
+  set %name %name , END_SPECIFIC_ITEMS$no$
+  ;------------------------ Slayer Weapons
+  set %name %name , START_SLAYER_WEAPONS$no$
+  set %name %name , Any_Slayer$no$
+  set %name %name , Air_Elemental_Slayer$a$110$0$0$0$
+  set %name %name , Arachnid_Slayer$a$130$0$0$0$
+  set %name %name , Blood_Elemental_Slayer$a$110$0$0$0$
+  set %name %name , Demon_Slayer$a$130$0$0$0$
+  set %name %name , Dragon_Slayer$a$110$0$0$0$
+  set %name %name , Earth_Elemental_Slayer$a$110$0$0$0$
+  set %name %name , Elemental_Slayer$a$130$0$0$0$
+  set %name %name , Fire_Elemental_Slayer$a$110$0$0$0$
+  set %name %name , Gargoyle_Slayer$a$110$0$0$0$
+  set %name %name , Lizardman_Slayer$a$110$0$0$0$
+  set %name %name , Ogre_Slayer$a$110$0$0$0$
+  set %name %name , Ophidian_Slayer$a$110$0$0$0$
+  set %name %name , Orc_Slayer$a$110$0$0$0$
+  set %name %name , Poison_Elemental_Slayer$a$110$0$0$0$
+  set %name %name , Repond_Slayer$a$130$0$0$0$
+  set %name %name , Reptile_Slayer$a$130$0$0$0$
+  set %name %name , Scorpion_Slayer$a$110$0$0$0$
+  set %name %name , Snake_Slayer$a$110$0$0$0$
+  set %name %name , Snow_Elemental_Slayer$a$110$0$0$0$
+  set %name %name , Spider_Slayer$a$110$0$0$0$
+  set %name %name , Terathan_Slayer$a$110$0$0$0$
+  set %name %name , Troll_Slayer$a$110$0$0$0$
+  set %name %name , Undead_Slayer$a$130$0$0$0$
+  set %name %name , Water_Elemental_Slayer$a$110$0$0$0$
+  set %name %name , Fey_Slayer$no$
+  set %name %name , Bat_Slayer$no$
+  set %name %name , Bear_Slayer$no$
+  set %name %name , Beetle_Slayer$no$
+  set %name %name , Bird_Slayer$no$
+  set %name %name , Bovine_Slayer$no$
+  set %name %name , Flame_Slayer$no$
+  set %name %name , Goblin_Slayer$no$
+  set %name %name , Ice_Slayer$no$
+  set %name %name , Mage_Slayer$no$
+  set %name %name , Vermin_Slayer$no$
+  set %name %name , END_SLAYER_WEAPONS$no$
+  ;------------------------ User searchs
+  set %name %name , START_USER_SEARCH$no$
+  set %name %name , Insert_your_search_here$no$
+  set %name %name , END_USER_SEARCH$no$
+
+  gosub TM_SplitString %name $
+  gosub TM_SubstringCount
+  set !cnt #RESULT - 1
+  set !command_cnt 0
+  repeat
+    gosub TM_GetIndexedValue auto
+    set !command #RESULT
+    set %name . !command_cnt  !command ; create %name(!i)
+    set % . !command !command_cnt ; this is the name(!i) index number
+    set %log . !command_cnt #TRUE
+    set !command_cnt !command_cnt + 1
+    gosub TM_GetIndexedValue auto
+    set !function #RESULT
+    if !function <> no
+    {
+      str len !function
+      for !i 1 #STRRES
+      {
+        str mid !function !i 1
+        if #STRRES in a_j_w_n_y
+        {
+          gosub GetUnravelInfo !command #STRRES
+          set !temp !command , _ , function
+          set % . !temp !function
+        }
+        else
+        {
+          display ok Unknown value , #SPC , #STRRES , #SPC , near , #SPC , entry , #SPC , !command_cnt
+          stop
+        }
+      }
+    }
+    gosub TM_GetIndex
+  until #RESULT >= !cnt
+  for !i %START_SPECIFIC_ITEMS  %END_SPECIFIC_ITEMS
+    set %log . !i #FALSE
+  set #LPC 100
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+; %"attrib" , _ , multiplier --> computed multiple per value point
+; %"attrib" , _ , bool --> either a value or ZERO i.e. spell channeling, etc.
+; %"attrib" , _ , function --> either a value or ZERO i.e. spell channeling, etc.
+sub GetUnravelInfo
+  set !command %1
+  set !info %2 ; a_j_w_n_y
+  gosub TM_GetIndexedValue auto ; max intensity
+  set !max_intensity #RESULT
+  gosub TM_GetIndexedValue auto ; min intensity
+  set !min_intensity #RESULT
+  gosub TM_GetIndexedValue auto ; max value
+  set !max_value #RESULT
+  gosub TM_GetIndexedValue auto ; min value
+  set !min_value #RESULT
+  if !min_intensity = 0
+  {
+    set !temp !command , _ , multiplier
+    set % . !temp !max_intensity
+    set !temp !command , _ , bool
+    set % . !temp #TRUE
+  }
+  else
+  {
+    set !multiplier ( ( !max_intensity - !min_intensity ) / ( !max_value - !min_value ) )
+    set !temp !command , _ , multiplier
+    set % . !temp !multiplier
+    set !temp !command , _ , bool
+    set % . !temp #FALSE
+    set !temp !command , _ , max_value    ; 781
+    set % . !temp !max_value              ; 781
+  }
+return
+;-------------------------------------------------------------------------------
+sub TM_SplitString
+  namespace push
+  namespace local PS
+  namespace clear
+  set !string %1
+  set !delimiter %2
+  set !cnt 0
+  str pos !string !delimiter
+  repeat
+    if #STRRES = 0
+      break
+    set !temp #STRRES - 1
+    str left !string !temp
+    set !array . !cnt #STRRES
+    set !cnt !cnt + 1
+    set !temp !temp + 1
+    str del !string 1 !temp
+    set !string #STRRES
+    str pos !string !delimiter
+  until #STRRES = 0
+  set #RESULT !cnt
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub TM_GetIndexedValue
+  namespace push
+  namespace local PS
+  if !index = N/A
+  {
+    set !index 0
+  }
+  else
+  {
+    if %1 = auto
+      set !index !index + 1
+    else
+      set !index %1
+  }
+  set #RESULT !array . !index
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub TM_GetIndex
+  namespace push
+  namespace local PS
+  set #RESULT !index
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub TM_SubstringCount
+  namespace push
+  namespace local PS
+  set #RESULT !cnt
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub GetIndex
+  set #RESULT % . %1
+return #RESULT
+;-------------------------------------------------------------------------------
+sub LoadSetup
+  if %override_save_check = #FALSE
+  {
+    display yesno Are you sure you want LOAD your setup?
+    if #DISPRES = no
+      return
+  }
+  menu set EUOStatus Loading setup...
+  menu get EUOEditSetupFile
+  gosub ClearAllRules
+  gosub ClearActiveRulesList
+  if %os_type = VISTA && :\ notin #MENURES
+  {
+    set #MENURES #CURPATH , #MENURES
+  }
+  else
+  {
+    if :\ notin #MENURES
+      set #MENURES c:\ , #MENURES
+  }
+  gosub TM_FileSystem_LoadFile #MENURES
+  if #RESULT = #TRUE
+  {
+    menu set EUOStatus Error loading configuration file.
+    return
+  }
+  set #LPC 1000
+  namespace push
+  namespace local RULES
+  if !rule_index >= 0
+  {
+    set !temp !rule_index - 1
+    for !i 0 !temp
+    {
+      set !ruleitemindex RULEITEM , !i
+      gosub AddSpace ! . !ruleitemindex
+      set !temprule #RESULT
+      set !rulelogicindex RULELOGIC , !i
+      set !ruleintensityindex RULEINTENSITY , !i
+      set !ruletextindex RULETEXT , !i
+      gosub GetButtonState ! . !rulelogicindex
+      set ! . !rulelogicindex #RESULT
+      if #RESULT = NA || ! . !ruleintensityindex = NA
+        set !text !temprule
+      else
+        set !text !temprule , #SPC , #RESULT , #SPC , ! . !ruleintensityindex
+      set ! . !ruletextindex !text
+    }
+  }
+  namespace pop
+
+  gosub DrawRuleChainStrings
+
+  gosub ChangeLeftPane RULES FORCE
+  gosub ChangeRightPane ACTIVE FORCE
+  if %use_antirules = #TRUE
+    gosub BuildAntiRuleList
+
+  menu set EUOStatus Setup loaded!
+  set #LPC 100
+
+  gosub UpdateEvaluationInfo
+
+  menu set EUOCheckBoxAutomatic %EUOCheckBoxAutomatic
+  menu set EUOCheckBoxGround %EUOCheckBoxGround
+  menu set EUOCheckBoxBOS %EUOCheckBoxBOS
+  menu set EUOCheckBoxLootAll %EUOCheckBoxLootAll
+  menu set EUOCheckBoxCarve %EUOCheckBoxCarve
+  menu set EUOEditKey1 %EUOEditKey1
+  menu set EUOEditKey2 %EUOEditKey2
+
+  menu set EUOEditTextSearch %EUOEditTextSearch
+  menu set EUOEditFindid %EUOEditFindid
+  menu set EUOCheckBoxHideBodies %EUOCheckBoxHideBodies
+  menu set EUOCheckTurbo %EUOCheckTurbo
+  menu set EUOCheckPreview %EUOCheckPreview
+  menu set EUOCheckBoxSound %EUOCheckBoxSound
+  if %EUOCheckBoxSound = N/A
+    menu set EUOCheckBoxSound #TRUE
+  menu set EUOCheckBoxTextLog %EUOCheckBoxTextLog
+  menu set EUOCheckBoxFINDIDLog %EUOCheckBoxFINDIDLog
+  finditem %lootpack C_ , #BACKPACKID
+  if #FINDCNT > 0
+    set %global_destination %lootpack
+  else
+    set %global_destination #BACKPACKID
+
+  menu set EUOCheckstealthdd %stealthdd
+
+return
+;------------------------------------------------------------------------------
+sub SaveSetup
+  if %override_save_check = #FALSE
+  {
+    display yesno Are you sure you want SAVE your setup?
+    if #DISPRES = no
+      return
+  }
+  set #LPC 1000
+  menu set EUOStatus Saving setup....
+  gosub TM_FileSystem_CreateFileHandle save_handle
+  gosub TM_FileSystem_SaveVariable local USERNAMES save_handle user_name_count
+  namespace copy user_name_count from local USERNAMES
+  gosub TM_FileSystem_SaveArray local USERNAMES save_handle user_name 0 !user_name_count
+  gosub TM_FileSystem_SaveVariable local std save_handle total_items_looted
+  gosub TM_FileSystem_SaveVariable local std save_handle total_items_evaluated
+  gosub TM_FileSystem_SaveVariable local std save_handle lootpack
+  gosub TM_FileSystem_SaveVariable local std save_handle running_gold_count
+  gosub TM_FileSystem_SaveVariable local std save_handle pane_font_size
+  gosub TM_FileSystem_SaveVariable local std save_handle forum_type
+
+  menu get EUOCheckBoxAutomatic
+  set %EUOCheckBoxAutomatic #MENURES
+  menu get EUOCheckBoxGround
+  set %EUOCheckBoxGround #MENURES
+  menu get EUOCheckBoxBOS
+  set %EUOCheckBoxBOS #MENURES
+  menu get EUOCheckBoxLootAll
+  set %EUOCheckBoxLootAll #MENURES
+  menu get EUOCheckBoxCarve
+  set %EUOCheckBoxCarve #MENURES
+  menu get EUOCheckPreview
+  set %EUOCheckPreview #MENURES
+  menu get EUOCheckTurbo
+  set %EUOCheckTurbo #MENURES
+  menu get EUOCheckBoxTextLog
+  set %EUOCheckBoxTextLog #MENURES
+  menu get EUOCheckBoxFINDIDLog
+  set %EUOCheckBoxFINDIDLog #MENURES
+  menu get EUOCheckstealthdd
+  set %stealthdd #MENURES
+
+  gosub TM_FileSystem_SaveVariable local std save_handle EUOCheckBoxAutomatic
+  gosub TM_FileSystem_SaveVariable local std save_handle EUOCheckBoxGround
+  gosub TM_FileSystem_SaveVariable local std save_handle EUOCheckBoxBOS
+  gosub TM_FileSystem_SaveVariable local std save_handle EUOCheckBoxLootAll
+  gosub TM_FileSystem_SaveVariable local std save_handle EUOCheckBoxCarve
+  gosub TM_FileSystem_SaveVariable local std save_handle EUOCheckPreview
+  gosub TM_FileSystem_SaveVariable local std save_handle EUOCheckTurbo
+  gosub TM_FileSystem_SaveVariable local std save_handle stealthdd
+  menu get EUOEditKey1
+  set %EUOEditKey1 #MENURES
+  menu get EUOEditKey2
+  set %EUOEditKey2 #MENURES
+  gosub TM_FileSystem_SaveVariable local std save_handle EUOEditKey1
+  gosub TM_FileSystem_SaveVariable local std save_handle EUOEditKey2
+
+  menu get EUOEditTextSearch
+  set %EUOEditTextSearch #MENURES
+  menu get EUOEditFindid
+  set %EUOEditFindid #MENURES
+  menu get EUOCheckBoxHideBodies
+  set %EUOCheckBoxHideBodies #MENURES
+  menu get EUOCheckBoxSound
+  set %EUOCheckBoxSound #MENURES
+  gosub TM_FileSystem_SaveVariable local std save_handle EUOEditTextSearch
+  gosub TM_FileSystem_SaveVariable local std save_handle EUOEditFindid
+  gosub TM_FileSystem_SaveVariable local std save_handle EUOCheckBoxHideBodies
+  gosub TM_FileSystem_SaveVariable local std save_handle EUOCheckBoxSound
+
+  namespace push
+  namespace local RULES
+  gosub TM_FileSystem_SaveVariable local RULES save_handle rule_index
+  if !rule_index >= 0
+  {
+    set !temp !rule_index - 1
+    for !i 0 !temp
+    {
+      set !ruleitemindex RULEITEM , !i
+      set !rulelogicindex RULELOGIC , !i
+      set !ruleintensityindex RULEINTENSITY , !i
+      gosub ConvertLogic ! . !rulelogicindex
+      set !temp ! . !rulelogicindex
+      set ! . !rulelogicindex #RESULT
+      gosub TM_FileSystem_SaveVariable local RULES save_handle !ruleitemindex
+      gosub TM_FileSystem_SaveVariable local RULES save_handle !rulelogicindex
+      gosub TM_FileSystem_SaveVariable local RULES save_handle !ruleintensityindex
+      set ! . !rulelogicindex !temp
+    }
+  }
+  gosub TM_FileSystem_SaveVariable local RULES save_handle active_rule_index
+  if !active_rule_index >= 0
+  {
+    set !temp !active_rule_index - 1
+    for !i 0 !temp
+    {
+      set !temp ACTIVERULE , !i
+      gosub TM_FileSystem_SaveVariable local RULES save_handle !temp
+    }
+  }
+
+  gosub TM_FileSystem_SaveVariable local RULES save_handle omit_rule_index
+  if !omit_rule_index >= 0
+  {
+    set !temp !omit_rule_index - 1
+    for !i 0 !temp
+    {
+      set !temp OMITRULE , !i
+      gosub TM_FileSystem_SaveVariable local RULES save_handle !temp
+    }
+  }
+  namespace pop
+
+  for %i %START_ITEM_ATTRIBUTES %END_USER_SEARCH
+    gosub TM_FileSystem_SaveVariable local STD save_handle log , %i
+
+  gosub SaveRuleChains
+
+  menu get EUOEditSetupFile
+  set %savefile #MENURES
+  if %os_type = VISTA
+    set %savefile #CURPATH , %savefile
+
+  gosub TM_FileSystem_SaveFile save_handle %savefile
+  execute cmd.exe /c echo set , #spc , % , setupfile , #spc , #MENURES > %configfile
+  set #LPC 100
+  menu set EUOStatus Setup Saved!
+return
+;-------------------------------------------------------------------------------
+;-------------------------  Data Structure - Rules  ----------------------------
+;-------------------------------------------------------------------------------
+sub AddNewRule
+  namespace push
+  namespace local RULES
+  set !temp_LPC #LPC
+  set #LPC 10000
+  set !ruleitem %1
+  set !rulelogic %2
+  set !ruleintensity %3
+  set !text %4
+  if !rule_index <> N/A && !rule_index > 0
+  {
+    for !i 0 !rule_index
+    {
+      set !ruleitemindex RULEITEM , !i
+      set !rulelogicindex RULELOGIC , !i
+      set !ruleintensityindex RULEINTENSITY , !i
+      if ( ( ! . !ruleitemindex = !ruleitem ) && ( ! . !rulelogicindex = !rulelogic ) && ( ! . !ruleintensityindex = !ruleintensity ) )
+      {
+        display ok There is already a rule for this.
+        set #LPC !temp_LPC
+        namespace pop
+        return
+      }
+    }
+  }
+  else
+  {
+    set !rule_index 0
+  }
+  set !ruleitemindex RULEITEM , !rule_index
+  set !rulelogicindex RULELOGIC , !rule_index
+  set !ruleintensityindex RULEINTENSITY , !rule_index
+  set !ruletextindex RULETEXT , !rule_index
+  set ! . !ruleitemindex !ruleitem
+  set ! . !rulelogicindex !rulelogic
+  set ! . !ruleintensityindex !ruleintensity
+  set ! . !ruletextindex !text
+
+  if RULECHAIN in !ruleitem
+  {
+    set ! . !ruleitem !rule_index
+    set % . !ruleitem #TRUE ; always assumes will be logged.
+  }
+
+  if %left_pane = RULES
+    menu List add EUOListLeftPane !text
+
+  set %leftpane_rulespos !rule_index
+  set !rule_index !rule_index + 1
+  menu List Select EUOListLeftPane !rule_index
+  set #LPC !temp_LPC
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub DeleteRule
+  namespace push
+  namespace local RULES
+  set !temp_LPC_end #LPC
+  set !chain_deleted #FALSE
+  set #LPC 10000
+
+  menu get EUOListLeftPane
+  if !rule_index = N/A || !rule_index = 0 || #MENURES <= 0
+    goto DeleteRule_skip
+
+  set !startindex #MENURES - 1
+  set !text RULETEXT , !startindex
+  set !string ! . !text
+  gosub CheckForRuleDependencyInActiveList !startindex
+  if #RESULT = #TRUE
+  {
+    menu set EUOStatus Dependency error for rule , #SPC , !string , #SPC , in , #SPC , active , #SPC , list.
+    goto DeleteRule_skip
+  }
+
+  gosub CheckForRuleDependencyInOmitList !startindex
+  if #RESULT = #TRUE
+  {
+    menu set EUOStatus Dependency error for rule , #SPC , !string , #SPC , in , #SPC , omit , #SPC , list.
+    goto DeleteRule_skip
+  }
+
+  gosub CheckForRuleDependency !startindex
+  if #RESULT = #TRUE
+  {
+    menu set EUOStatus Dependency error for rule , #SPC , !string
+    goto DeleteRule_skip
+  }
+
+  set !rule RULEITEM , !startindex
+  if RULECHAIN in ! . !rule
+  {
+    gosub DeleteRuleChain ! . !rule
+    set !chain_deleted #TRUE
+  }
+  for !delete_index !startindex !rule_index
+  {
+    set !next_index !delete_index + 1
+
+    set !next_ruleitemindex RULEITEM , !next_index
+    set !next_rulelogicindex RULELOGIC , !next_index
+    set !next_ruleintensityindex RULEINTENSITY , !next_index
+    set !next_ruletextindex RULETEXT , !next_index
+
+    set !delete_ruleitemindex RULEITEM , !delete_index
+    set !delete_rulelogicindex RULELOGIC , !delete_index
+    set !delete_ruleintensityindex RULEINTENSITY , !delete_index
+    set !delete_ruletextindex RULETEXT , !delete_index
+
+    set ! . !delete_ruleitemindex ! . !next_ruleitemindex
+    set ! . !delete_rulelogicindex ! . !next_rulelogicindex
+    set ! . !delete_ruleintensityindex ! . !next_ruleintensityindex
+    set ! . !delete_ruletextindex ! . !next_ruletextindex
+  }
+
+  if !chain_deleted = #TRUE
+  {
+    for !i !rc !rulechain_count
+    {
+      set !next !i + 1
+      set !RULECHAIN . !i !RULECHAIN . !next
+      if !RULECHAIN . !i < 0
+      {
+        set !RULECHAIN . !i N/A
+      }
+      else
+      {
+        set !ptr !RULECHAIN . !next
+        set !temp RULEITEM . !ptr
+        set ! . !temp RULECHAIN , !i
+      }
+    }
+    set !temp RULECHAIN , !next
+    set ! . !temp N/A
+  }
+
+  gosub AdjustRuleChains !startindex
+  set !startindex !startindex + 1
+  gosub AdjustActiveList !startindex
+  gosub AdjustOmitList !startindex
+
+  set !rule_index !rule_index - 1
+  if !rule_index <= 0
+    set !rule_index N/A
+  if %left_pane = RULES
+    gosub DrawRulesPane
+
+  menu list select EUOListLeftPane #MENURES
+  menu set EUOStatus !string , #SPC , deleted.
+DeleteRule_skip:
+
+  set #LPC !temp_LPC_end
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub CheckForRuleDependencyInActiveList
+  namespace push
+  namespace local RULES
+  set !rule %1
+  if !active_rule_index <> N/A
+  {
+    set !temp !active_rule_index - 1
+    for !i 0 !temp
+    {
+      set !testrule ACTIVERULE , !i
+      if !rule = ! . !testrule
+      {
+        namespace pop
+        return #TRUE
+      }
+    }
+  }
+  namespace pop
+return #FALSE
+;-------------------------------------------------------------------------------
+sub AdjustActiveList
+  namespace push
+  namespace local RULES
+  set !start %1
+  if !active_rule_index <> N/A
+  {
+    set !temp !active_rule_index - 1
+    for !i 0 !temp
+    {
+      set !testrule ACTIVERULE , !i
+      if ! . !testrule >= !start
+        set ! . !testrule ! . !testrule - 1
+    }
+  }
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub ClearAllRules
+  namespace push
+  namespace local RULES
+  menu delete EUOListLeftPane
+  menu Font BGColor Window
+  menu Font Name Arial
+  menu Font Size 7
+  menu Font Style
+  menu List Create EUOListLeftPane 4 48 269 169
+  if !rule_index <> N/A
+  {
+    for !i 0 !rule_index
+    {
+      set !delete_ruleitemindex RULEITEM , !i
+      set !delete_rulelogicindex RULELOGIC , !i
+      set !delete_ruleintensityindex RULEINTENSITY , !i
+      set !delete_ruletextindex RULETEXT , !i
+      set ! . !delete_ruleitemindex N/A
+      set ! . !delete_rulelogicindex N/A
+      set ! . !delete_ruleintensityindex N/A
+      set ! . !delete_ruletextindex N/A
+    }
+  }
+  set !rule_index N/A
+
+  if !rulechain_count <> N/A
+  {
+    for !i 0 !rulechain_count
+    {
+      for !j 0 !RULECHAIN_index . !i
+      {
+        set !rulechain RULECHAIN_rule , !i , _ , !j
+        set ! . !rulechain N/A
+      }
+      set !RULECHAIN_index . !i N/A
+    }
+  }
+  set !rulechain_count N/A
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+;---------------------  Data Structure - Active Rules  -------------------------
+;-------------------------------------------------------------------------------
+sub AddNewMultiActiveRule
+  namespace push
+  namespace local RULES
+  set !type %1
+  set !temp_LPC #LPC
+  set #LPC 10000
+  set !index !type , _rule_index
+  set !rule_idx ! . !index
+  if !rule_idx = N/A
+    set !rule_idx 0
+  if !listbox_text_ptr = N/A
+    set !listbox_text_ptr 0
+  if %left_pane <> RULES
+    goto AddNewMultiActiveRule_skip1
+  menu get EUOListLeftPane
+  if #MENURES <= 0
+    goto AddNewMultiActiveRule_skip1
+  set !rule #MENURES - 1
+  set !nextmenures #MENURES + 1
+  for !i 0 !rule_idx ; check to see if this rule is already in active list.
+  {
+    set !temp !type , RULE , !i
+    if ! . !temp = !rule
+    {
+      menu set EUOStatus That rule already exists in your active search list.
+      goto AddNewMultiActiveRule_skip1
+    }
+  }
+
+  set !activerule !type , RULE , !rule_idx
+  set ! . !activerule !rule
+  set !text RULETEXT , !rule
+
+  if !type = OMIT
+    set !output OMIT: , #SPC , ! . !text
+  else
+    set !output ! . !text
+
+  set !listbox_text . !listbox_text_ptr !output
+  set !listbox_text_ptr !listbox_text_ptr + 1
+
+  menu set EUOStatus Adding , #SPC , !output
+  set !rule_idx !rule_idx + 1
+  set !temp !type , RULE , !rule_idx
+  set ! . !temp N/A ; zero last value
+  menu list select EUOListLeftPane !nextmenures
+  set ! . !index !rule_idx
+  if %use_antirules = #TRUE
+    gosub BuildAntiRuleList
+
+AddNewMultiActiveRule_skip1:
+  set #LPC !temp_LPC
+  set #RESULT !listbox_text_ptr ; !rule_idx
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub DeleteMultiActiveRule
+  namespace push
+  namespace local RULES
+  set !pane %1
+  set !temp_LPC #LPC
+  set #LPC 10000
+  menu get !pane
+  if #MENURES = 0
+    goto DeleteMultiActiveRule_skip1
+  set !start #MENURES - 1
+  set !final !start
+  if OMIT in !listbox_text . !start
+  {
+    set !type OMIT
+  }
+  else
+  {
+    set !type ACTIVE
+    set !start !start - !omit_rule_index
+  }
+  set !tempindex !type , _rule_index
+  set !rule_idx ! . !tempindex
+  if !rule_idx = N/A || !rule_idx = 0
+    goto DeleteMultiActiveRule_skip1
+  for !i !start !rule_idx
+  {
+    set !deleted !type , RULE , !i
+    set !index !i + 1
+    set !temp !type , RULE , !index
+    set ! . !deleted ! . !temp
+    set ! . !temp N/A
+  }
+  set !rule_idx !rule_idx - 1
+  gosub ReDrawActiveRules
+  menu list select !pane !final
+  set ! . !tempindex !rule_idx
+  if %use_antirules = #TRUE
+    gosub BuildAntiRuleList
+DeleteMultiActiveRule_skip1:
+  set #LPC !temp_LPC
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub ClearActiveRulesList
+  namespace push
+  namespace local RULES
+  set !temp_LPC #LPC
+  set #LPC 10000
+  set !listbox_text_ptr 0
+  for !i 0 !active_rule_index
+  {
+    set !temp ACTIVERULE , !i
+    set ! . !temp N/A
+  }
+  for !i 0 !omit_rule_index
+  {
+    set !temp OMITRULE , !i
+    set ! . !temp N/A
+  }
+  set !active_rule_index N/A
+  set !omit_rule_index N/A
+  gosub ReDrawActiveRules
+ClearActiveRulesList_skip:
+  set #LPC !temp_LPC
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+;-----------------  Data Structure - User Defined Names  -----------------------
+;-------------------------------------------------------------------------------
+sub AddUserDefinedName
+  namespace push
+  namespace local USERNAMES
+  if !user_name_count = N/A
+    set !user_name_count 0
+  menu get EUOEditUserDefinedText
+  gosub ConvertStringToVariable #MENURES
+  set !name #RESULT
+  set !i 0
+  while !i < !user_name_count
+  {
+    if !user_name . !i = !name
+    {
+      display ok You already have this search specified.
+      namespace pop
+      return
+    }
+    set !i !i + 1
+  }
+  set !user_name . !user_name_count !name
+  set !user_name_count !user_name_count + 1
+  set #RESULT !user_name_count
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub DeleteUserDefinedName
+  namespace push
+  namespace local USERNAMES
+
+  if !user_name_count = N/A
+  {
+    namespace pop
+    return
+  }
+  menu get EUOComboUser
+  if #MENURES > 0
+  {
+    set !temp_index #MENURES - 1
+    for !i !temp_index !user_name_count
+    {
+      set !temp_next !i + 1
+      set !user_name . !i !user_name . !temp_next
+    }
+  }
+  if !user_name_count > 0
+    set !user_name_count !user_name_count - 1
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+; user names stored in !user_name
+sub DrawUserDefinedNames
+  namespace push
+  namespace local USERNAMES
+  gosub GetIndex START_USER_SEARCH
+  set !start_index #RESULT
+  set !start_index !start_index + 1 ; look at next index
+  if !user_name0 = N/A
+  {
+    set %name . !start_index No , #SPC , selection
+    set % . !name !start_index
+    set !start_index !start_index + 1
+    goto DrawUserDefinedNames_skip1
+  }
+  set !i 0
+  while !user_name . !i <> N/A
+  {
+    set %name . !start_index !user_name . !i
+    set !name !user_name . !i
+    set % . !name !start_index
+    set !start_index !start_index + 1
+    set !i !i + 1
+  }
+DrawUserDefinedNames_skip1:
+  set %name . !start_index END_USER_SEARCH
+  set % . END_USER_SEARCH !start_index
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+;-------------------------  [History] List Management --------------------------
+;-------------------------------------------------------------------------------
+sub AddItemsToList
+  namespace push
+  namespace local %1
+  set !temp_LPC #LPC
+  set #LPC 10000
+  set !item %2
+  if !history_index = N/A
+  {
+    set !history_index -1
+    set !history_index_max -1
+  }
+AddItemsToList_loop1:
+  str pos !item _
+  if #STRRES > 0
+  {
+    set !logit #FALSE
+    set !len #STRRES - 1
+    str left !item !len
+    set !history_index_max !history_index_max + 1
+    event property #STRRES
+    namespace copy match , #STRRES from local ITEMINFO
+    namespace copy unravel , #STRRES from local ITEMINFO
+    namespace copy mods , #STRRES from local ITEMINFO
+    namespace copy unravel_string , #STRRES from local ITEMINFO
+
+    set !rule !match . #STRRES
+    set !unravel !unravel . #STRRES
+    set !mods !mods . #STRRES
+    set !unravel_string !unravel_string . #STRRES
+
+    set !temprule ACTIVERULE , !rule
+    namespace copy !temprule from local RULES
+    set !temprule ! . !temprule
+
+    set !temprule RULEITEM , !temprule
+    namespace copy !temprule from local RULES
+    set !temprule ! . !temprule
+
+    if RULECHAIN in !temprule
+    {
+      set !logit % . !temprule
+    }
+    else
+    {
+      set !temprule % . !temprule
+      set !logit %log . !temprule
+    }
+
+    if TEXT: notin !rule && FINDID: notin !rule
+    {
+      set !rule ACTIVERULE , !rule
+      namespace copy !rule from local RULES
+      set !rule ! . !rule
+      set !rule RULETEXT , !rule
+      namespace copy !rule from local RULES
+      set !rule ! . !rule
+    }
+    else
+    {
+      if TEXT: in !rule
+      {
+        menu get EUOCheckBoxTextLog
+        if #MENURES = #TRUE
+          set !logit #TRUE
+      }
+      if FINDID: in !rule
+      {
+        menu get EUOCheckBoxFINDIDLog
+        if #MENURES = #TRUE
+          set !logit #TRUE
+      }
+    }
+
+    if !logit = #TRUE
+      set !historyid . !history_index_max #STRRES
+    set !len !len + 1
+    str del !item 1 !len
+    set !item #STRRES
+    if !logit = #TRUE
+    {
+      set !history . !history_index_max #PROPERTY , *** , #SPC , !rule , #SPC , *** , $ , Unravel , #SPC , = , #SPC , !unravel , $ , Mods= , #SPC , !mods , $
+      set !history_string . !history_index_max !unravel_string
+    }
+    else
+      set !history_index_max !history_index_max - 1
+    goto AddItemsToList_loop1
+  }
+  set !history_index !history_index_max
+  set #LPC !temp_LPC
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub DropIndexedItem
+  namespace push
+  namespace local %1
+  set !temp !historyid . !history_index
+
+  finditem !temp C_ , %global_destination
+  if #FINDKIND = -1
+    ignoreitem !temp
+
+  finditem !temp C_ , %global_destination
+  if #FINDKIND <> -1
+  {
+    set !dropx #CHARPOSX + 1
+    set !dropy #CHARPOSY
+    set !dropz #CHARPOSZ + 1
+    set !TM_dragdrop_busy #TRUE
+    namespace copy TM_dragdrop_busy to global TM_loot
+    exevent drag #FINDID #FINDSTACK
+    wait 10
+    exevent dropg !dropx !dropy !dropz
+    wait 20
+    set !TM_dragdrop_busy #FALSE
+    namespace copy TM_dragdrop_busy to global TM_loot
+    finditem !temp C_ , %global_destination
+    if #FINDKIND = -1
+    {
+      str pos !history . !history_index $
+      set #STRRES #STRRES - 1
+      str left !history . !history_index #STRRES
+      set #STRRES #STRRES , $ , dropped$
+      set !historyid . !history_index N/A
+      set !history . !history_index #STRRES
+      if %right_pane = HISTORY
+        gosub DrawHistoryPane
+    }
+    else
+    {
+      menu set EUOStatus Drop item failed for some reason.
+    }
+  }
+  else
+  {
+    menu set EUOStatus Cannot locate item.
+  }
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+;--------------------------------  Window Handling  ----------------------------
+;-------------------------------------------------------------------------------
+sub ChangeLeftPane
+  namespace push
+  namespace local CLP
+  set !temp_lpc #LPC
+  set #LPC 10000
+  set !pane %1
+  set !force %2
+  if !pane <> %left_pane || !force = FORCE
+  {
+    if %left_pane = ACTIVE
+      gosub ReleaseActivePane LEFT
+    if %left_pane = RULES
+      gosub ReleaseRulesPane
+
+    if !pane = ACTIVE
+    {
+      gosub DrawActivePane LEFT
+      set %left_pane ACTIVE
+      gosub ReDrawActiveRules
+    }
+    if !pane = RULES
+    {
+      gosub DrawRulesPane
+      set %left_pane RULES
+    }
+  }
+  set #LPC !temp_lpc
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub ChangeRightPane
+  namespace push
+  namespace local CRP
+  set !temp_lpc #LPC
+  set #LPC 10000
+  set !pane %1
+  set !force %2
+  if ( !pane <> %right_pane || !force = FORCE ) && !pane in ACTIVE_HISTORY_PREVIEW_STATS
+  {
+    if %right_pane = ACTIVE
+      gosub ReleaseActivePane RIGHT
+    if %right_pane = HISTORY
+      gosub ReleaseHistoryPane
+    if %right_pane = PREVIEW
+      gosub ReleasePreviewPane
+    if %right_pane = STATS
+      gosub ReleaseStatsPane
+
+    if !pane = ACTIVE
+    {
+      gosub DrawActivePane RIGHT
+      set %right_pane ACTIVE
+      gosub ReDrawActiveRules
+    }
+    if !pane = HISTORY
+    {
+      gosub DrawHistoryPane
+      set %right_pane HISTORY
+    }
+    if !pane = PREVIEW
+    {
+      gosub DrawPreviewPane
+      set %right_pane PREVIEW
+    }
+    if !pane = STATS
+    {
+      gosub DrawStatsPane
+      set %right_pane STATS
+    }
+  }
+  set #LPC !temp_lpc
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub DrawActivePane
+  namespace push
+  namespace local ACTIVE
+  set !pane %1
+  if !pane = LEFT
+  {
+    menu delete EUOButtonLeftActive
+    menu Font Name Arial
+    menu Font Size 7
+    menu delete EUOButtonDelete
+    menu delete EUOButtonClear
+    menu Button EUOButtonDelete 4 220 35 21 Delete
+    menu Button EUOButtonClear 44 220 35 21 Clear
+    menu Font BGColor White
+    menu delete EUOButtonLeftActive
+    menu Button EUOButtonLeftActive 52 32 43 17 Active
+    menu Font Size 8
+    menu Font Style b
+    menu Font BGColor BtnFace
+    menu delete EUOLabelLeftTitle
+    if %left_window_zoom = #FALSE
+      menu Text EUOLabelLeftTitle 172 32 [Active Rules]
+    else
+      menu Text EUOLabelLeftTitle 445 32 [Active Rules]
+    menu Font Style
+  }
+  if !pane = RIGHT
+  {
+    menu delete EUOButtonRightActive
+    menu Font Name Arial
+    menu Font Size 7
+    menu delete EUOButtonActiveDelete
+    menu delete EUOButtonActiveClear
+    menu Button EUOButtonActiveDelete 284 220 35 21 Delete
+    menu Button EUOButtonActiveClear 324 220 35 21 Clear
+    menu Font BGColor White
+    menu delete EUOButtonRightActive
+    menu Button EUOButtonRightActive 328 32 43 17 Active
+    menu Font Size 8
+    menu Font Style b
+    menu Font BGColor BtnFace
+    menu delete EUOLabelRightTitle
+    menu Text EUOLabelRightTitle 468 32 [Active Rules]
+    menu Font Style
+  }
+  menu Font Size %pane_font_size
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub ReDrawActiveRules
+  namespace push
+  namespace local RULES
+  set !temp_LPC #LPC
+  set #LPC 10000
+  menu Font Size %pane_font_size
+  set !listbox_text_ptr 0
+  if %left_pane = ACTIVE
+  {
+    menu Font Name Arial
+    menu Font Style
+    menu Font BGColor Window
+    menu delete EUOListLeftPane
+    if %left_window_zoom = #FALSE
+      menu List Create EUOListLeftPane 4 48 269 169
+    else
+      menu List Create EUOListLeftPane 4 48 545 169
+  }
+  if %right_pane = ACTIVE && %left_window_zoom = #FALSE
+  {
+    menu Font Name Arial
+    menu Font Style
+    menu Font BGColor Window
+    menu delete EUOListRightPane
+    menu List Create EUOListRightPane 280 48 269 169
+  }
+
+  set %forum_str
+  set !i 0
+  while !i >= 0 && !i < !omit_rule_index
+  {
+    set !temp OMITRULE , !i
+    set !rule ! . !temp
+    if !rule <> N/A
+    {
+      set !text RULETEXT , !rule
+      set !output OMIT: , #SPC , ! . !text
+      if %left_pane = ACTIVE
+        menu list add EUOListLeftPane !output
+      if %right_pane = ACTIVE
+        menu list add EUOListRightPane !output
+      set %forum_str %forum_str , %list_start , !output , %list_end
+      set !listbox_text . !listbox_text_ptr !output
+      set !listbox_text_ptr !listbox_text_ptr + 1
+    }
+    set !i !i + 1
+  }
+  set !i 0
+  while !i >= 0 && !i < !active_rule_index
+  {
+    set !temp ACTIVERULE , !i
+    set !rule ! . !temp
+    if !rule <> N/A
+    {
+      set !text RULETEXT , !rule
+      set !output ! . !text
+      if %left_pane = ACTIVE
+        menu list add EUOListLeftPane !output
+      if %right_pane = ACTIVE
+        menu list add EUOListRightPane !output
+      set %forum_str %forum_str , %list_start , !output , %list_end
+      set !listbox_text . !listbox_text_ptr !output
+      set !listbox_text_ptr !listbox_text_ptr + 1
+    }
+    set !i !i + 1
+  }
+  if %left_pane = ACTIVE
+    menu list Select EUOListLeftPane %leftpane_activepos
+  if %right_pane = ACTIVE
+    menu list Select EUOListRightPane %rightpane_activepos
+  set #LPC !temp_LPC
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub ReleaseActivePane
+  namespace push
+  namespace local ACTIVE
+  set !pane %1
+
+  if !pane = LEFT
+  {
+    menu delete EUOLabelLeftTitle
+    menu delete EUOButtonLeftActive
+    menu Font Name Arial
+    menu Font Size 7
+    menu Font BGColor BtnFace
+    menu Button EUOButtonLeftActive 52 32 43 17 Active
+    menu delete EUOButtonDelete
+    menu delete EUOButtonClear
+  }
+  if !pane = RIGHT
+  {
+    menu delete EUOLabelRightTitle
+    menu delete EUOButtonRightActive
+    menu Font Name Arial
+    menu Font Size 7
+    menu Font BGColor BtnFace
+    menu Button EUOButtonRightActive 328 32 43 17 Active
+    menu delete EUOButtonActiveDelete
+    menu delete EUOButtonActiveClear
+  }
+  menu Font Size %pane_font_size
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub DrawStatsPane
+  namespace push
+  namespace local STATS
+  set %forum_str
+  menu delete EUOButtonStats
+  menu delete EUOLabelRightTitle
+  menu Font Size 7
+  menu Font BGColor White
+  menu Button EUOButtonStats 372 32 43 17 Stats
+  menu delete EUOListRightPane
+  menu Font BGColor Window
+  menu List Create EUOListRightPane 280 48 269 169
+  menu Font Size 8
+  menu Font Style b
+  menu Font BGColor BtnFace
+  menu Text EUOLabelRightTitle 468 32 [Stats]
+  menu Font Size %pane_font_size
+  menu Font BGColor White
+  menu Font Style
+  menu delete EUOListRightPane
+  menu List Create EUOListRightPane 280 48 269 169
+  set %time #SCNT - %program_start
+  gosub ConvertTimeHourMinSec %time
+  set %time Time , #SPC , Online: , #SPC , #RESULT
+  menu List Add EUOListRightPane %time
+  set %forum_str %forum_str , %list_start , %time , %list_end
+  set %goldperhour ( %gold_count * 3600 ) / ( #SCNT - %program_start )
+  set %text Gold/hr: , #SPC , %goldperhour
+  menu List Add EUOListRightPane %text
+  set %forum_str %forum_str , %list_start , %text , %list_end
+  set %text Average , #SPC , time , #SPC , between , #SPC , loots: , #SPC , %average_loot_time , #SPC , seconds
+  menu List Add EUOListRightPane %text
+  set %forum_str %forum_str , %list_start , %text , %list_end
+  namespace push
+  namespace local RULES
+  if !rule_index = N/A
+    set %text 0
+  else
+    set %text !rule_index
+  set %text Rule , #SPC , count: , #SPC , %text
+  menu List Add EUOListRightPane %text
+  set %forum_str %forum_str , %list_start , %text , %list_end
+  if !active_rule_index = N/A
+    set %text 0
+  else
+    set %text !active_rule_index
+  set %text Active , #SPC , rules: , #SPC , %text
+  menu List Add EUOListRightPane %text
+  set %forum_str %forum_str , %list_start , %text , %list_end
+  if %version_type = FULL
+  {
+    if !rulechain_count = N/A
+      set %text 0
+    else
+      set %text !rulechain_count + 1
+    set %text Complex , #SPC , rules: , #SPC , %text
+    menu List Add EUOListRightPane %text
+    set %forum_str %forum_str , %list_start , %text , %list_end
+    if !omit_rule_index = N/A
+      set %text 0
+    else
+      set %text !omit_rule_index
+    set %text Omit , #SPC , rules: , #SPC , %text
+    menu List Add EUOListRightPane %text
+    set %forum_str %forum_str , %list_start , %text , %list_end
+  }
+  namespace pop
+  namespace pop
+  namespace copy container_timer from local SCFN
+  namespace copy rule_counter from local SCFN
+  set %text ( ( !container_timer * 1000 ) / !rule_counter )
+  set %text2 %text / 10
+  set %text %text % 10
+  set %text %text2 , #DOT , %text
+  set %time !container_timer / 10
+  set %time2 !container_timer % 10
+  set %time %time , #DOT , %time2
+  set %time3 %avg_RPC / %avg_window
+  set %text RET: , #SPC , %text , ms , #SPC , ( , !rule_counter , #SPC , RPC. , #SPC , in , #SPC , %time , sec.)  , #SPC , AvgRPC: , #SPC , %time3
+  menu List Add EUOListRightPane %text
+  set %forum_str %forum_str , %list_start , %text , %list_end
+  set %avg %avg_RPS / %avg_window
+  set %text %rulespersec , #SPC , RPS , #SPC , ( , %low_count , - , %high_count , ) , #SPC , Avg: , #SPC , %avg
+  menu List Add EUOListRightPane %text
+  set %forum_str %forum_str , %list_start , %text , %list_end
+  set %text Last/Avg , #SPC , Imbue , #SPC , Value: , #SPC ,  %imbue_last , / , %imbue_average , #SPC , Items: , #SPC , %imbue_item_count
+  menu List Add EUOListRightPane %text
+  set %forum_str %forum_str , %list_start , %text , %list_end
+return
+;-------------------------------------------------------------------------------
+; %1 = input - Time to convert
+; #RESULT -  Time converted to #:##:## format
+sub ConvertTimeHourMinSec
+  namespace push
+  namespace local ctime
+  set !hourpart %1 / 3600
+  set !secpart ( %1 % 3600 ) % 60
+  set !minpart ( ( %1 % 3600 ) / 60 )
+
+  if !hourpart >= 10
+    set #RESULT !hourpart , :
+  else
+    set #RESULT 0 , !hourpart , :
+  if !minpart < 10
+    set #RESULT #RESULT , 0
+  set #RESULT #RESULT , !minpart , :
+  if !secpart < 10
+    set #RESULT #RESULT , 0
+  set #RESULT #RESULT , !secpart
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub ReleaseStatsPane
+  namespace push
+  namespace local STATS
+  menu delete EUOLabelRightTitle
+  menu delete EUOButtonStats
+  menu Font Size 7
+  menu Font BGColor BtnFace
+  menu Button EUOButtonStats 372 32 43 17 Stats
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub DrawRulesPane
+  namespace push
+  namespace local RULES
+  set !temp_LPC_draw #LPC
+  set #LPC 10000
+  menu Font Name Arial
+  menu Font BGColor BtnFace
+  menu Font Size 8
+  menu Font Style b
+  menu delete EUOLabelLeftTitle
+  if %left_window_zoom = #FALSE
+    menu Text EUOLabelLeftTitle 172 32 [Rule Entry]
+  else
+    menu Text EUOLabelLeftTitle 445 32 [Rule Entry]
+  menu Font Style
+  menu Font Size 7
+  menu delete EUOButtonLeftRules
+  menu delete EUOButtonDelete
+  menu delete EUOButtonClear
+  menu delete EUOButtonAddActiveRule
+  menu Button EUOButtonDelete 4 220 35 21 Delete
+  menu Button EUOButtonClear 44 220 35 21 Clear
+  menu Button EUOButtonAddActiveRule 192 220 31 21 Add
+  menu delete EUOCheckBoxLogItem
+  menu Check EUOCheckBoxLogItem 116 32 49 17 #false Log?
+  menu set EUOCheckBoxLogItem %log_check_state
+  if %version_type = FULL
+  {
+    menu delete EUOButtonNewRule
+    menu delete EUOButtonOmit
+    menu Button EUOButtonNewRule 228 220 31 21 Rule
+    menu Button EUOButtonOmit 156 220 31 21 Omit
+  }
+  menu Font BGColor White
+  menu delete EUOButtonLeftRules
+  menu Button EUOButtonLeftRules 8 32 43 17 Rules
+
+  menu Font BGColor Window
+  menu Font Size %pane_font_size
+  set %left_pane RULES
+  set %forum_str
+  if !rule_index <> N/A
+  {
+    menu delete EUOListLeftPane
+    if %left_window_zoom = #FALSE
+      menu List Create EUOListLeftPane 4 48 269 169
+    else
+      menu List Create EUOListLeftPane 4 48 545 169
+    set !temp !rule_index - 1
+    for !i 0 !temp
+    {
+      set !ruletextindex RULETEXT , !i
+      menu List add EUOListLeftPane ! . !ruletextindex
+      set %text ! . !ruletextindex
+      set %forum_str %forum_str , %list_start , %text , %list_end
+    }
+  }
+  else
+  {
+    menu delete EUOListLeftPane
+    if %left_window_zoom = #FALSE
+      menu List Create EUOListLeftPane 4 48 269 169
+    else
+      menu List Create EUOListLeftPane 4 48 545 169
+    namespace clear
+  }
+  menu list Select EUOListLeftPane %leftpane_rulespos
+  set #LPC !temp_LPC_draw
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub ReleaseRulesPane
+  namespace push
+  namespace local HISTORY
+  menu delete EUOButtonLeftRules
+  menu Font Name Arial
+  menu Font Size 7
+  menu Font BGColor BtnFace
+  menu Button EUOButtonLeftRules 8 32 43 17 Rules
+  menu delete EUOCheckBoxLogItem
+  menu delete EUOButtonOmit
+  menu delete EUOButtonNewRule
+  menu delete EUOLabelLeftTitle ;  204 32 (Rule Entry)
+  menu delete EUOButtonDelete
+  menu delete EUOButtonClear
+  menu delete EUOButtonAddActiveRule
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub GotoNextListItem
+  namespace push
+  namespace local %1
+  if %1 = HISTORY
+    set !function DrawHistoryPane
+  if %1 = PREVIEW
+    set !function DrawPreviewPane
+  if !history_index = N/A
+  {
+    namespace pop
+    return
+  }
+  set !history_index !history_index + 1
+  if !history_index > !history_index_max
+    set !history_index 0
+  if %right_pane = %1
+    gosub !function
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub GotoPrevListItem
+  namespace push
+  namespace local %1
+  if %1 = HISTORY
+    set !function DrawHistoryPane
+  if %1 = PREVIEW
+    set !function DrawPreviewPane
+  if !history_index = N/A
+  {
+    namespace pop
+    return
+  }
+  set !history_index !history_index - 1
+  if !history_index < 0
+    set !history_index !history_index_max
+  if %right_pane = %1
+    gosub !function
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub ReleaseHistoryPane
+  namespace push
+  namespace local HISTORY
+  menu delete EUOButtonLeftArrow
+  menu delete EUOButtonRightArrow
+  menu delete EUOButtonDrop
+  menu delete EUOLabelHistoryStatus
+  menu delete EUOLabelRightTitle
+  menu delete EUOButtonHistory
+  menu Font BGColor BtnFace
+  menu Font Name Arial
+  menu Font Size 7
+  menu Button EUOButtonHistory 284 32 43 17 History
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub DrawHistoryPane
+  namespace push
+  namespace local HISTORY
+  set !temp_LPC #LPC
+  set #LPC 10000
+  menu Font Name Arial
+  menu Font Size 8
+  menu Font Style b
+  menu Font BGColor BtnFace
+  menu Text EUOLabelRightTitle 468 32 [Loot History]
+  menu Font Style
+
+  menu Font Size 7
+  menu Font Name Arial
+  menu delete EUOButtonLeftArrow
+  menu delete EUOButtonRightArrow
+  menu delete EUOButtonDrop
+  menu Button EUOButtonLeftArrow 300 220 27 21 <<
+  menu Button EUOButtonRightArrow 512 220 27 21 >>
+  menu Button EUOButtonDrop 400 220 39 21 Drop
+  menu Font BGColor White
+  menu delete EUOButtonHistory
+  menu Button EUOButtonHistory 284 32 43 17 History
+
+  menu Font Size %pane_font_size
+  menu Font BGColor Window
+  if !history_index = N/A
+  {
+    menu delete EUOListRightPane
+    menu List Create EUOListRightPane 280 48 269 169
+    menu Text EUOLabelHistoryStatus 460 224 0 of 0
+    goto DrawList_skip
+  }
+  menu delete EUOListRightPane
+  menu List Create EUOListRightPane 280 48 269 169
+  set !item !history . !history_index
+  set !string !history_string . !history_index
+;  menu set euoSTATUS !string
+  set %forum_str
+DrawHistoryPane_loop1:
+  str pos !item $
+  if #STRRES > 0
+  {
+    set !len #STRRES - 1
+    str left !item !len
+    menu list add EUOListRightPane #STRRES
+    set %forum_str %forum_str , %list_start , #STRRES , %list_end
+    set !len !len + 1
+    str del !item 1 !len
+    set !item #STRRES
+    goto DrawHistoryPane_loop1
+  }
+
+  menu delete EUOLabelHistoryStatus
+
+  set !temp1 !history_index  + 1
+  set !temp2 !history_index_max + 1
+  set !text !temp1 , #SPC , of , #SPC , !temp2
+  menu Font Size 7
+  menu Font Style
+  menu Font Color WindowText
+  menu Font Transparent #false
+  menu Font Align Left
+  menu Text EUOLabelHistoryStatus 460 224 !text
+DrawList_skip:
+  set #LPC !temp_LPC
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub DrawComboBox
+  namespace push
+  namespace local DCB
+  set !combobox %1
+  set !s1 %2
+  set !e1 %3
+  set !a %4
+  set !b %5
+  set !c %6
+  menu Font BGColor Window
+  menu Font Size 8
+  gosub GetIndex !s1
+  set !start #RESULT + 1
+  gosub GetIndex !e1
+  set !end #RESULT - 1
+  menu delete !combobox
+  menu Combo Create !combobox !a !b !c
+  for !i !start !end
+  {
+    set !name name , !i
+    gosub AddSpace % . !name
+    menu Combo Add !combobox #RESULT
+  }
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub ChangeButtonState  ; >= = <= < >
+  namespace push
+  namespace local CBS
+  menu Font BGColor BtnFace
+  set !buttonstate %1
+  set !buttonname %2
+  set !buttonx1 %3
+  set !buttony1 %4
+  set !buttonx2 %5
+  set !buttony2 %6
+  set !buttonstate !buttonstate + 1
+  if !buttonstate > 5
+    set !buttonstate 0
+  gosub GetButtonState !buttonstate
+  set !buttontext #RESULT
+  menu delete !buttonname
+  menu Button !buttonname !buttonx1 !buttony1 !buttonx2 !buttony2 !buttontext
+  set #RESULT !buttonstate
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub GetButtonState  ; >= = <= < >
+  namespace push
+  namespace local GBS
+  set !buttonstate %1
+  if !buttonstate = 0
+    set #RESULT >=
+  if !buttonstate = 1
+    set #RESULT =
+  if !buttonstate = 2
+    set #RESULT <=
+  if !buttonstate = 3
+    set #RESULT <
+  if !buttonstate = 4
+    set #RESULT >
+  if !buttonstate = 5
+    set #RESULT NA
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub ConvertLogic  ; >= = <= < >
+  namespace push
+  namespace local CL
+  set !buttonstate %1
+  if !buttonstate = >=
+    set #RESULT 0
+  if !buttonstate = =
+    set #RESULT 1
+  if !buttonstate = <=
+    set #RESULT 2
+  if !buttonstate = <
+    set #RESULT 3
+  if !buttonstate = >
+    set #RESULT 4
+  if !buttonstate = NA
+    set #RESULT 5
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+;----------------------  Advanced Journal Handling Subs  -----------------------
+;-------------------------------------------------------------------------------
+; %1 - Journal Name
+; %2 - #LPC setting (optional)
+; Brings !_jindex up to the most recent #journal entry
+sub TM_AdvJournalSync
+  namespace push
+  namespace local TM_AdvJS_ , %1
+  set !_jindex #jindex + 1
+  if %0 > 1
+    set !lpc_set %2
+  namespace pop
+  set !TM_FunctionCalled #TRUE
+return
+;-------------------------------------------------------------------------------
+; %1 - Journal Name
+; %2 - NONE, ADVANCE , ( _VALID ) - advances jindex pointer, anything else
+; %3, %4, %5, etc strings to match
+; returns #TRUE for match, #FALSE for no match
+;  Will not advance !_jindex pointer to allow for scanning journal history for more than one search.
+;  Also searches for : , #SPC in journal entry to be sure someone isn't spamming the text
+;  About %2 arguments:
+;    NONE: defaults to basic journal scan (no SPAM checking, no #jindex pointer copy advancing)
+;    ADVANCE: no spam checking, advances #jindex copy
+;    VALID: invokes SPAM filtering, no advance of #jindex copy
+;    VALID_ADVANCE, VALIDADVANCE, ADVANCE_VALID, etc.: invokes SPAM filtering, advances of #jindex copy
+sub TM_AdvJournalScan
+  namespace push
+  namespace local TM_AdvJS_ , %1
+  set !args %2
+  set !temp_lpc #LPC
+  if !lpc_set = N/A
+    set #LPC 1000
+  else
+    set #LPC !lpc_set
+  set !num_args %0
+  set !first_arg 3
+  if !_jindex = N/A
+    set !_jindex #jindex
+  if !charname = N/A
+  {
+    set !charname #CHARNAME
+AdvJournalScan_loop1:
+    str pos !charname #SPC
+    if #STRRES <> 0
+    {
+      set !val #STRRES - 1
+      str left !charname !val
+      set !left #STRRES
+      set !val !val + 1
+      str del !charname 1 !val
+      set !charname !left , _ , #STRRES
+      goto AdvJournalScan_loop1
+    }
+  }
+  set !index !first_arg
+  repeat
+    set !temp_jindex !_jindex
+    set !text % . !index
+    while !temp_jindex <= #jindex
+    {
+      scanjournal !temp_jindex
+      str pos #JOURNAL !charname 1
+      set !namepos #STRRES
+      str count #JOURNAL !charname
+      set !namecnt #STRRES
+      str pos #JOURNAL :_ 1
+      set !smcpos #STRRES
+      str pos #JOURNAL !text 1
+      set !textpos #STRRES
+      if !textpos < !smcpos && !smcpos <> 0 || !smcpos = 1 || :_ notin #JOURNAL || VALID notin !args
+        set !pass #TRUE
+      else
+        set !pass #FALSE
+      if ( !text in #journal && ( ( !namepos = 1 && !namecnt <= 1 ) || !pass ) )
+      {
+        set !temp_jindex !temp_jindex + 1
+        if ADVANCE in !args
+          set !_jindex !temp_jindex
+        set #LPC !temp_lpc
+        namespace pop
+        set !TM_FunctionCalled #TRUE
+        return #TRUE
+      }
+      set !temp_jindex !temp_jindex + 1
+    }
+    set !index !index + 1
+  until !index - !first_arg > !num_args - !first_arg
+  set #LPC !temp_lpc
+  set %10 #JINDEX - !_jindex
+  set %10 %1 , _ , %10
+  namespace pop
+  set !TM_FunctionCalled #TRUE
+return #FALSE
+;-------------------------------------------------------------------------------
+;--------------------------  Advanced File System  -----------------------------
+;-------------------------------------------------------------------------------
+; %1 - Name of file handle name to create
+sub TM_FileSystem_CreateFileHandle
+  namespace push
+  namespace local TM_FileSystem
+  set !ptr %1 , _ptr ; {userhandle}_ptr
+  set ! . !ptr 0 ; !{userhandle}_ptr (actual pointer)
+  set !handle ! . !ptr
+  set !handle %1 , !handle
+  set ! . !handle ; assume new variable
+  namespace pop
+  set !TM_Function_found #TRUE
+return
+;-------------------------------------------------------------------------------
+; %1 = namespace location (local, global)
+; %2 = namespace name
+; %3 = file handle name
+; %4 = variable name
+sub TM_FileSystem_SaveVariable
+  namespace push
+  namespace local TM_FileSystem
+  set !ns_loc %1
+  set !ns_name %2
+  set !handle %3
+  set !var %4
+  set !sep 
+  set !temp_LPC #LPC
+  set #LPC 1000
+  if !handle = handle
+    set !handle __ , handle
+  set !ptr !handle , _ptr ; {userhandle}_ptr
+  set !handle_copy !handle
+  if ! . !ptr = N/A
+  {
+    set ! . !ptr 0 ; !{userhandle}_ptr (actual pointer)
+    set !handle_copy ! . !ptr
+    set !handle_copy !handle , !handle_copy
+    set ! . !handle_copy ; assume new variable
+  }
+  set !handle_copy ! . !ptr
+  set !handle_copy !handle , !handle_copy
+  if !ns_loc = local && !ns_name = std
+    set !value % . !var
+  else
+  {
+    namespace copy !var from !ns_loc !ns_name
+    set !value ! . !var
+  }
+  gosub AddUnderscore !value ; must not have spaces in stored variables!!!
+  set ! . !handle_copy ! . !handle_copy , !ns_loc , !sep , !ns_name , !sep , !var , !sep , #RESULT , !sep
+  str len ! . !handle_copy
+  if #STRRES > 2000
+  {
+    set !len #STRRES
+    str left ! . !handle_copy 2000
+    set !temp #STRRES
+    str del ! . !handle_copy 1 2000
+    set ! . !handle_copy !temp
+    set ! . !ptr ! . !ptr + 1
+    set !handle_copy ! . !ptr
+    set !handle_copy !handle , !handle_copy
+    set ! . !handle_copy #STRRES
+  }
+  set !value
+  set !temp
+  set #LPC !temp_LPC
+  namespace pop
+  set !TM_Function_found #TRUE
+return
+;-------------------------------------------------------------------------------
+; %1 = namespace location (local, global)
+; %2 = namespace name
+; %3 = file handle name
+; %4 = array name
+; %5 = starting index
+; %6 = ending index
+sub TM_FileSystem_SaveArray
+  namespace push
+  namespace local TM_FileSystem
+  set !temp_LPC #LPC
+  set #LPC 10000
+  set !ns_loc %1
+  set !ns_name %2
+  set !handle %3
+  set !var %4
+  set !start_index %5
+  set !end_index %6
+  set !sep 
+  if !handle = handle
+    set !handle __ , handle
+  set !ptr !handle , _ptr ; {userhandle}_ptr
+  set !handle_copy !handle
+  if ! . !ptr = N/A
+  {
+    set ! . !ptr 0 ; !{userhandle}_ptr (actual pointer)
+    set !handle_copy ! . !ptr
+    set !handle_copy !handle , !handle_copy
+    set ! . !handle_copy ; assume new variable
+  }
+  set !handle_copy ! . !ptr
+  set !handle_copy !handle , !handle_copy
+  for !i !start_index !end_index
+  {
+    if !ns_loc = local && !ns_name = std
+    {
+      set !newvar !var , !i
+      set !value % . !newvar
+    }
+    else
+    {
+      set !newvar !var , !i
+      namespace copy !newvar from !ns_loc !ns_name
+      set !value ! . !newvar
+    }
+    gosub AddUnderscore !value ; must not have spaces in stored variables!!!
+    set ! . !handle_copy ! . !handle_copy , !ns_loc , !sep , !ns_name , !sep , !newvar , !sep , #RESULT , !sep
+    str len ! . !handle_copy
+    if #STRRES > 2000
+    {
+      set !len #STRRES
+      str left ! . !handle_copy 2000
+      set !temp #STRRES
+      str del ! . !handle_copy 1 2000
+      set ! . !handle_copy !temp
+      set ! . !ptr ! . !ptr + 1
+      set !handle_copy ! . !ptr
+      set !handle_copy !handle , !handle_copy
+      set ! . !handle_copy #STRRES
+    }
+  }
+  set !value
+  set !temp
+  set #LPC !temp_LPC
+  namespace pop
+  set !TM_Function_found #TRUE
+return
+;-------------------------------------------------------------------------------
+; %1 = file handle name
+; %2 = file name
+sub TM_FileSystem_SaveFile
+  namespace push
+  namespace local TM_FileSystem
+  set !temp_LPC #LPC
+  set #LPC 10000
+  set !LINE_LENGTH 2000 ; near DOS maximum
+  set !handle %1
+  set !filename %2
+  if !handle = handle
+    set !handle __ , handle
+  set !ptr !handle , _ptr ; {userhandle}_ptr
+  for !i 0 ! . !ptr
+  {
+    set !handle_copy !handle , !i
+    set !str ! . !handle_copy
+    if !i = 0
+      execute cmd.exe /c echo set , #spc , ! , fileout , !i ,  #spc , !str > !filename
+    else
+      execute cmd.exe /c echo set , #spc , ! , fileout , !i , #spc , !str >> !filename
+  }
+  set #LPC !temp_LPC
+  namespace pop
+  set !TM_Function_found #TRUE
+return
+;-------------------------------------------------------------------------------
+; %1 - file line variable
+sub TM_ReadVariables
+  set !temp %1
+  set !fileoutindex 0
+  set !fileout !fileout0
+TM_ReadVariables_loop1:
+  gosub ReadItem ns_loc
+  if #RESULT = #TRUE
+    goto TM_ReadVariables_skip1
+  gosub ReadItem ns_name
+  if #RESULT = #TRUE
+    goto TM_ReadVariables_skip1
+  gosub ReadItem var
+  if #RESULT = #TRUE
+    goto TM_ReadVariables_skip1
+  gosub ReadItem value
+  if #RESULT = #TRUE
+    goto TM_ReadVariables_skip1
+
+  if !ns_loc in local_LOCAL && !ns_name in std_STD
+    set % . !var !value
+  else
+  {
+    set ! . !var !value
+    namespace copy !var to !ns_loc !ns_name
+  }
+  goto TM_ReadVariables_loop1
+
+TM_ReadVariables_skip1:
+return
+;-------------------------------------------------------------------------------
+; Passes %fileout(n) as local, #RESULT
+sub ReadItem
+  str pos !fileout 
+  if #STRRES = 0
+  {
+    set !fileoutindex !fileoutindex + 1
+    if !fileout . !fileoutindex <> N/A
+    {
+      set !fileout !fileout , !fileout . !fileoutindex
+      str pos !fileout 
+    }
+    else
+    {
+      return #TRUE
+    }
+  }
+  set !len #STRRES - 1
+  str left !fileout !len
+  set ! . %1 #STRRES
+  set !len !len + 1
+  str del !fileout 1 !len
+  set !fileout #STRRES
+return #FALSE
+;-------------------------------------------------------------------------------
+; %2 - file name
+sub TM_FileSystem_LoadFile
+  namespace push
+  namespace local TM_FileSystem
+  set !lpc #LPC
+  set #LPC 10000
+  set !filename %1
+
+  for !i 0 1000
+    set !fileout . !i N/A
+
+  call !filename
+  if !fileout0 = N/A
+  {
+    set #LPC !lpc
+    namespace pop
+    set !TM_Function_found #TRUE
+    return #TRUE ; error
+  }
+
+  set !index 0
+  gosub TM_ReadVariables ; assumes namespace TM_FileSystem
+
+  set #LPC !lpc
+  namespace pop
+  set !TM_Function_found #TRUE
+return #FALSE
+;-------------------------------------------------------------------------------
+sub OpenPaperdoll
+  event macro 8 1 ; open paperdoll
+  gosub GumpWait paperdoll_gump NULL
+  contpos 804 0
+return
+;-------------------------------------------------------------------------------
+; %1 = OpenStatusBar
+sub OpenStatusBar
+  event macro 8 2 ; open status
+  gosub GumpWait status_gump NULL
+  contpos 0 680
+return
+;-------------------------------------------------------------------------------
+; %1 = OpenBackPack
+sub OpenBackPack
+  event macro 8 7 ; open backpack
+  gosub GumpWait container_gump NULL
+  contpos 804 325
+return
+;-------------------------------------------------------------------------------
+; %1 = SetupGumps
+; Globals -------->
+; 	%mypack = container ID of personal backpack
+sub SetupGumps
+  gosub OpenPaperdoll
+  gosub OpenStatusBar
+  gosub OpenBackPack
+return
+;-------------------------------------------------------------------------------
+sub GumpWait
+  wait 10
+  set %timedelay #SCNT
+loopwait1:
+  if #CONTNAME = %1 || #CONTNAME = %2
+    return
+  if #SCNT > %timedelay + 7
+    return
+  goto loopwait1
+return
+;-------------------------------------------------------------------------------
+;-----------------------  External Interface Routines  -------------------------
+;-------------------------------------------------------------------------------
+; %1 = #CONTID
+sub GrabArtifactList
+  namespace push
+  namespace local GAL
+  set !findid %1
+  set !temp_LPC #LPC
+  set #LPC 10000
+  set !TM_loot_artifact_success #FALSE
+  namespace copy loot_match from local RULES
+  if !loot_match = #FALSE
+  {
+    namespace copy TM_artifact* from global TM_loot
+    event property !findid
+    set !cnt 0
+    while !cnt < !TM_artifact_index
+    {
+      if !TM_artifact . !cnt in #PROPERTY
+      {
+        set !findid #FINDID
+        gosub AddToList loot_list findid
+        set !TM_loot_artifact_success #TRUE
+        set !loot_match #TRUE
+      }
+      set !cnt !cnt + 1
+    }
+    namespace copy loot_match to local SCFN
+    namespace copy TM_loot_artifact_success to global TM_loot
+  }
+  set #LPC !temp_LPC
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub ExternalSetup
+  namespace push
+  namespace global TM_LOOT
+  wait 5
+  if LOOTGROUND in !TM_MODE
+    menu set EUOCheckBoxGround !TM_ARG1
+  if SENDGOLD in !TM_MODE
+    menu set EUOCheckBoxBOS !TM_ARG1
+  if AUTOMATIC in !TM_MODE
+    menu set EUOCheckBoxAutomatic !TM_ARG1
+  if CARVE in !TM_MODE
+    menu set EUOCheckBoxCarve !TM_ARG1
+  if LOOTALL in !TM_MODE
+    menu set EUOCheckBoxLootAll !TM_ARG1
+  if HIDEBODIES in !TM_MODE
+    menu set EUOCheckBoxHideBodies !TM_ARG1
+  if PREVIEW in !TM_MODE
+    menu set EUOCheckPreview !TM_ARG1
+  if TURBO in !TM_MODE
+    menu set EUOCheckTurbo !TM_ARG1
+  if STEALTH in !TM_MODE
+    menu set EUOCheckstealthdd !TM_ARG1
+  if LOADFILE in !TM_MODE
+  {
+    if !TM_ARG1 <> #TRUE
+      menu set EUOEditSetupFile !TM_ARG1
+    set %override_save_check #TRUE
+    gosub LoadSetup
+    set %override_save_check #FALSE
+  }
+  if SAVEFILE in !TM_MODE
+  {
+    if !TM_ARG1 <> #TRUE
+      menu set EUOEditSetupFile !TM_ARG1
+    set %override_save_check #TRUE
+    gosub SaveSetup
+    set %override_save_check #FALSE
+  }
+  if MINMAX in !TM_MODE
+  {
+    if !TM_ARG1 = #TRUE
+      set %window_size MINIMUM
+    else
+      set %window_size MAXIMUM
+    set #MENUBUTTON EUOButtonMinMax
+  }
+  set !TM_MODE N/A
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+;----------------------------  FULL VERSION CONTENT  ---------------------------
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+
+sub CheckForRuleDependencyInOmitList
+  namespace push
+  namespace local RULES
+  set !rule %1
+  if !omit_rule_index <> N/A
+  {
+    set !temp !omit_rule_index - 1
+    for !i 0 !temp
+    {
+      set !testrule OMITRULE , !i
+      if !rule = ! . !testrule
+      {
+        namespace pop
+        return #TRUE
+      }
+    }
+  }
+  namespace pop
+return #FALSE
+;-------------------------------------------------------------------------------
+sub AdjustOmitList
+  namespace push
+  namespace local RULES
+  set !start %1
+  if !omit_rule_index <> N/A
+  {
+    set !temp !omit_rule_index - 1
+    for !i 0 !temp
+    {
+      set !testrule OMITRULE , !i
+      if ! . !testrule >= !start
+        set ! . !testrule ! . !testrule - 1
+    }
+  }
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub InitializeVersion
+  set %version_type FULL
+  set %title TrailMyx's , #SPC , Advanced , #SPC , CLAw , #SPC , %version_type , #SPC , %version , #SPC , - , #SPC , #CHARNAME
+return
+;-------------------------------------------------------------------------------
+sub BuildAntiRuleList
+  namespace push
+  namespace local RULES
+
+  ignoreitem reset ANTIRULES
+  set !ignorelist N/A
+  for !i % . START_SPECIFIC_ITEMS % . END_SPECIFIC_ITEMS
+  {
+    if !i = % . END_SPECIFIC_ITEMS
+      break
+    set !index !i - % . START_SPECIFIC_ITEMS
+    set !firstrule name , !i
+    set !firstrule % . !firstrule
+    set !found #FALSE
+    for !rulenum 0 !active_rule_index
+    {
+      set !ruletext ACTIVERULE , !rulenum
+      set !ruletext ! . !ruletext
+      set !ruletext RULEITEM , !ruletext
+      set !ruletext ! . !ruletext
+      if !ruletext = !firstrule
+      {
+        set !found #TRUE
+        break
+      }
+    }
+    if !found = #FALSE
+    {
+      set !temptext %id . !index
+      if !ignorelist = N/A
+        set !ignorelist !temptext
+      else
+        set !ignorelist !ignorelist , !temptext
+    }
+  }
+  str pos !ignorelist IJG 1 ; don't want to eradicate all bracelets
+  if #STRRES <> 0
+  {
+    str del !ignorelist #STRRES 4
+    set !ignorelist #STRRES
+  }
+  str pos !ignorelist UDF 1 ; don't want to eradicate fishing nets
+  if #STRRES <> 0
+  {
+    str del !ignorelist #STRRES 4
+    set !ignorelist #STRRES
+  }
+  set !ignorelist !ignorelist , %id_user ; add the user's ignore list
+  ignoreitem !ignorelist ANTIRULES
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub SetLooterIdle
+  menu delete EUOButtonMinMax
+  menu Font BGColor Lime
+  menu Font Name Arial
+  menu Font Size 7
+  menu Font Style
+  menu Button EUOButtonMinMax 632 4 19 17 M
+  menu Font BGColor BtnFace
+return
+;-------------------------------------------------------------------------------
+sub SetLooterActive
+  menu delete EUOButtonMinMax
+  menu Font BGColor Red
+  menu Font Name Arial
+  menu Font Size 7
+  menu Font Style
+  menu Button EUOButtonMinMax 632 4 19 17 M
+  menu Font BGColor BtnFace
+return
+;-------------------------------------------------------------------------------
+sub HandleAdvancedCLAwFull
+  if #MENUBUTTON = EUOButtonNewRule ; Drop button
+  {
+    set #MENUBUTTON N/A
+    set !rule_index N/A
+    namespace copy rule_index from local RULES
+    if !rule_index = N/A
+      return
+    if %rule_entry_mode = #FALSE
+    {
+      gosub ChangeRightPane ACTIVE NULL
+      set %rule_entry_mode #TRUE
+      menu Font Size 7
+      menu Font Name Arial
+      menu Font BGColor BtnFace
+      menu delete EUOButtonNOT
+      menu delete EUOButtonRuleOK
+      menu Button EUOButtonNOT 156 220 31 21 NOT
+      menu Button EUOButtonRuleOK 192 220 31 21 OK
+      menu delete EUOButtonAddActiveRule
+      menu delete EUOButtonOmit
+      menu delete EUOButtonNewRule
+      menu Button EUOButtonNewRule 228 220 31 21 Done
+      menu delete EUOLabel16
+      menu Font Name MS Sans Serif
+      menu Font Size 8
+      menu Font Style b
+      menu Text EUOLabel16 4 8 Rule:
+      menu Font Style
+      set %temp_pause_state %script_pause
+      if %script_pause = #FALSE
+        set #MENUBUTTON EUOButtonPause
+      menu set EUOStatus
+      gosub NewRuleChain
+      set %current_rulechain #RESULT
+      set %logic_required #FALSE
+      set %sucessful_entry #FALSE
+      set %editline
+    }
+    else
+    {
+      if %logic_required = #TRUE
+      {
+        menu Font Size 7
+        menu Font Name Arial
+        menu Font BGColor BtnFace
+        menu delete EUOButtonAND
+        menu delete EUOButtonOR
+        menu delete EUOButtonNOT
+        menu delete EUOButtonRuleOK
+        set %rule_entry_mode #FALSE
+        menu Font Size 7
+        menu Font Name Arial
+        menu delete EUOButtonNewRule
+        menu delete EUOButtonAddActiveRule
+        menu delete EUOButtonOmit
+        menu Button EUOButtonNewRule 228 220 31 21 Rule
+        menu Button EUOButtonAddActiveRule 192 220 31 21 Add
+        menu Button EUOButtonOmit 156 220 31 21 Omit
+        menu delete EUOLabel16
+        menu Font Name MS Sans Serif
+        menu Font Size 8
+        menu Font Style b
+        menu Text EUOLabel16 4 8 Status:
+        menu Font Style
+        if %sucessful_entry = #TRUE
+        {
+          set %chainname RULECHAIN , %current_rulechain
+          str len %editline
+          set #STRRES #STRRES - 1
+          str left %editline #STRRES
+          gosub GetRuleName %current_rulechain
+          gosub AddNewRule %chainname NA NA #RESULT
+          menu set EUOStatus Rule entry complete!
+        }
+        if %temp_pause_state = #FALSE
+          set #MENUBUTTON EUOButtonPause
+      }
+    }
+  }
+
+  if #MENUBUTTON = EUOButtonRuleOK && %rule_entry_mode = #TRUE && %logic_required = #FALSE
+  {
+    set #MENUBUTTON N/A
+    menu get EUOListLeftPane
+    if #MENURES > 0
+    {
+      set %rule #MENURES - 1
+      gosub AddRuleToChain CURRENT %rule
+      set %logic_required #TRUE
+      set %temp RULETEXT , %rule
+      namespace copy %temp from local RULES
+      set %temp ! . %temp
+      set %temp2 RULEITEM , %rule
+      namespace copy %temp2 from local RULES
+      if RULECHAIN in ! . %temp2
+        set %editline %editline , ( , %temp , ) , #SPC
+      else
+        set %editline %editline , %temp , #SPC
+      menu set EUOStatus %editline
+      set %sucessful_entry #TRUE
+
+      menu Font Size 7
+      menu Font Name Arial
+      menu Font BGColor BtnFace
+      menu delete EUOButtonAND
+      menu delete EUOButtonOR
+      menu Button EUOButtonAND 84 220 31 21 AND
+      menu Button EUOButtonOR 120 220 31 21 OR
+    }
+  }
+
+  if #MENUBUTTON = EUOButtonRuleOK && %rule_entry_mode = #TRUE && %logic_required = #TRUE
+  {
+    set #MENUBUTTON EUOButtonNewRule
+  }
+
+  if #MENUBUTTON in EUOButtonAND_EUOButtonOR && %rule_entry_mode = #TRUE && %logic_required = #TRUE
+  {
+    if #MENUBUTTON = EUOButtonAND
+      set %temp_logic AND
+    if #MENUBUTTON = EUOButtonOR
+      set %temp_logic OR
+    gosub AddRuleToChain CURRENT %temp_logic
+    set %logic_required #FALSE
+    set %editline %editline , %temp_logic , #SPC
+    menu set EUOStatus %editline
+    set #MENUBUTTON N/A
+    menu delete EUOButtonAND
+    menu delete EUOButtonOR
+  }
+
+  if #MENUBUTTON in EUOButtonNOT && %rule_entry_mode = #TRUE && %logic_required = #FALSE
+  {
+    set %temp_logic NOT
+    gosub AddRuleToChain CURRENT %temp_logic
+    set %logic_required #FALSE
+    set %editline %editline , %temp_logic , #SPC
+    menu set EUOStatus %editline
+    set #MENUBUTTON N/A
+  }
+
+  if #MENUBUTTON = EUOButtonLeftMinMax ; Minimize/Maximize LEFT Window pane
+  {
+    set #MENUBUTTON N/A
+    if %left_window_zoom = #FALSE
+    {
+      if %right_pane = HISTORY
+        gosub ReleaseHistoryPane
+      if %right_pane = ACTIVE
+        gosub ReleaseActivePane RIGHT
+      if %right_pane = PREVIEW
+        gosub ReleasePreviewPane RIGHT
+      menu delete EUOListRightPane
+      menu delete EUOButtonHistory
+      menu delete EUOButtonRightActive
+      menu delete EUOButtonPreview
+      menu delete EUOButtonStats
+      menu Font Size 7
+      menu delete EUOButtonLeftMinMax
+      menu Button EUOButtonLeftMinMax 528 32 19 17 <<
+      set %left_window_zoom #TRUE
+      gosub ChangeLeftPane %left_pane FORCE
+    }
+    else
+    {
+      menu Font Size 7
+      menu Font BGColor BtnFace
+      menu delete EUOButtonHistory
+      menu delete EUOButtonRightActive
+      menu delete EUOButtonPreview
+      menu delete EUOButtonStats
+      menu Button EUOButtonHistory 284 32 43 17 History
+      menu Button EUOButtonRightActive 328 32 43 17 Active
+      menu Button EUOButtonPreview 416 32 43 17 Preview
+      menu Button EUOButtonStats 372 32 43 17 Stats
+      set %left_window_zoom #FALSE
+      gosub ChangeLeftPane %left_pane FORCE
+      gosub ChangeRightPane %right_pane FORCE
+      menu Font BGColor BtnFace
+      menu delete EUOButtonLeftMinMax
+      menu Font Size 7
+      menu Button EUOButtonLeftMinMax 252 32 19 17 >>
+    }
+  }
+
+  if #MENUBUTTON = EUOButtonPreview
+  {
+    set #MENUBUTTON N/A
+    gosub ChangeRightPane PREVIEW NULL
+  }
+
+
+  if #MENUBUTTON = EUOButtonOmit
+  {
+    set #MENUBUTTON N/A
+    gosub ChangeRightPane ACTIVE NULL
+    gosub AddNewMultiActiveRule OMIT
+    set !temp #RESULT
+    gosub ReDrawActiveRules
+    menu list select EUOListRightPane !temp
+  }
+  if #MENUBUTTON = EUOButtonKeep
+  {
+    set #MENUBUTTON N/A
+    gosub KeepPreviewItem
+  }
+  if #MENUBUTTON = EUOButtonPreviewCLR
+  {
+    set #MENUBUTTON N/A
+    namespace push
+    namespace local PREVIEW
+    set !history_index -1
+    set !history_index_max -1
+    namespace pop
+    if %right_pane = PREVIEW
+      gosub DrawPreviewPane
+  }
+return
+;-------------------------------------------------------------------------------
+sub KeepPreviewItem
+  namespace push
+  namespace local PREVIEW
+  set !temp !historyid . !history_index
+  if !temp <> N/A
+  {
+    gosub TM_FastDragItem !temp
+    set !tempid !historyid . !history_index
+    set !temphistory !history . !history_index
+    namespace copy tempid to local HISTORY
+    namespace copy temphistory to local HISTORY
+    namespace push
+    namespace local HISTORY
+    if !history_index = N/A
+    {
+      set !history_index -1
+      set !history_index_max -1
+    }
+    set !history_index !history_index + 1
+    set !history_index_max !history_index_max + 1
+    set !historyid . !history_index !tempid
+    set !history . !history_index !temphistory
+    namespace pop
+    set !historyid . !history_index N/A
+    set !history . !history_index Grabbed.$
+    if %right_pane = PREVIEW
+      gosub DrawPreviewPane
+  }
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub DrawRuleChainStrings
+  namespace push
+  namespace local RULES
+  if !rulechain_count <> N/A
+  {
+    set !temp_index !rule_index - 1
+    for !i 0 !temp_index
+    {
+      set !rule RULEITEM , !i
+      if RULECHAIN in ! . !rule
+      {
+        str del ! . !rule 1 9
+        gosub IterateRuleChains #STRRES
+        set !ruletext RULETEXT , !i
+        set ! . !ruletext #SPC , [ , #RESULT , ] , #SPC
+      }
+    }
+  }
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub GetRuleName
+  namespace push
+  namespace local RULES
+  set !rulechain %1
+  gosub IterateRuleChains !rulechain
+  set #RESULT [ , #RESULT , ]
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub IterateRuleChains
+  namespace push
+  namespace local RULES , %1
+  set !i %1
+  set !rval
+  namespace copy RULE* from local RULES
+  set !tempindex !RULECHAIN_index . !i - 1
+  for !index 0 !tempindex
+  {
+    set !rulechain RULECHAIN_rule , !i , _ , !index
+    set !ruleindex ! . !rulechain
+    if !ruleindex in AND_OR_NOT
+    {
+      set !rval !rval , #SPC , !ruleindex
+    }
+    else
+    {
+      set !rule RULEITEM , !ruleindex
+      if RULECHAIN notin ! . !rule
+      {
+        set !ruletext RULETEXT , !ruleindex
+        set !ruletext ! . !ruletext
+        set !rval !rval , #SPC , !ruletext
+      }
+      else
+      {
+        set !ruletext RULETEXT , !ruleindex
+        if ! . !ruletext <> N/A
+        {
+          set !temp ! . !ruletext
+          set !rval !rval , ( , !temp  ,  )
+        }
+      }
+    }
+  }
+  set #RESULT !rval
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+; Rule Chain Values
+; !RULECHAIN_index(X) = number rules entries of RULECHAIN(X)
+; !RULECHAIN_rule(X)_(Y) = rule number (Y) of RULECHAIN(X)
+; returns new rule number
+sub NewRuleChain
+  namespace push
+  namespace local RULES
+  if !rulechain_count = N/A
+    set !rulechain_count -1
+  set !rulechain_count !rulechain_count + 1
+  set !RULECHAIN_index . !rulechain_count 0
+  set !rulechain RULECHAIN_rule , !rulechain_count , _ , 0
+  set ! . !rulechain N/A
+  set #RESULT !rulechain_count
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+; %1 = index of rulechain, CURRENT for current rule
+sub AddRuleToChain
+  namespace push
+  namespace local RULES
+  set !chain %1
+  set !rule %2
+  if !rulechain_count = N/A
+  {
+    gosub NewRuleChain
+    set !chain !rulechain_count
+  }
+  if !chain = CURRENT
+    set !chain !rulechain_count
+  if !chain <= !rulechain_count
+  {
+    set !index !RULECHAIN_index . !chain
+    set !rulechain RULECHAIN_rule , !rulechain_count , _ , !index
+    set ! . !rulechain !rule
+    set !index !index + 1
+    set !RULECHAIN_index . !chain !index
+  }
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub DeleteRuleChain
+  namespace push
+  namespace local RULES
+  set !chain %1
+  str del !chain 1 9
+  set !rc #STRRES
+
+  set !end !rulechain_count
+  for !i !rc !end
+  {
+    set !nextchain !i + 1
+    if !RULECHAIN_index . !nextchain <> N/A
+    {
+      for !j 0 !RULECHAIN_index . !i
+      {
+        set !delrulechain RULECHAIN_rule , !i , _ , !j
+        set ! . !delrulechain N/A
+      }
+      for !j 0 !RULECHAIN_index . !nextchain
+      {
+        set !delrulechain RULECHAIN_rule , !i , _ , !j
+        set !nextrulechain RULECHAIN_rule , !nextchain , _ , !j
+        set ! . !delrulechain ! . !nextrulechain
+      }
+    }
+    set !RULECHAIN_index . !i !RULECHAIN_index . !nextchain
+    set !RULECHAIN . !i !RULECHAIN . !i - 1
+  }
+
+  set !idx 0
+  set !i !i - 1
+  set !delrulechain RULECHAIN_rule , !i , _ , !idx
+  while ( ( ! . !delrulechain ) <> N/A )
+  {
+    set ! . !delrulechain N/A
+    set !idx !idx + 1
+    set !delrulechain RULECHAIN_rule , !i , _ , !idx
+  }
+
+  set !RULECHAIN . !rc N/A
+  set !rulechain_count !rulechain_count - 1
+
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub SaveRuleChains
+  namespace push
+  namespace local RULES
+  if !rulechain_count <> N/A || !rulechain_count >= 0
+  {
+    gosub TM_FileSystem_SaveVariable local RULES save_handle rulechain_count
+    for !chain 0 !rulechain_count
+    {
+      gosub TM_FileSystem_SaveVariable local RULES save_handle rulechain_index , !chain
+      for !chainindex 0 !rulechain_index . !chain
+      {
+        set !rulechain RULECHAIN_rule , !chain , _ , !chainindex
+        gosub TM_FileSystem_SaveVariable local RULES save_handle !rulechain
+      }
+      gosub TM_FileSystem_SaveVariable local RULES save_handle RULECHAIN , !chain
+      gosub TM_FileSystem_SaveVariable local STD save_handle RULECHAIN , !chain
+    }
+  }
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub CheckForRuleDependency
+  namespace push
+  namespace local RULES
+  set !rule %1
+  if !rulechain_count <> N/A || !rulechain_count >= 0
+  {
+    for !chain 0 !rulechain_count
+    {
+      for !chainindex 0 !rulechain_index . !chain
+      {
+        set !rulechain RULECHAIN_rule , !chain , _ , !chainindex
+        if ! . !rulechain = !rule
+        {
+          namespace pop
+          return #TRUE
+        }
+      }
+    }
+  }
+  namespace pop
+return #FALSE
+;-------------------------------------------------------------------------------
+sub AdjustRuleChains
+  namespace push
+  namespace local RULES
+  set !start %1
+
+  if !rulechain_count <> N/A || !rulechain_count >= 0
+  {
+    for !chain 0 !rulechain_count
+    {
+      for !chainindex 0 !rulechain_index . !chain
+      {
+        set !rulechain RULECHAIN_rule , !chain , _ , !chainindex
+        if ! . !rulechain >= !start
+          set ! . !rulechain ! . !rulechain - 1
+      }
+    }
+  }
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+;! . !rule !findid !findtype
+sub EvaluateRuleChain
+  namespace push
+  namespace local RULES , %4
+  set !chain %1
+  set !findid %2
+  set !findtype %3
+  set !loot_match #FALSE
+  set !level %4 + 1
+  str del !chain 1 9
+  set !tempchain #STRRES
+  set !present_logic #FALSE
+  set !logic_toggle #FALSE
+  set !present_logic_operator N/A
+  namespace copy RULE* from local RULES
+  set !tempindex !rulechain_index . !tempchain - 1
+  set !chainindex 0
+EvaluateRuleChain_loop1:
+  set !temp_rule RULECHAIN_rule , !tempchain , _ , !chainindex
+  set !temp_rule ! . !temp_rule
+  set !temp_ruleindex RULEITEM , !temp_rule
+  if RULECHAIN notin ! . !temp_ruleindex
+  {
+    if !temp_rule in AND_OR_NOT
+    {
+      if !temp_rule = NOT
+        set !logic_toggle ! !logic_toggle
+      else
+        set !present_logic_operator !temp_rule
+    }
+    else
+    {
+      gosub EvaluateRule !temp_rule !findid !findtype
+      gosub CheckLogic
+    }
+  }
+  else
+  {
+    gosub EvaluateRuleChain ! . !temp_ruleindex !findid !findtype !level
+    gosub CheckLogic
+  }
+  set !chainindex !chainindex + 1
+  if !chainindex <= !tempindex
+    goto EvaluateRuleChain_loop1
+
+  set !loot_match !present_logic
+  namespace copy loot_match to local RULES
+  set #RESULT !present_logic
+  namespace clear
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub CheckLogic
+  if !logic_toggle = #TRUE
+    set #RESULT ! #RESULT
+  if !present_logic_operator = N/A
+    set !present_logic #RESULT
+  if !present_logic_operator = AND
+    set !present_logic !present_logic && #RESULT
+  if !present_logic_operator = OR
+    set !present_logic !present_logic || #RESULT
+return
+;-------------------------------------------------------------------------------
+sub DrawPreviewPane
+  namespace push
+  namespace local PREVIEW
+  set !temp_LPC #LPC
+  set #LPC 10000
+  menu delete EUOButtonPreview
+  menu delete EUOLabelRightTitle
+  menu Font Size 7
+  menu Font BGColor White
+  menu Button EUOButtonPreview 416 32 43 17 Preview
+  menu Font BGColor White
+  menu Font Size %pane_font_size
+  menu Font Style
+  menu delete EUOListRightPane
+  menu List Create EUOListRightPane 280 48 269 169
+  menu Font Size 8
+  menu Font Style b
+  menu Font BGColor BtnFace
+  menu Text EUOLabelRightTitle 468 32 [Preview]
+  menu Font Style
+  menu Font Size 7
+  menu Font Name Arial
+  menu delete EUOButtonLeftArrow
+  menu delete EUOButtonRightArrow
+  menu delete EUOButtonKeep
+  menu delete EUOButtonPreviewCLR
+  menu Button EUOButtonLeftArrow 300 220 27 21 <<
+  menu Button EUOButtonRightArrow 512 220 27 21 >>
+  menu Button EUOButtonKeep 400 220 39 21 Keep
+  menu Button EUOButtonPreviewCLR 364 220 31 21 CLR
+
+  menu Font Size %pane_font_size
+  menu Font BGColor Window
+  if !history_index = N/A
+  {
+    menu delete EUOListRightPane
+    menu List Create EUOListRightPane 280 48 269 169
+    menu delete EUOLabelHistoryStatus
+    menu Text EUOLabelHistoryStatus 460 224 0 of 0
+    goto DrawPreviewPane_skip
+  }
+  menu delete EUOListRightPane
+  menu List Create EUOListRightPane 280 48 269 169
+  set !item !history . !history_index
+  set !string !history_string . !history_index
+;  menu set euoSTATUS !string
+  set %forum_str
+DrawPreviewPane_loop1:
+  str pos !item $
+  if #STRRES > 0
+  {
+    set !len #STRRES - 1
+    str left !item !len
+    menu list add EUOListRightPane #STRRES
+    set %forum_str %forum_str , %list_start , #STRRES , %list_end
+    set !len !len + 1
+    str del !item 1 !len
+    set !item #STRRES
+    goto DrawPreviewPane_loop1
+  }
+
+  menu delete EUOLabelHistoryStatus
+
+  set !temp1 !history_index  + 1
+  set !temp2 !history_index_max + 1
+  set !text !temp1 , #SPC , of , #SPC , !temp2
+  menu Font Size 7
+  menu Font Style
+  menu Font Color WindowText
+  menu Font Transparent #false
+  menu Font Align Left
+  menu Text EUOLabelHistoryStatus 460 224 !text
+DrawPreviewPane_skip:
+  set #LPC !temp_LPC
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub ReleasePreviewPane
+  namespace push
+  namespace local PREVIEW
+  menu delete EUOLabelRightTitle
+  menu delete EUOButtonPreview
+  menu delete EUOButtonLeftArrow
+  menu delete EUOButtonRightArrow
+  menu delete EUOLabelHistoryStatus
+  menu delete EUOButtonKeep
+  menu delete EUOButtonPreviewCLR
+  menu Font Size 7
+  menu Font BGColor BtnFace
+  menu Button EUOButtonPreview 416 32 43 17 Preview
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+;--------- EasyUO Menu Designer Code Begin ---------
+sub showEUOMenu1
+  menu Clear
+  menu Window Title %title
+  menu Window Color BtnFace
+  menu Window Size 652 421
+  menu Font Transparent #true
+  menu Font Align Right
+  menu Font Name Arial
+  menu Font Size 7
+  menu Font Style
+  menu Font Color WindowText
+  menu Font Transparent #false
+  menu Font Align Left
+  menu Text EUOLabel1 4 252 Item Attribute
+  menu Text EUOLabel2 4 276 Skill Intensity:
+  menu Text EUOLabel17 24 300 Talisman:
+  menu Text EUOLabel14 4 324 User Defined:
+  menu Text EUOLabel3 360 252 Specific Items:
+  menu Text EUOLabel12 352 276 Slayer Weapons:
+  menu Text EUOLabel9 364 300 Text;Text;Text
+  menu Text EUOLabel8 364 324 #FINDTYPEs:
+  menu Text EUOLabel4 380 348 Setup File:
+  menu Text EUOLabelHistoryStatus 460 224 0 of 0
+  menu Text EUOLabelItemsLooted 472 0 Items Looted:
+  menu Font Name MS Arial
+  menu Font Style b
+  menu Text EUOLabelLeftTitle 182 32 (Rule Entry)
+  menu Text EUOLabelRightTitle 469 32 (Loot History)
+  menu Text EUOLabel16 4 8 Status:
+  menu Font Size 9
+  menu Text EUOLabel5 460 376 Alt +
+  menu Text EUOLabel6 460 400 Alt +
+  menu Text EUOLabel10 524 376 Targeted Corpse/Box
+  menu Text EUOLabel11 524 396 Surrounding Corpses
+  menu Font Name Arial
+  menu Font Size 7
+  menu Font Style
+  menu Text EUOLabel15 12 348 User Entry:
+  menu Text EUOLabelGold 472 12 Gold:
+  menu Font BGColor Window
+  menu List Create EUOListLeftPane 4 48 269 169
+  menu List Create EUOListRightPane 280 48 269 169
+  menu Combo Create EUOComboItemAttrib 68 248 173
+  menu Combo Create EUOComboSkillIntensity 68 272 173
+  menu Combo Create EUOComboTalisman 68 296 173
+  menu Combo Create EUOComboUser 68 320 173
+  menu Combo Create EUOComboSpecificItems 428 248 173
+  menu Combo Create EUOComboSlayer 428 272 173
+  menu Edit EUOEditItemAttrib 276 248 29 10
+  menu Edit EUOEditSkillIntensity 276 272 29 10
+  menu Edit EUOEditTalisman 276 296 29 10
+  menu Edit EUOEditTextSearch 428 296 173
+  menu Edit EUOEditFindid 428 320 173
+  menu Edit EUOEditUserDefinedIntensity 276 320 29 10
+  menu Edit EUOEditUserDefinedText 68 344 173 Enter , #spc , user , #spc , defined , #spc , text , #spc , here.
+  menu Edit EUOEditSetupFile 428 344 173 sampleclawsetup.txt
+  menu Edit EUOEditKey1 492 376 25 F1
+  menu Edit EUOEditKey2 492 396 25 F2
+  menu Font BGColor BtnFace
+  menu Check EUOCheckBoxGround 8 368 101 17 #false Loot Ground Items
+  menu Check EUOCheckBoxBOS 8 384 149 17 #false Send Gold via Bag of Sending
+  menu Check EUOCheckBoxAutomatic 8 400 141 17 #true Automatic Corpse Looting
+  menu Check EUOCheckBoxCarve 160 368 85 17 #false Carve Corpse
+  menu Check EUOCheckBoxLootAll 160 384 77 17 #false Loot all
+  menu Font Name MS Sans Serif
+  menu Font Size 9
+  menu Font BGColor ScrollBar
+  menu Edit EUOStatus 48 4 421 Status
+  menu Font Size 8
+  menu Font BGColor BtnFace
+  menu Button EUOButtonItemAttribLogic 244 248 31 21 >=
+  menu Button EUOButtonSkillIntensityLogic 244 272 31 21 >=
+  menu Button EUOButtonTalismanLogic 244 296 31 21 >=
+  menu Button EUOButtonUserLogic 244 320 31 21 >=
+  menu Button EUOButtonLeftArrow 300 220 27 21 <<
+  menu Button EUOButtonRightArrow 512 220 27 21 >>
+  menu Font Name Arial
+  menu Font Size 7
+  menu Button EUOButtonItemAttribOK 308 248 35 21 OK
+  menu Button EUOButtonSkillIntensityOK 308 272 35 21 OK
+  menu Button EUOButtonDrop 400 220 39 21 Drop
+  menu Button EUOButtonDelete 4 220 35 21 Delete
+  menu Button EUOButtonClear 44 220 35 21 Clear
+  menu Button EUOButtonSpecificItemOK 608 248 39 21 OK
+  menu Button EUOButtonSlayerOK 608 272 39 21 OK
+  menu Button EUOButtonTalismanOK 308 296 35 21 OK
+  menu Button EUOButtonUserOK 308 320 35 21 OK
+  menu Button EUOButtonAND 84 220 31 21 AND
+  menu Button EUOButtonOR 120 220 31 21 OR
+  menu Button EUOButtonNOT 156 220 31 21 NOT
+  menu Button EUOButtonRuleOK 192 220 31 21 OK
+  menu Button EUOButtonActiveDelete 284 220 35 21 Delete
+  menu Button EUOButtonActiveClear 324 220 35 21 Clear
+  menu Button EUOButtonRightActive 328 32 43 17 Active
+  menu Button EUOButtonPreview 416 32 43 17 Preview
+  menu Button EUOButtonKeep 400 220 39 21 Keep
+  menu Button EUOButtonPreviewCLR 364 220 31 21 CLR
+  menu Font BGColor White
+  menu Button EUOButtonHistory 284 32 43 17 History
+  menu Font Size 8
+  menu Font BGColor BtnFace
+  menu Button EUOButtonLoadSetup 568 52 67 25 Load Setup
+  menu Button EUOButtonSaveSetup 568 84 67 25 Save Setup
+  menu Button EUOButtonPause 568 116 67 25 Pause
+  menu Button EUOButtonLootPack 568 148 67 25 Set Loot
+  menu Font Size 7
+  menu Button EUOButtonUserEntryOK 248 344 27 17 OK
+  menu Button EUOButtonUserEntryDEL 276 344 27 17 DEL
+  menu Check EUOCheckBoxHideBodies 160 400 77 17 #false Hide Bodies
+  menu Button EUOButtonMinMax 632 4 19 17 M
+  menu Button EUOButtonNewRule 228 220 31 21 Rule
+  menu Button EUOButtonLeftActive 52 32 43 17 Active
+  menu Font BGColor White
+  menu Button EUOButtonLeftRules 8 32 43 17 Rules
+  menu Font BGColor BtnFace
+  menu Button EUOButtonAddActiveRule 192 220 31 21 Add
+  menu Button EUOButtonLeftMinMax 252 32 19 17 >>
+  menu Button EUOButtonStats 372 32 43 17 Stats
+  menu Check EUOCheckPreview 248 368 61 17 #false Preview
+  menu Check EUOCheckTurbo 248 384 49 17 #false Turbo
+  menu Button EUOButtonSmaller 552 32 15 13 <
+  menu Button EUOButtonLarger 568 32 15 13 >
+  menu Button EUOButtonOmit 156 220 31 21 Omit
+  menu Check EUOCheckBoxSound 600 28 49 17 #true Sound
+  menu Check EUOCheckBoxLogItem 116 32 49 17 #false Log?
+  menu Check EUOCheckBoxTextLog 604 296 49 17 #false Log?
+  menu Check EUOCheckBoxFINDIDLog 604 320 49 17 #false Log?
+  menu Button EUOButtonLittlePause 612 4 19 17 P
+  menu Button EUOButtonList 544 220 39 21 List
+	menu Check EUOCheckstealthdd 248 400 93 17 #false StealthDrag/Drop
+	menu Button EUOButtonForum 588 220 40 21 SMF
+  menu Show 421 270
+return
+;--------- EasyUO Menu Designer Code End ---------
+
+;--------- EasyUO Menu Designer Code Begin ---------
+sub showEUOMenu2
+	menu Clear
+	menu Window Title Information......
+	menu Window Color WindowText
+	menu Window Size 316 87
+	menu Font Transparent #true
+	menu Font Align Right
+	menu Font Name MS Sans Serif
+	menu Font Size 10
+	menu Font Style
+	menu Font Color Window
+	menu Font Transparent #false
+	menu Font Align Left
+	menu Font BGColor WindowText
+	menu Text EUOLabel1 41 36 Advanced CLAw Initializing, Please Wait...
+	menu Show 421 270
+return
+;--------- EasyUO Menu Designer Code End ---------
+
+
+;-------------------------------------------------------------------------------
+;------------------------------  Loot Handling  --------------------------------
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+
+sub TM_DragDrop_GetState
+  namespace push
+  namespace local PDD
+  set #RESULT !state
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub TM_DragDrop_Initialize
+  namespace push
+  namespace local PDD
+  set !index 0
+  set !total 0
+  set !drags 0
+  set !list0 N/A
+  set !state IDLE ; EMPTY, IDLE, DRAGDELAY, DROPDELAYSTART, DROPDELAY
+  set !counter #SCNT2
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub TM_DragDrop_PushItem
+  namespace push
+  namespace local PDD
+  set !findid . !index %1
+  set !stack . !index %2
+  set !type . !index %3
+  set !index !index + 1
+  set !total !total + 1
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub TM_DragDrop_PopItem
+  namespace push
+  namespace local PDD
+  set #RESULT N/A
+  if !index > 0
+  {
+    set !index !index - 1
+    set #RESULT !findid . !index
+    set !findid #RESULT
+    set !stack !stack . !index
+    set !type !type . !index
+    set !findid !findid . !index
+  }
+  namespace pop
+return #RESULT ; only returns findid
+;-------------------------------------------------------------------------------
+sub TM_DragDrop_ItemCount
+  namespace push
+  namespace local PDD
+  set #RESULT !index
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub TM_DragDrop_Execute ;
+  namespace push
+  namespace local PDD
+  if !state = IDLE && !index = 0 ; nothing to do.
+  {
+    namespace pop
+    return
+  }
+  if !state = IDLE && !index > 0
+  {
+    set !state DRAGDELAY
+    set !drags !drags + 1
+    menu set EUOStatus Dragging item , #SPC , !drags , #SPC , of , #SPC , !total
+    gosub TM_DragDrop_PopItem
+    namespace copy TM_dragdrop_busy to global TM_loot
+    set !TM_dragdrop_busy #TRUE
+    exevent drag !findid !stack
+    set !counter #SCNT2
+    namespace pop
+    return
+  }
+  if !state = DRAGDELAY
+  {
+    set !elapsed #SCNT2 - !counter
+    if !elapsed < %exevent_drag
+    {
+      namespace pop
+      return
+    }
+    set !state DROPDELAYSTART
+  }
+  if !state = DROPDELAYSTART
+  {
+    set !state DROPDELAY
+
+    if !type in %id_main_pack_items ; gold, bandages, hides , Bones, MIBs
+      exevent dropc #BACKPACKID
+    else
+      exevent dropc %global_destination
+
+    set !TM_dragdrop_busy #FALSE
+    namespace copy TM_dragdrop_busy to global TM_loot
+    set !counter #SCNT2
+    namespace pop
+    return
+  }
+  if !state = DROPDELAY
+  {
+    set !elapsed #SCNT2 - !counter
+    if !elapsed < %exevent_drop
+    {
+      namespace pop
+      return
+    }
+    set !state IDLE
+    if !index = 0
+    {
+      set !total 0
+      set !drags 0
+      menu set EUOStatus Item drag/drop complete!
+      wait 5
+    }
+  }
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub OpenContainer
+  namespace push
+  namespace local OC
+  set !body %1
+  set !temp_cnt #SCNT + 12
+  set !container_timeout 5
+
+  if %stealthdd = #TRUE
+    wait 10
+
+  repeat
+    namespace copy TM_HEAL from global TM_healer
+    if !TM_HEAL = #TRUE
+      wait 20
+    if #SCNT > !temp_cnt
+    {
+      namespace pop
+      return #TRUE
+    }
+  until !TM_HEAL <> #TRUE && #LLIFTEDKIND = 0 && #TargCurs <> 1 && A notin #CHARSTATUS
+
+  gosub TM_AdvJournalSync DRAG
+
+  set #LOBJECTID !body
+  set !temp_contid #CONTID
+  set !temp2_cnt #SCNT + 5
+  event macro 17 0
+  repeat
+  until #CONTID <> !temp_contid || #SCNT > !temp2_cnt
+  set !temp_cnt #SCNT + !container_timeout
+  set !open_retry_cnt #SCNT + 2
+  repeat
+    set !sample_contid #CONTID
+    gosub TM_AdvJournalScan DRAG VALID act!
+    if #RESULT = #TRUE
+    {
+      gosub TM_AdvJournalSync DRAG
+      namespace pop
+      return #TRUE ; impossible to open this container - forget it
+    }
+    gosub TM_AdvJournalScan DRAG VALID you_must_wait
+    if #RESULT = #TRUE || #SCNT > !open_retry_cnt
+    {
+      gosub TM_AdvJournalSync DRAG
+      wait 20
+      set #LOBJECTID !body
+      set !temp_contid #CONTID
+      set !temp2_cnt #SCNT + 1
+      event macro 17 0
+      repeat
+      until #CONTID <> !temp_contid || #SCNT > !temp2_cnt
+      set !temp_cnt #SCNT + !container_timeout
+      set !open_retry_cnt #SCNT + 2
+      continue
+    }
+    gosub TM_AdvJournalScan DRAG VALID you_did_not_earn that_is_too_far that_is_out_of_sight reach
+    if #RESULT = #TRUE
+    {
+      gosub TM_AdvJournalSync DRAG
+      namespace pop
+      return #TRUE ; impossible to open this container - forget it
+    }
+    str del !sample_contid 1 4
+  until ( ( ( #STRRES in !body ) || ( #SCNT > !temp_cnt ) ) && !temp_cnt <> #CHARID )
+
+  if #SCNT > !temp_cnt
+  {
+    namespace pop
+    return #FALSE ; not a fatal error, can try and open again
+  }
+
+  wait %container_delay
+  set %ignored_containers %ignored_containers , _ , !sample_contid
+  set #RESULT !sample_contid
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub ProceedAndLoot
+  set %source %1
+  menu set EUOStatus Evaluating container...
+  gosub ScanContainerForMatch %source PACK      ; Scan container and process rules/rule chains
+;  set %loot_time #SCNT2 - %loot_time
+;  set %loot_time_sec %loot_time / 10
+;  set %loot_time_dec %loot_time % 10
+  namespace copy loot_list from local SCFN
+  if !loot_list <> #TRUE
+  {
+    menu get EUOCheckPreview
+    if #MENURES = #TRUE
+    {
+      gosub AddItemsToList PREVIEW !loot_list
+      if %right_pane = PREVIEW
+        gosub DrawPreviewPane
+    }
+    else
+    {
+      if %use_history = #TRUE
+      {
+        gosub AddItemsToList HISTORY !loot_list
+        if %right_pane = HISTORY
+          gosub DrawHistoryPane
+      }
+      if %stealthdd = #FALSE
+      {
+        menu set EUOStatus Dragging rule items...
+        gosub TM_LootList !loot_list %source %global_destination
+      }
+    }
+  }
+  menu get EUOCheckBoxCarve
+  if #MENURES = #TRUE
+  {
+    wait 10
+    set #LOBJECTID %scissors
+    finditem %id_hides , %id_Bones C_ , #BACKPACKID
+    if #FINDKIND <> -1
+    {
+      set #LTARGETID #FINDID
+      set #LTARGETKIND 1
+      event macro 17
+      target 5s
+      event macro 22
+      wait 20
+    }
+  }
+return
+;-------------------------------------------------------------------------------
+sub TM_LootList
+  namespace push
+  namespace local LL
+  set !list %1
+  set !source %2
+  set !dest %3
+LootList_loop1:
+  if !source = GROUND
+    finditem !list G_2
+  else
+    finditem !list C_ , !source
+  if #FINDKIND <> -1
+  {
+    set !fail #FALSE
+    set !findid #FINDID
+    set !findtype #FINDTYPE
+    set %items_looted %items_looted + 1
+    gosub TM_DragItem #FINDID #FINDTYPE #FINDSTACK !source !dest
+    if !findtype notin %BOS_ITEMS && !findtype notin %id_hides && !findtype notin %id_Bones
+      ignoreitem !findid %ignoreitem_ptr
+    namespace copy fail from local DI
+    if !fail = #TRUE
+    {
+      namespace pop
+      return
+    }
+    goto LootList_loop1
+  }
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub TM_FastDragItem
+  namespace push
+  namespace local FDI
+  set !item %1
+  set #RESULT #FALSE
+  finditem !item *
+  if #FINDKIND <> -1
+  {
+    if %use_exevents = #TRUE
+    {
+      set !TM_dragdrop_busy #TRUE
+      namespace copy TM_dragdrop_busy to global TM_loot
+      exevent drag #FINDID #FINDSTACK
+      wait %exevent_drag
+      exevent dropc %global_destination
+      wait %exevent_drop
+      set !TM_dragdrop_busy #FALSE
+      namespace copy TM_dragdrop_busy to global TM_loot
+      set #RESULT #TRUE
+    }
+    else
+    {
+      if #CONTNAME <> paperdoll_gump
+      {
+        event macro 8 1
+        set !drag_cnt #SCNT + 4
+        repeat
+        until #CONTNAME = paperdoll_gump || #SCNT > !drag_cnt
+      }
+      set !clickx #CONTPOSX + 140
+      set !clicky #CONTPOSY + 220
+      wait %exevent_drop
+      set !TM_dragdrop_busy #TRUE
+      namespace copy TM_dragdrop_busy to global TM_loot
+      event drag #FINDID
+      set !timeout #SCNT + 5
+      repeat
+      until #CONTNAME = drag_gump || #CONTNAME = stack_gump || #SCNT > !timeout
+      if #CONTNAME = stack_gump
+        msg $
+      click !clickx !clicky p
+      set !TM_dragdrop_busy #FALSE
+      namespace copy TM_dragdrop_busy to global TM_loot
+      set !drag_cnt #SCNT + 4
+      repeat
+      until #CONTNAME <> drag_gump || #SCNT > !drag_cnt
+    }
+  }
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+; uses %exevent_drag , %exevent_drop
+sub TM_DragItem
+  namespace push
+  namespace local DI
+  set !drag_item %1
+  set !drag_type %2
+  set !drag_stack %3
+  set !drag_source %4
+  set !drop_location %5
+  set !drag_time #SCNT + 5
+  set !drag_attempts 2
+  set !fail #FALSE
+
+  wait 10
+  repeat
+    namespace copy TM_HEAL from global TM_healer
+    if !TM_HEAL = #TRUE
+      wait 10
+  until !TM_HEAL <> #TRUE && #LLIFTEDKIND = 0 && #TargCurs <> 1 && A notin #CHARSTATUS ; healer is busy or lifting in process
+
+  gosub TM_AdvJournalSync DRAG
+DragItem_loop1:
+  if #CONTID <> !drag_source && !drag_source <> GROUND
+    gosub OpenContainer !drag_source
+  if #SCNT > !drag_time
+  {
+    set #RESULT #FALSE
+    goto DragItem_skip1
+  }
+  namespace copy TM_eval_request from global TM_LOOT
+  if !TM_eval_request = #FALSE
+  {
+    finditem %body G_2
+    if ( #FINDDIST = N/A || #FINDDIST > 2 ) && ( %targeted_mode = #FALSE ) && ( !drag_source <> GROUND )
+    {
+      set #RESULT #FALSE
+      set !fail #TRUE
+      goto DragItem_skip1
+    }
+  }
+
+  set !TM_dragdrop_busy #TRUE
+  namespace copy TM_dragdrop_busy to global TM_loot
+  if %use_exevents = #TRUE
+  {
+    exevent drag !drag_item !drag_stack
+  }
+  else
+  {
+    wait %exevent_drag
+    if #CONTNAME <> paperdoll_gump
+    {
+      event macro 8 1
+      set !drag_cnt #SCNT + 4
+      repeat
+      until #CONTNAME = paperdoll_gump || #SCNT > !drag_cnt
+    }
+    set !clickx #CONTPOSX + 140
+    set !clicky #CONTPOSY + 220
+    event drag !drag_item
+  }
+  wait %exevent_drag
+  gosub TM_AdvJournalScan DRAG VALID you_must_wait
+  if #RESULT = #TRUE
+  {
+    gosub TM_AdvJournalSync DRAG
+    wait %exevent_drag
+    goto DragItem_loop1
+  }
+  gosub TM_AdvJournalScan DRAG VALID you_are_already_holding you_can_not_pick ; RunUO: you_are_already_holding
+  if #RESULT = #TRUE
+  {
+    gosub TM_AdvJournalSync DRAG
+    exevent dropc !drop_location
+    wait %exevent_drag
+    goto DragItem_loop1
+  }
+  gosub TM_AdvJournalScan DRAG VALID you_did_not_earn that_is_too_far that_is_out_of_sight you_can_not_pick reach
+  if #RESULT = #TRUE
+  {
+    gosub TM_AdvJournalSync DRAG
+    set #RESULT #FALSE
+    goto DragItem_skip1
+  }
+  if %use_exevents = #FALSE
+  {
+    gosub GumpWait drag_gump stack_gump
+    if #CONTNAME = stack_gump
+    {
+      msg !drag_stack , $
+      gosub GumpWait drag_gump drag_gump
+    }
+    click !clickx !clicky p
+    set !drag_cnt #SCNT + 4
+    repeat
+    until #CONTNAME <> drag_gump || #SCNT > !drag_cnt
+  }
+  else
+  {
+    if !drag_type in %id_main_pack_items ; gold, bandages, hides , Bones, MIBs
+      exevent dropc #BACKPACKID
+    else
+      exevent dropc !drop_location
+  }
+  wait %exevent_drop
+  if !drag_source = GROUND
+    finditem !drag_item G_2
+  else
+    finditem !drag_item C_ , !drag_source
+  if #FINDKIND <> -1
+  {
+    set !drag_attempts !drag_attempts - 1
+    if !drag_attempts <= 0
+    {
+      set #RESULT #TRUE
+      goto DragItem_skip1
+    }
+    goto DragItem_loop1
+  }
+  set !TM_dragdrop_busy #FALSE
+  namespace copy TM_dragdrop_busy to global TM_loot
+  set %total_items_looted %total_items_looted + 1
+  set #RESULT #TRUE
+DragItem_skip1:
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub CheckForBagOfSending
+  if ( ( #WEIGHT > ( #MAXWEIGHT - 10 ) ) || ( #WEIGHT > %overweight_config ) )
+  {
+    menu get EUOCheckBoxBOS  ; should I send the gold via bag of sending?
+    if #MENURES = #TRUE
+    {
+      if %weightwarn = #FALSE
+      {
+        gosub SendItems %BOS_ITEMS
+      }
+    }
+    else
+    {
+      if %weightwarn = #FALSE && %override_weight_check = #FALSE
+      {
+        display ok You are nearly overweight
+        set %weightwarn #TRUE
+      }
+    }
+  }
+  else
+  {
+    set %weightwarn #FALSE
+  }
+return
+;-------------------------------------------------------------------------------
+sub SendItems
+  namespace push
+  namespace local SI
+  set !bos_items %1
+  set !temp_LOBJECTID #LOBJECTID
+  set !temp_LTARGETID #LTARGETID
+  set !temp_LTARGETKIND #LTARGETKIND
+  wait 20
+  repeat
+    namespace copy TM_HEAL from global TM_healer
+    if !TM_HEAL = #TRUE
+      wait 20
+  until !TM_HEAL <> #TRUE && #LLIFTEDKIND = 0 && #TargCurs <> 1 && A notin #CHARSTATUS
+  set !TM_loot_in_progress #TRUE
+  namespace copy !TM_loot_in_progress to global TM_loot
+
+SendItems_loop1:
+  finditem CKF C_ , #BACKPACKID
+  if #FINDKIND <> -1
+  {
+    event property #FINDID
+    if sending notin #PROPERTY
+    {
+      ignoreitem #FINDID BOS
+      goto SendItems_loop1
+    }
+    set !bagofsending #FINDID
+SendItems_loop2:
+    finditem !bos_items C_ , #BACKPACKID
+    if #FINDKIND <> -1
+    {
+      set !item #FINDID
+      event property !bagofsending
+      str len #PROPERTY
+      set #STRRES #STRRES - 1
+      str left #PROPERTY #STRRES
+      gosub GetIntensityRight #STRRES
+      namespace copy intensity from local GIR
+      if !intensity = 0   ; as in zero charges
+      {
+        ignoreitem !bagofsending BOS
+        goto SendItems_loop1
+      }
+      exevent popup !bagofsending
+      contpos 0 15
+      wait 10
+      gosub GumpWait normal_gump normal_gump
+      set !clickx #CONTPOSX + 30
+      set !clicky #CONTPOSY + 28
+      click !clickx !clicky dmc
+      target 10s
+      set #LTARGETID !item
+      set #LTARGETKIND 1
+      event macro 22 0
+      wait 10
+      set %weightwarn #FALSE
+      goto SendItems_loop2
+    }
+    else
+    {
+      if #WEIGHT = N/A
+        gosub OpenStatusBar
+      if %override_weight_check = #FALSE
+      {
+        if ( #WEIGHT > ( #MAXWEIGHT - 10 ) ) || ( #WEIGHT > %userweightmax )
+        {
+          display ok You are nearly overweight, but you have no selected$items to send.  Please unload manually.
+          set %weightwarn #TRUE
+          goto SendItems_skip
+        }
+      }
+    }
+  }
+  else
+  {
+    display ok No valid bags of sending in your main pack.$Please unload manually.
+    set %weightwarn #TRUE
+    goto SendItems_skip
+  }
+  set %weightwarn #FALSE
+SendItems_skip:
+  set #LOBJECTID !temp_LOBJECTID
+  set #LTARGETID !temp_LTARGETID
+  set #LTARGETKIND !temp_LTARGETKIND
+  set !TM_loot_in_progress #FALSE
+  namespace copy !TM_loot_in_progress to global TM_loot
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub UpdateLootInfo
+  set %loot_time #SCNT2 - %loot_time
+  set %loot_time_sec %loot_time / 10
+  set %loot_time_dec %loot_time % 10
+  if %items_looted = 1
+    set %looted_text
+  else
+    set %looted_text s
+  set %looted_text %items_looted , #SPC , item , %looted_text , #SPC , Looted!
+  if %eval_items = 1
+    set %eval_text
+  else
+    set %eval_text s
+  set %eval_text %eval_items , #SPC , item , %eval_text , #SPC , evaluated , #SPC , in , #SPC , %loot_time_sec , #DOT , %loot_time_dec , #SPC , seconds. , #SPC , %looted_text
+  menu set EUOStatus %eval_text
+return
+;-------------------------------------------------------------------------------
+sub UpdateEvaluationInfo
+  menu Font Name Arial
+  menu Font Size 7
+  menu Font BGColor BtnFace
+  menu delete EUOLabelItemsLooted
+  namespace copy history_index_max from local HISTORY
+  if !history_index_max = N/A
+    set !temp 0
+  else
+    set !temp !history_index_max + 1
+  set %total_items_evaluated %total_items_evaluated + %eval_items
+  set %text Items , #SPC , Looted: , #SPC , ( , !temp , / , %total_items_looted , / , %total_items_evaluated , )
+  menu Text EUOLabelItemsLooted 472 0 %text ; 504
+  menu delete EUOLabelGold
+  set %text Gold: , #SPC , ( , %gold_count , / , %running_gold_count , )
+  menu Text EUOLabelGold 472 12 %text
+return
+;-------------------------------------------------------------------------------
+;-------------------------  Rule Evaluation - LITE  ----------------------------
+;-------------------------------------------------------------------------------
+sub ScanContainerForMatch
+  namespace push
+  namespace local SCFN
+  set !container %1
+  set !groundorcontainer %2
+  set !temp_LPC #LPC
+  if !groundorcontainer = GROUND
+    set #LPC 100
+  else
+    set #LPC 20000
+  set !loot_list #TRUE
+
+  set !container_timer #SCNT2
+  set !rule_counter 0
+
+  set !active_rule_index N/A
+  namespace copy active_rule_index from local RULES
+  if !active_rule_index < 1 || !active_rule_index = N/A
+  {
+    display ok You must have at least one rule in your active list.$Please select a rule from your [Rule Entry]$tab and press the "Add" button.
+    goto ScanContainerForMatch_skip1
+  }
+
+  menu get EUOCheckTurbo
+  set %TURBO #MENURES
+
+  namespace push
+  namespace local ITEMINFO
+  namespace clear
+  namespace pop
+
+  set %new_loot_time #SCNT
+  set %average_loot_time ( %new_loot_time - %last_loot_time - ( ( %new_loot_time - %last_loot_time ) / 2 ) + %average_loot_time / 2 )
+  set %last_loot_time %new_loot_time
+
+  menu get EUOCheckBoxLootAll
+  set !lootall #MENURES
+  if !groundorcontainer = GROUND
+    finditem * G_2
+  else
+    finditem * C_ , !container
+
+  if #FINDCNT >= 1
+  {
+    if !lootall = #TRUE
+    {
+      for #FINDINDEX 1 #FINDCNT
+      {
+        if #FINDID <> #CHARID
+        {
+          set !findid #FINDID
+          set %eval_items %eval_items + 1
+          gosub AddToList loot_list findid
+        }
+        else
+        {
+          ignoreitem #FINDID ME
+        }
+        if %stealthdd = #TRUE
+          gosub TM_DragDrop_Execute
+      }
+      ignoreitem reset ME
+      goto ScanContainerForMatch_skip1
+    }
+
+    namespace copy TM_eval_request from global TM_loot
+
+    for #FINDINDEX 1 #FINDCNT
+    {
+      set %_count14 %_count14 + 1
+      set %eval_items %eval_items + 1
+      set !intensity N/A
+      set !findid #FINDID
+      set !findtype #FINDTYPE
+      set !findcnt #FINDCNT
+      set !findstack #FINDSTACK
+      set !loot_match #FALSE
+      set !fail #FALSE
+
+      if !loot_match = #FALSE  ; ---  Start of Normal Rule checks:
+        gosub EvaluateRulesList !findid !findtype
+
+      if !loot_match = #FALSE && !fail = #FALSE && !TM_eval_request = #TRUE ; ---  Start of Normal Rule checks:
+        gosub GrabArtifactList !findid
+
+      if !loot_match = #FALSE && !fail = #FALSE  ; ---  Check text entry
+      {
+        gosub CheckItemTextMegaFunction
+        if #RESULT = #TRUE
+          set !loot_match #TRUE
+      }
+      if !loot_match = #FALSE && !fail = #FALSE  ; ---  Check FINDID entry
+      {
+        gosub CheckItemFINDIDMegaFunction
+        if #RESULT = #TRUE
+          set !loot_match #TRUE
+      }
+
+      if !loot_match = #TRUE && !fail = #FALSE
+      {
+        gosub AddToList loot_list findid
+        if %stealthdd = #TRUE
+        {
+          gosub TM_DragDrop_PushItem !findid !findstack !findtype
+          set %items_looted %items_looted + 1
+        }
+      }
+      if %stealthdd = #TRUE
+        gosub TM_DragDrop_Execute
+    }
+  }
+ScanContainerForMatch_skip1:
+  set !container_timer #SCNT2 - !container_timer
+  set %rulespersec !rule_counter * 10 / !container_timer
+  if %rulespersec < %low_count
+    set %low_count %rulespersec
+  if %rulespersec > %high_count
+    set %high_count %rulespersec
+  if %avg_RPS = N/A
+    set %avg_RPS %rulespersec * %avg_window
+  else
+    set %avg_RPS ( %avg_RPS - ( %avg_RPS / %avg_window ) + %rulespersec )
+
+  if %avg_RPC = N/A
+    set %avg_RPC !rule_counter * %avg_window
+  else
+    set %avg_RPC ( %avg_RPC - ( %avg_RPC / %avg_window ) + !rule_counter )
+  set #LPC 100
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub ParseItemAttributes
+  namespace push
+  namespace local PIA
+  namespace clear
+  set !item %1
+  event property !item
+  set !str #PROPERTY
+  set !linecount 0
+  set !attrib_count 0
+  set !imbue_list
+  set !imbue_val 0
+  set %max_intensity_cnt 0
+  set %mods 0
+ParseItem_loop1:
+  str pos !str $ 1
+  set %_count13 %_count13 + 1
+  if #STRRES <> 0
+  {
+    set !linecount !linecount + 1
+    set !len #STRRES - 1
+    str left !str !len
+;    gosub NewAddUnderscore #STRRES
+    gosub ReplaceCharacterList #STRRES
+    set !substr #RESULT
+    gosub GetIntensityRight !substr !item
+    if !intensity = N/A
+      gosub GetIntensityLeft !substr !item
+    if !linecount = 1
+      set !title #RESULT
+    set !temp #RESULT , _ , max_value   ; 781
+      set !max % . !temp              ; 781
+    set %name #RESULT
+    set %max !max
+    set %intensity !intensity
+    if !max = !intensity && !intensity <> N/A
+      set %max_intensity_cnt %max_intensity_cnt + 1
+    if % . #RESULT <> N/A
+    {
+      if !intensity <> N/A
+        set ! . #RESULT !intensity
+      else
+        set ! . #RESULT yes
+      if %enable_unravel = #TRUE && !linecount > 1
+      {
+        set !temp #RESULT , _ , multiplier
+        set !mult % . !temp
+        if !mult <> N/A && !temp notin !mult
+        {
+          set !imbue_list !imbue_list , _ , #RESULT
+          set !attrib , !attrib_count #RESULT
+          set !attrib_count !attrib_count + 1
+          set !temp #RESULT , _ , bool
+          if % . !temp = #TRUE
+            set !imbue_val !imbue_val + !mult
+          else
+            set !imbue_val !imbue_val + !mult * !intensity
+          if % . !temp <> N/A
+            set %mods %mods + 1
+        }
+      }
+    }
+    if #FINDTYPE in DWR_EWR_GWR_YJG
+    {
+      set #RESULT N/A
+      if killer in !substr
+        set #RESULT Any_Killer_Talisman
+      if protection in !substr
+        set #RESULT Any_Protection_Talisman
+      if bonus in !substr && exceptional notin !substr
+        set #RESULT Any_Bonus_Talisman
+      if exceptional_bonus in !substr
+        set #RESULT Any_Exceptional_Bonus_Talisman
+      if #RESULT <> N/A && !intensity <> N/A
+        set ! . #RESULT !intensity
+    }
+    set !len !len + 1
+    str del !str 1 !len
+    set !str #STRRES
+    goto ParseItem_loop1
+  }
+  set !unravel_value !imbue_val
+  set !unravel_string !attrib_count , _ , !imbue_list
+  set %unravel !unravel_value
+  set %unravel_string !unravel_string
+  if !imbue_val > 0
+  {
+    if %imbue_item_count = N/A
+    {
+      set %imbue_item_count 0
+      set %imbue_sum 0
+    }
+    set %imbue_sum %imbue_sum + !imbue_val
+    set %imbue_last !imbue_val
+    set %imbue_item_count %imbue_item_count + 1
+    set %imbue_average %imbue_sum / %imbue_item_count
+  }
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub EvaluateRulesList
+  namespace push
+  namespace local RULES
+  set !findid %1
+  set !findtype %2
+  set !fail #FALSE
+  gosub ParseItemAttributes !findid !findtype
+  gosub SetupExceptionsList
+  if %version_type = FULL || %version_type = N/A
+  {
+    set %_count11 %_count11 + 1
+    set !i !omit_rule_index - 1
+    while !i >= 0
+    {
+      set !rule OMITRULE , !i
+      set !temp ! . !rule
+      set !temp RULEITEM . !temp
+      if RULECHAIN notin ! . !temp
+        gosub EvaluateRule ! . !rule !findid !findtype
+      else
+        gosub EvaluateRuleChain ! . !temp !findid !findtype 0
+      if #RESULT = #TRUE
+      {
+        set !fail #TRUE
+        goto EvaluateRulesList_skip1
+      }
+      set !i !i - 1
+    }
+
+    set !i !active_rule_index - 1
+    while !i >= 0
+    {
+      set %_count12 %_count12 + 1
+      set !rule ACTIVERULE , !i
+      set !temp ! . !rule
+      set !temp RULEITEM . !temp
+      if RULECHAIN notin ! . !temp
+        gosub EvaluateRule ! . !rule !findid !findtype
+      else
+        gosub EvaluateRuleChain ! . !temp !findid !findtype 0
+      if #RESULT = #TRUE
+      {
+        if %enable_unravel = #TRUE
+        {
+          set !unravel . !findid %unravel
+          set !unravel_string . !findid %unravel_string
+        }
+        if %enable_mods_count = #TRUE
+          set !mods . !findid %mods
+        if %use_history = #TRUE
+        {
+          set !match . !findid !i ; record the rule that matched.
+          namespace copy match , !findid to local ITEMINFO
+          if %enable_unravel = #TRUE
+          {
+            namespace copy unravel , !findid to local ITEMINFO
+            namespace copy unravel_string , !findid to local ITEMINFO
+          }
+          if %enable_mods_count = #TRUE
+            namespace copy mods , !findid to local ITEMINFO
+        }
+        break
+      }
+      set !i !i - 1
+    }
+    goto EvaluateRulesList_skip1
+  }
+
+  display ok Unsupported version!
+  stop
+EvaluateRulesList_skip1:
+  namespace copy fail to local SCFN
+  namespace copy loot_match to local SCFN
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub EvaluateRule
+  namespace push
+  namespace local RULES
+  set !rule %1
+  set !findid %2
+  set !findtype %3
+  set !loot_match #FALSE
+  set %_count10 %_count10 + 1
+  namespace copy rule_counter from local SCFN
+  set !rule_counter !rule_counter + 1
+
+  set !ruleitemindex RULEITEM , !rule
+  set !ruleitem ! . !ruleitemindex
+  if RULECHAIN in !ruleitem   ; RULECHAINS PROCESSED SEPARATELY
+    goto EvaluateRule_skip1
+  set !index % . !ruleitem
+  set !rulelogicindex RULELOGIC , !rule
+  if ! . !rulelogicindex = NA
+    set !rulelogic =
+  else
+    set !rulelogic ! . !rulelogicindex
+  set !ruleintensityindex RULEINTENSITY , !rule
+  ; All other rules indexed from #PROPERTY
+  if !loot_match = #FALSE
+  {
+    set ! . !ruleitem N/A
+    namespace copy !ruleitem from local PIA
+    if ( ( ! . !ruleitem <> N/A ) && ( ! . !ruleitem !rulelogic ! . !ruleintensityindex || ! . !ruleitem = yes ) )
+      set !loot_match #TRUE
+    set %temp !ruleitem
+    set %temp1 !rulelogic
+    set %temp2 ! . !ruleintensityindex
+    if !ruleitem = Sum_of_Maximum && %max_intensity_cnt !rulelogic ! . !ruleintensityindex ; Sum_of_Maximum  781
+      set !loot_match #TRUE                                                                       ; 781
+    if !ruleitem = Mods_Count && %mods !rulelogic ! . !ruleintensityindex
+      set !loot_match #TRUE
+  }
+  ; ------------------  Specific ITEM rules:  #FINDID based..
+  if !loot_match = #FALSE
+  {
+    if ( ( !index >= % . START_SPECIFIC_ITEMS ) && ( !index <= % . END_SPECIFIC_ITEMS ) )
+    {
+      set !name_index !index
+      set !name_index name , !index
+      set !name_index % . !name_index
+      set !index !index - % . START_SPECIFIC_ITEMS
+      set #RESULT %id . !index
+      if #RESULT <> #TRUE && !findtype in #RESULT
+        set !loot_match #TRUE
+      if !name_index = MIBs && !loot_match = #TRUE
+      {
+        set !loot_match #FALSE
+        if message in #PROPERTY
+          set !loot_match #TRUE
+      }
+      if !name_index = Colored_Nets && !loot_match = #TRUE
+      {
+        set !loot_match #FALSE
+        if #FINDCOL <> 2208
+          set !loot_match #TRUE
+      }
+      if !name_index = Gold && !loot_match = #TRUE
+      {
+        set %eval_items %eval_items - 1
+        set %running_gold_count %running_gold_count + #FINDSTACK
+        set %gold_count %gold_count + #FINDSTACK
+      }
+      if !name_index = Solen_Items && !loot_match = #TRUE && !findtype = IJG
+      {
+        set !loot_match #FALSE
+        if #FINDCOL = 1161
+          set !loot_match #TRUE
+      }
+    }
+  }
+  ; ------------------  User specific
+  if !loot_match = #FALSE
+  {
+    if ( !index >= %START_USER_SEARCH ) && ( !index <= %END_USER_SEARCH ) && ( ! . !ruleitem !rulelogic ! . !ruleintensityindex || ! . !ruleintensityindex = NA )
+    {
+      gosub AddSpace !ruleitem
+      if #RESULT in #PROPERTY
+        set !loot_match #TRUE
+    }
+  }
+
+  if %TURBO = #TRUE
+  {
+    str count #PROPERTY $
+    if #STRRES <= 2
+      goto EvaluateRule_skip1
+  }
+  ; ------------------  Various intensity megafunction scans
+  gosub CheckRangeMegaFunction Any_Skill START_SKILLS END_SKILLS
+  gosub CheckRangeMegaFunction Any_Resist Physical_Resist Energy_Resist
+  gosub CheckRangeMegaFunction Any_Slayer START_SLAYER_WEAPONS END_SLAYER_WEAPONS
+  ; ------------------  Various summation megafunction scans
+  gosub SumRangeMegaFunction Sum_of_Resists Physical_Resist Energy_Resist
+  gosub SumRangeMegaFunction Sum_of_STR_DEX_INT Strength_Bonus Intelligence_Bonus
+  gosub SumRangeMegaFunction Sum_of_Skills Anatomy Wrestling
+
+EvaluateRule_skip1:
+  namespace copy rule_counter to local SCFN
+  if !loot_match
+    set #RESULT #TRUE
+  else
+    set #RESULT #FALSE
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub CheckRangeMegaFunction  ; stay in RULES namespace
+  if ( ( !index = % . %1 ) && ( !loot_match = #FALSE ) )
+  {
+    namespace copy rulelogic to local PIA
+    set !intensity ! . !ruleintensityindex
+    namespace copy intensity to local PIA
+    namespace push
+    namespace local PIA
+    set #RESULT #FALSE
+    for !ix % . %2 % . %3
+    {
+      set %_count9 %_count9 + 1
+      set !tx name , !ix
+      set !tx % . !tx
+      if ( ( ! . !tx !rulelogic !intensity ) || ( ! . !tx = yes ) )
+      {
+        set #RESULT #TRUE
+        break
+      }
+    }
+    namespace pop
+    set !loot_match #RESULT
+  }
+return #FALSE
+;-------------------------------------------------------------------------------
+sub SumRangeMegaFunction  ; stay in RULES namespace
+  if ( ( !index = % . %1 ) && ( !loot_match = #FALSE ) )
+  {
+    namespace push
+    namespace local PIA
+    set #RESULT 0
+    for !ix % . %2 % . %3
+    {
+      set %_count8 %_count8 + 1
+      set !tx name , !ix
+      set !tx % . !tx
+      set #RESULT #RESULT + ! . !tx
+    }
+    namespace pop
+    if #RESULT !rulelogic ! . !ruleintensityindex
+      set !loot_match #TRUE
+  }
+return #FALSE
+;-------------------------------------------------------------------------------
+sub AddToList
+  if ! . %1 = #TRUE
+    set ! . %1 ! . %2 , _
+  else
+    set ! . %1 ! . %1 , ! . %2 , _
+return
+;-------------------------------------------------------------------------------
+sub CheckItemTextMegaFunction
+  menu get EUOEditTextSearch
+  set !temptext #MENURES
+  str right !temptext 1
+  if #STRRES <> #SMC
+    set !temptext !temptext , #SMC
+CheckItemTextMegaFunction_loop1:
+  set %_count7 %_count7 + 1
+  str pos !temptext #SMC
+  if #STRRES > 1
+  {
+    set !len #STRRES - 1
+    str left !temptext !len
+    if #STRRES in #PROPERTY
+    {
+      if %use_history = #TRUE
+      {
+        set !match . #FINDID TEXT: , #SPC , #STRRES ; record the rule that matched.
+        namespace copy match , #FINDID to local ITEMINFO
+      }
+      return #TRUE
+    }
+    set !len !len + 1
+    str del !temptext 1 !len
+    set !temptext #STRRES
+    goto CheckItemTextMegaFunction_loop1
+  }
+return #FALSE
+;-------------------------------------------------------------------------------
+sub CheckItemFINDIDMegaFunction
+  menu get EUOEditFINDID
+  str len #MENURES
+  if #FINDTYPE in #MENURES && #STRRES > 0
+  {
+    set !match . #FINDID FINDID: , #SPC , #FINDTYPE ; record the rule that matched.
+    namespace copy match , #FINDID to local ITEMINFO
+    return #TRUE
+  }
+return #FALSE
+;-------------------------------------------------------------------------------
+sub SetupExceptionsList
+  namespace push
+  namespace local PIA
+  if one-handed in #PROPERTY
+    set ! . One_Handed_Weapon yes
+  if two-handed in #PROPERTY
+    set ! . Two_Handed_Weapon yes
+  if mage , #SPC , weapon in #PROPERTY
+    set ! . Mage_Weapon yes
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub HandleOKWithVal
+  namespace push
+  namespace local RULEENTRY
+  set !combo %1
+  set !first_index %2
+  set !logicbutton %3
+  set !intensity %4
+  menu get !combo
+  if #MENURES > 0
+  {
+    gosub GetIndex !first_index ; get the first index in this section
+    set !index #RESULT + #MENURES
+    set !tempname name , !index
+    set !tempname % . !tempname
+    set !tempname_us !tempname
+    gosub AddSpace !tempname
+    set !tempname #RESULT
+    if !logicbutton <> 5 && !logicbutton <> N/A ; may not have an intensity...
+    {
+      gosub GetButtonState !logicbutton ; OK button
+      set !buttontext #RESULT ; >= = <= < >
+      menu get !intensity
+      set !val #MENURES
+      set !ruleentry !tempname , #SPC , !buttontext , #SPC , !val
+    }
+    else
+    {
+      set !ruleentry !tempname
+      set !val NA
+      set !buttontext NA
+    }
+    gosub AddNewRule !tempname_us !buttontext !val !ruleentry
+  }
+  namespace pop
+return
+;-------------------------------------------------------------------------------
+sub GetIntensityRight
+  namespace push
+  namespace local GIR
+  set !str %1
+  set !item %2
+  str len !str
+  set !ptr #STRRES
+  set !intensity N/A
+GetIntensityRight_loop1:
+set %_count6 %_count6 + 1
+  str mid !str !ptr 1
+  if #STRRES in 0_1_2_3_4_5_6_7_8_9_+_- , %
+  {
+    if ( #STRRES in 0_1_2_3_4_5_6_7_8_9_- ) && ( #STRRES <> _ )
+    {
+      if !intensity = N/A
+        set !intensity #STRRES
+      else
+        set !intensity #STRRES , !intensity
+    }
+    set !ptr !ptr - 1
+    if !ptr > 0
+      goto GetIntensityRight_loop1
+  }
+  str mid !str 1 !ptr
+  set #RESULT #STRRES
+  namespace copy intensity to local PIA
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+sub GetIntensityLeft
+  namespace push
+  namespace local GIL
+  set !str %1
+  set !item %2
+  str len !str
+  set !len #STRRES
+  set !ptr 1
+  set !intensity N/A
+GetIntensityLeft_loop1:
+set %_count5 %_count5 + 1
+  str mid !str !ptr 1
+  if #STRRES in 0_1_2_3_4_5_6_7_8_9_+_- , %
+  {
+    if ( #STRRES in 0_1_2_3_4_5_6_7_8_9_- ) && ( #STRRES <> _ )
+    {
+      if !intensity = N/A
+        set !intensity #STRRES
+      else
+        set !intensity !intensity , #STRRES
+    }
+    set !ptr !ptr + 1
+    if !ptr <= !len
+      goto GetIntensityLeft_loop1
+  }
+  str mid !str !ptr !len
+  set #RESULT #STRRES
+  namespace copy intensity to local PIA
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+; %1 - string to mung, removes spaces, minuses and colons
+sub ConvertStringToVariable
+  namespace push
+  namespace local CSTV
+  set !string %1
+  set !args % , #SMC , #DOT , #SPC , !@#$%^&*()+={}|\][:"<>?~`'
+ConvertStringToVariable_loop2:
+  str left !args 1
+  set !arg #STRRES
+ConvertStringToVariable_loop1:
+  set %_count4 %_count4 + 1
+  str pos !string !arg
+  if #STRRES <> 0
+  {
+    if !warn = N/A && !arg <> #SPC
+    {
+      display ok You may not include special characters here:$ , !args
+      set !warn #TRUE
+    }
+    set !val #STRRES - 1
+    str left !string !val
+    set !left #STRRES
+    set !val !val + 1
+    str del !string 1 !val
+    set !string !left , _ , #STRRES
+    goto ConvertStringToVariable_loop1
+  }
+  str del !args 1 1
+  set !args #STRRES
+  str len !args
+  if #STRRES > 0
+    goto ConvertStringToVariable_loop2
+  set #RESULT !string
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+; %1 - string to mung, removes spaces, minuses and colons
+sub AddUnderscore
+  namespace push
+  namespace local AU
+  set !tempstring %1
+AddUnderscore_loop1:
+  str pos !tempstring #SPC
+  set %_count3 %_count3 + 1
+  if #STRRES <> 0
+  {
+    set !val #STRRES - 1
+    str left !tempstring !val
+    set !left #STRRES
+    set !val !val + 1
+    str del !tempstring 1 !val
+    set !tempstring !left , _ , #STRRES
+    goto AddUnderscore_loop1
+  }
+  set #RESULT !tempstring
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+; %1 - string to mung, removes spaces, minuses and colons
+sub NewAddUnderscore
+  namespace push
+  namespace local AU
+  set !tempstring %1
+  set %_count15 %_count15 + 1
+NewAddUnderscore_loop1:
+  str pos !tempstring #SPC
+  set %_count2 %_count2 + 1
+  if #STRRES <> 0
+  {
+    set %_count16 %_count16 + 1
+    set !val #STRRES - 1
+    str left !tempstring !val
+    set !left #STRRES
+    set !val !val + 1
+    str del !tempstring 1 !val
+    set !tempstring !left , _ , #STRRES
+    goto NewAddUnderscore_loop1
+  }
+  str pos !tempstring :
+  if #STRRES <> 0
+  {
+    set %_count17 %_count17 + 1
+    set !val #STRRES - 1
+    str left !tempstring !val
+    set !left #STRRES
+    set !val !val + 1
+    str del !tempstring 1 !val
+    set !tempstring !left , _ , #STRRES
+    goto NewAddUnderscore_loop1
+  }
+  set #RESULT !tempstring
+  namespace pop
+return #RESULT
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+sub ReplaceCharacterList
+  set %chars #SPC , '[]- , #DOT , :
+  str len %chars
+  for %ii 1 #STRRES
+  {
+    str mid %chars %ii 1
+    gosub ReplaceCharacter %1 #STRRES
+  }
+  set %_count15 %_count15 + 1
+return %1
+;-------------------------------------------------------------------------------
+sub ReplaceCharacter
+  repeat
+    str pos %1 %2
+    if #STRRES = 0
+      break
+    if #STRRES <> 0
+    {
+      set %_val #STRRES - 1
+      str left %1 %_val
+      set %_left #STRRES
+      set %_val %_val + 1
+      str del %1 1 %_val
+      set %1 %_left , _ , #STRRES
+    }
+  until #STRRES = 0
+return %1
+;-------------------------------------------------------------------------------
+; %1 - string to mung
+sub AddSpace
+  namespace push
+  namespace local AS
+  set !tempstring %1
+AddSpace_loop1:
+  set %_count1 %_count1 + 1
+  str pos !tempstring _
+  if #STRRES <> 0
+  {
+    set !val #STRRES - 1
+    str left !tempstring !val
+    set !left #STRRES
+    set !val !val + 1
+    str del !tempstring 1 !val
+    set !tempstring !left , #SPC , #STRRES
+    goto AddSpace_loop1
+  }
+  set #RESULT !tempstring
+  namespace pop
+return #RESULT
+
+

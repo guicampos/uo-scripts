@@ -1,0 +1,929 @@
+// ====== autoFighter v. 1.1.1 =======//
+
+// Changes from 1.1.0:
+
+// # Fixed discordance use timeout
+
+// # Reworked targeting system
+
+// Changes from 1.0.0:
+
+// # Added levels of macro logging
+
+// # Fixed mass attack ability or spell use
+
+// # Added Divine Fury cast when stamina is running out
+
+// # Added discord exclude action after confirmation
+
+// # Added claim implementation with retry with interval
+
+// === Future plans ===
+
+// # Add claim exclude list
+
+// # Add reagents organizer
+
+// # Add Cloth/Leather organizer
+
+// # Add gold moving from main bag to BOH (if exists)
+
+// # Add arrows storage
+
+// # Add cast timer invalidator if it was fizzled
+
+// ===================================
+
+// Please, read carefully and fill settings before use.
+
+// This script is written for Seventh Stone friends and
+
+// delivered under GPL licence as it is, without any waranties.
+
+// Any requests or suggestions are welcome by email: korvindest@gmail.com
+
+// or [PM "Seventh Stone"
+
+// NOTE: Script healing is more effective than native but requires to disable
+
+// UOSteam healing (or you can set healing start from 30-40% of health)
+
+// And script healing works only for you only.
+
+for 3
+
+ if @inlist 'status' 'setup'
+
+   // # Defines a level of system messages from macro where
+
+   // # 0 - No messages 1 - Major Errors 2 - Warnings
+
+   // # 3- Info 4 - Trace 5 - all messages
+
+   @pushlist 'logLevel' '1' // #<- Change this value
+
+   // # This settings must be adjusted to the player before serious fight
+
+   // ==================================
+
+   // #It must be valid weapon object ID from "Object Inspector"
+
+   @pushlist 'weaponId' '0x41ecf90d'
+
+   @pushlist 'shieldId' ''
+
+   // #Ajusted with your cast speed and recovery value in milliseconds
+
+   @pushlist 'castDelay' '2000'
+
+   // #If you don't want script healing leave it empty
+
+   // #Even with 220 Dex I'd recommend you leave at least 600 delay
+
+   // # for other values see the table
+
+   // # https://tinyurl.com/HealingDelayTable
+
+   @pushlist 'healingDelay' '600'
+
+   // #The value of hits from what it starts heal you
+
+   @pushlist 'healthLimit' '250'
+
+   // #Empty claimCommand means you won’t claim
+
+   @pushlist 'claimCommand' '[claim'
+
+   @pushlist 'claimDistance' '6'
+
+   // #Very short claim delay to avoid claim spamming
+
+   @pushlist 'claimDelay' '100'
+
+   // #Period of time macro retry to claim failed to claim corpses near you
+
+   @pushlist 'claimRetryDelay' '3000'
+
+   // #What a weight limit to stop claiming corpses
+
+   @pushlist 'maxWeight' '450'
+
+   // #What an items count to stop claiming corpses
+
+   @pushlist 'maxItemsCount' '130'
+
+   // #Any ability or spell that allows emphasize damage
+
+   // #Recomended values: 'primary','secondary',<any fight spell>
+
+   @pushlist 'mightStrike' 'primary'
+
+   // #If weapon supportts Whirlwind you can put primary
+
+   // #or secondary ability here. Also it supports momentum strikes or other
+
+   // #fight spell with multiple targets
+
+   // #Recomended values: 'primary','secondary','Momentum Strike', etc
+
+   // #Any that can damage more than one target
+
+   @pushlist 'massStrike' 'Momentum Strike'
+
+   // #how often script will check for mass attack
+
+   @pushlist 'massStrikeRate' '2000'
+
+   // # Fastest hitting rate about 1 hit per second
+
+   // # You can make it less for often checks might or mass strike
+
+   @pushlist 'strikeDelay' '900'
+
+   // #The minimal level of mana to cast fighting spells
+
+   // #if lower it will cast oonly statuses
+
+   @pushlist 'manaLimit' '50'
+
+   // #At what level script will cast Divine Fury
+
+   @pushlist 'staminaLimit' '200'
+
+   // #Script will look for other enemy if distance more than value
+
+   // #Recommended is 2 for melee and 6 for range weapon
+
+   @pushlist 'enemyDistance' '2'
+
+   // #Since cast time depends on Karma you can adjust it
+
+   @pushlist 'consecrateDelay' '6000'
+
+   // #You would better not to touch that but
+
+   // #if connection is slow it might be 1000
+
+   @pushlist 'actionsDelay' '600'
+
+   // #You can increase it if often see the message of skill use timeout
+
+   @pushlist 'discordanceDelay' '2000'
+
+   // #Last two setup lines
+
+   @clearlist 'status'
+
+   @pushlist 'status' 'startup'
+
+ elseif @inlist 'status' 'startup'
+
+   // #Main fighting block
+
+   while @list 'logLevel' <= logLevel[0]
+
+     @pushlist 'logLevel' ''
+
+     sysmsg 'test'
+
+   endwhile
+
+   @poplist 'logLevel' 'front'
+
+   if @list 'logLevel' > 0
+
+     sysmsg 'Setup user settings' 25
+
+   endif
+
+   @clearignorelist
+
+   @settimer 'castDelayTimer' castDelay[0]
+
+   @settimer 'actionDelayTimer' actionsDelay[0]
+
+   @settimer 'consecrateDelayTimer' consecrateDelay[0]
+
+   @settimer 'massStrikeRateTimer' massStrikeRate[0]
+
+   @settimer 'strikeDelayTimer' strikeDelay[0]
+
+   @settimer 'healingDelayTimer' healingDelay[0]
+
+   @settimer 'claimRetryDelayTimer' claimRetryDelay[0]
+
+   @settimer 'claimDelayTimer' claimDelay[0]
+
+   @settimer 'overweightWarningTimer' 0
+
+   @settimer 'discordanceDelayTimer' discordanceDelay[0]
+
+   if @inlist 'claimCommand' ''
+
+     @clearlist 'claimCommand'
+
+   endif
+
+   if @inlist 'massStrike' ''
+
+     @clearlist 'massStrike'
+
+   endif
+
+   if @inlist 'mightStrike' ''
+
+     @clearlist 'mightStrike'
+
+   endif
+
+   if @inlist 'shieldId' ''
+
+     @clearlist 'shieldId'
+
+   endif
+
+   @unsetalias 'singleStrikeAbility'
+
+   if @inlist 'mightStrike' 'primary' or @inlist 'mightStrike' 'secondary'
+
+     @setalias 'singleStrikeAbility' 'self'
+
+   endif
+
+   @unsetalias 'massStrikeAbility'
+
+   if @inlist 'massStrike' 'primary' or @inlist 'massStrike' 'secondary'
+
+     @setalias 'massStrikeAbility' 'self'
+
+   endif
+
+   @unsetalias 'checkHeal'
+
+   if not @inlist 'healingDelay' '' or @list 'healingDelay' > 0
+
+     @setalias 'checkHeal' 'self'
+
+   endif
+
+   if @findalias 'massStrikeAbility'
+
+     @pushlist 'massStrikeMobsCount' '2'
+
+   else
+
+     @pushlist 'massStrikeMobsCount' '1'
+
+   endif
+
+   if @list 'logLevel' > 4
+
+     sysmsg 'massStrikeMobsCount is '
+
+     sysmsg massStrikeMobsCount[0]
+
+   endif
+
+   sysmsg "If you like what I'm making you can donate some gold to motivate me." 25
+
+   sysmsg "Best Regards, Seventh Stone" 25
+
+   // #Check if weapon is in hands
+
+   if @findobject weaponId[0] -1 'self'
+
+     if @list 'logLevel' > 3
+
+       sysmsg 'weapon found' msgclr[0]
+
+     endif
+
+     if @findobject weaponId[0] -1 'backpack'
+
+       clearhands 'both'
+
+       if @list 'logLevel' > 3
+
+         sysmsg 'Equipping weapon' 25
+
+       endif
+
+       equipitem weaponId[0] 2
+
+     else
+1090666693
+       if @list 'logLevel' > 3
+
+         sysmsg 'Weapon already equiped' 25
+
+       endif
+
+     endif
+
+     if @list 'shieldId' > 0
+
+       equipitem shieldId[0] 1
+
+     endif
+
+   endif
+
+   // #Last line before start fighting
+
+   @clearlist 'status'
+
+   @unsetalias 'nextTarget'
+
+   // ==============================
+
+   // ======= Fighting loop ========
+
+   // ==============================
+
+   while not dead
+
+     // # Checking if target exists
+
+     if @targetexists
+
+       if @findalias 'nextTarget'
+
+         target! 'nextTarget'
+
+         @unsetalias 'nextTarget'
+
+       else
+
+         @canceltarget
+
+       endif
+
+     endif
+
+     if not @findobject 'nextTarget'
+
+       @unsetalias 'nextTarget'
+
+     endif
+
+     // #Your health is most important thing
+
+     if @findalias 'checkHeal'
+
+       @unsetalias 'needHeal'
+
+       if poisoned 'self' or hits < healthLimit[0]
+
+         if @timer 'actionDelayTimer' > actionsDelay[0]
+
+           if @timer 'healingDelayTimer' > healingDelay[0]
+
+             @setalias 'needHeal' 'self'
+
+           else
+
+             // #small delay to prevent CPU overload
+
+             pause 100
+
+             continue
+
+           endif
+
+         endif
+
+         if @findalias 'needHeal'
+
+           // #sysmsg 'Heal Work' 25
+
+           @unsetalias 'nextTarget'
+
+           msg '[bandself'
+
+           @settimer 'actionDelayTimer' 0
+
+           @settimer 'healingDelayTimer' 0
+
+         endif
+
+       endif
+
+     endif
+
+     // ------checking-closest-enemy------
+
+     if not @inrange 'enemy' enemyDistance[0] or dead 'enemy'
+
+       @getenemy 'murderer' 'enemy' 'criminal' 'gray' 'closest'
+
+       if @inrange 'enemy' 10 and not dead 'enemy'
+
+         if not @findalias 'nextTarget'
+
+           if @timer 'discordanceDelayTimer' > discordanceDelay[0]
+
+             if not @inlist 'discordedEnemy' 'enemy'
+
+               @setalias 'nextTarget' 'enemy'
+
+               @useskill 'Discordance'
+
+               @settimer 'discordanceDelayTimer' 0
+
+             endif
+
+           endif
+
+         endif
+
+         attack! 'enemy'
+
+       endif
+
+     endif
+
+     // ---------Discordance-repeat-------
+
+     if not @findalias 'nextTarget'
+
+       if @inrange 'enemy' 10 and not dead 'enemy'
+
+         if not @inlist 'discordedEnemy' 'enemy'
+
+           if @timer 'discordanceDelayTimer' > discordanceDelay[0]
+
+             @setalias 'nextTarget' 'enemy'
+
+             @useskill 'Discordance'
+
+             @settimer 'discordanceDelayTimer' 0
+
+           endif
+
+         endif
+
+       endif
+
+     endif
+
+     // #-----checking-for-mass-strike-----
+
+     @unsetalias 'checkSingleStrike'
+
+     if @list 'massStrike' > 0
+
+       if @timer 'massStrikeRateTimer' > massStrikeRate[0]
+
+         if @list 'logLevel' > 4
+
+           sysmsg 'Mass strike check'
+
+         endif
+
+         @settimer 'massStrikeRateTimer' 0
+
+         @setalias 'curEnemy' 'enemy'
+
+         // count enemies around
+
+         @clearlist 'enemyCount'
+
+         if @findalias 'enemy'
+
+           @pushlist 'enemyCount' 'enemy'
+
+         endif
+
+         for 10
+
+           @getenemy 'murderer' 'enemy' 'criminal' 'gray' 'next'
+
+           if @inrange 'enemy' enemyDistance[0] and not @inlist 'enemyCount' 'enemy'
+
+             @pushlist 'enemyCount' 'enemy'
+
+           endif
+
+           if @list 'enemyCount' > massStrikeMobsCount[0]
+
+             break
+
+           endif
+
+         endfor
+
+         @setalias 'enemy' 'curEnemy'
+
+         attack! 'enemy'
+
+         if @list 'enemyCount' > massStrikeMobsCount[0]
+
+           if @list 'logLevel' > 4
+
+             sysmsg 'Decided to deliver mass strike'
+
+           endif
+
+           @settimer 'strikeDelayTimer' 0
+
+           if @findalias 'massStrikeAbility'
+
+             @setability 'massStrike' 'on'
+
+           else
+
+             cast massStrike[0]
+
+           endif
+
+         elseif @list 'mightStrike' > 0
+
+           @setalias 'checkSingleStrike' 'self'
+
+         endif
+
+       elseif @list 'mightStrike' > 0
+
+         @setalias 'checkSingleStrike' 'self'
+
+       endif
+
+     elseif @list 'mightStrike' > 0
+
+       @setalias 'checkSingleStrike' 'self'
+
+     endif
+
+     // #------Single-Strike-Aim------
+
+     // #Single strike Aim if mass strike not applicable
+
+     if @findalias 'checkSingleStrike' and @timer 'strikeDelayTimer' > strikeDelay[0]
+
+       if @list 'logLevel' > 4
+
+         sysmsg 'Checking might strike'
+
+       endif
+
+       if mana > manaLimit[0]
+
+        @settimer 'strikeDelayTimer' 0
+
+         if @findalias 'singleStrikeAbility'
+
+           @setability mightStrike[0] 'on'
+
+         else
+
+           cast mightStrike[0]
+
+         endif
+
+       endif
+
+     endif
+
+     // #-----Stamina-check-----------
+
+     if stam < staminaLimit[0]
+
+       if @timer 'castDelayTimer' > castDelay[0]
+
+         cast 'Divine Fury'
+
+         @settimer 'castDelayTimer' 0
+
+       endif
+
+     endif
+
+     // #-------Consecrate-cast-------
+
+     if @timer 'consecrateDelayTimer' > consecrateDelay[0]
+
+       if @timer 'castDelayTimer' > castDelay[0]
+
+         cast 'Consecrate Weapon'
+
+         @settimer 'consecrateDelayTimer' 0
+
+         @settimer 'castDelayTimer' 0
+
+       endif
+
+     endif
+
+     // #-----------Claim-------------
+
+     // # check that previous claim done well
+
+     if not @findalias 'nextTarget' and @list 'claimCommand' > 0
+
+       if @findobject 'corpse' -1 'ground' 1 claimDistance[0]
+
+         // # put corpse in retry pool
+
+         @pushlist 'claimRetry' 'corpse'
+
+         @unsetalias 'corpse'
+
+       endif
+
+       if weight < maxWeight[0] and @contents 'backpack' < maxItemsCount[0]
+
+         if @timer 'claimDelayTimer' > claimDelay[0]
+
+           @settimer 'claimDelayTimer' 0
+
+           if @findtype '0x2006' -1 'ground' '1' claimDistance[0]
+
+             @setalias 'corpse' 'found'
+
+             @pushlist 'claimRetry' 'corpse'
+
+             @setalias 'nextTarget' 'corpse'
+
+             msg claimCommand[0]
+
+             @ignoreobject 'corpse'
+
+             @settimer 'claimRetryDelayTimer' 0
+
+           elseif @timer 'claimRetryDelayTimer' > claimRetryDelay[0]
+
+           // # Retry old corpses that were failed to claim
+
+             @settimer 'claimRetryDelayTimer' 0
+
+             if @list 'logLevel' > 3
+
+               sysmsg 'Retry claim command' 25
+
+             endif
+
+             @unsetalias 'corpse'
+
+             while @list 'claimRetry' > 0
+
+               if not @findobject claimRetry[0]
+
+                 if @list 'logLevel' > 4
+
+                   sysmsg 'Removing corpse from retry' 25
+
+                 endif
+
+                 @poplist 'claimRetry' 'front'
+
+               else
+
+                 if distance claimRetry[0] < 10
+
+                   if @list 'logLevel' > 4
+
+                     sysmsg 'Possible corpse to retry claim' 25
+
+                   endif
+
+                   @setalias 'corpse' claimRetry[0]
+
+                   @pushlist 'claimRetry' claimRetry[0]
+
+                   @poplist 'claimRetry' 'front'
+
+                   break
+
+                 else
+
+                   @pushlist 'claimRetry' claimRetry[0]
+
+                   @poplist 'claimRetry' 'front'
+
+                 endif
+
+               endif
+
+             endwhile
+
+             if @findalias 'corpse'
+
+               @setalias 'nextTarget' 'corpse'
+
+               msg claimCommand[0]
+
+             endif
+
+           endif
+
+         endif
+
+       else
+
+         // # Warn about items count and weight every 10 seconds
+
+         if @timer 'overweightWarningTimer' > 10000
+
+           @settimer 'overweightWarningTimer' 0
+
+           if weight >= maxWeight[0]
+
+             sysmsg '(!) Current weight exceeds the limit you set as' 25
+
+             sysmsg maxWeight[0] 25
+
+           elseif @contents 'backpack' >= maxItemsCount[0]
+
+             sysmsg '(!) Current items count exceeds the limit you set' 25
+
+             sysmsg maxItemsCount[0] 25
+
+           endif
+
+           sysmsg 'Claim services is stopped' 25
+
+         endif
+
+       endif
+
+     endif
+
+     // #-------Messages-Handling-----
+
+     // # Message service should be the last in loop
+
+     if @injournal 'That creature is already in discord'
+
+       @pushlist 'discordedEnemy' 'enemy'
+
+     endif
+
+     if @injournal 'You must wait a few moments to use another skill'
+
+       @unsetalias 'nextTarget'
+
+     endif
+
+     @clearjournal
+
+     // #----Cleanup-Service----------
+
+     // # TODO
+
+     // #-----------------------------
+
+   endwhile
+
+   // ==============================
+
+   // ==============================
+
+   // ==============================
+
+   sysmsg 'Seems you are dead (‿ˠ‿)' 25
+
+   stop
+
+ else
+
+   sysmsg 'Initialization' 25
+
+   // ---- Variables ----
+
+   @createlist 'logLevel'
+
+   @clearlist 'logLevel'
+
+   @createlist 'status'
+
+   @clearlist 'status'
+
+   @createlist 'weaponId'
+
+   @clearlist 'weaponId'
+
+   @createlist 'shieldId'
+
+   @clearlist 'shieldId'
+
+   @createlist 'castDelay'
+
+   @clearlist 'castDelay'
+
+   @createlist 'healingDelay'
+
+   @clearlist 'healingDelay'
+
+   @createlist 'strikeDelay'
+
+   @clearlist 'strikeDelay'
+
+   @createlist 'healthLimit'
+
+   @clearlist 'healthLimit'
+
+   @createlist 'claimCommand'
+
+   @clearlist 'claimCommand'
+
+   @createlist 'claimDistance'
+
+   @clearlist 'claimDistance'
+
+   @createlist 'mightStrike'
+
+   @clearlist 'mightStrike'
+
+   @createlist 'massStrike'
+
+   @clearlist 'massStrike'
+
+   @createlist 'manaLimit'
+
+   @clearlist 'manaLimit'
+
+   @createlist 'staminaLimit'
+
+   @clearlist 'staminaLimit'
+
+   @createlist 'enemyDistance'
+
+   @clearlist 'enemyDistance'
+
+   @createlist 'actionsDelay'
+
+   @clearlist 'actionsDelay'
+
+   @createlist 'maxWeight'
+
+   @clearlist 'maxWeight'
+
+   @createlist 'maxItemsCount'
+
+   @clearlist 'maxItemsCount'
+
+   @createlist 'consecrateDelay'
+
+   @clearlist 'consecrateDelay'
+
+   @createlist 'massStrikeRate'
+
+   @clearlist 'massStrikeRate'
+
+   @createlist 'massStrikeMobsCount'
+
+   @clearlist 'massStrikeMobsCount'
+
+   @createlist 'discordanceDelay'
+
+   @clearlist 'discordanceDelay'
+
+   @createlist 'claimRetryDelay'
+
+   @clearlist 'claimRetryDelay'
+
+   @createlist 'claimDelay'
+
+   @clearlist 'claimDelay'
+
+   // ---- Lists ----
+
+   @createlist 'enemyCount'
+
+   @createlist 'claimRetry'
+
+   @clearlist 'claimRetry'
+
+   @createlist 'discordedEnemy'
+
+   @clearlist 'discordedEnemy'
+
+   // ---- Timers ----
+
+   @createtimer 'castDelayTimer'
+
+   @createtimer 'discordanceDelayTimer'
+
+   @createtimer 'strikeDelayTimer'
+
+   @createtimer 'actionDelayTimer'
+
+   @createtimer 'consecrateDelayTimer'
+
+   @createtimer 'massStrikeRateTimer'
+
+   @createtimer 'healingDelayTimer'
+
+   @createtimer 'claimDelayTimer'
+
+   @createtimer 'claimRetryDelayTimer'
+
+   @createtimer 'overweightWarningTimer'
+
+   // last init line
+
+   @pushlist 'status' 'setup'
+
+ endif
+
+endfor

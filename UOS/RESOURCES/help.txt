@@ -1,0 +1,132 @@
+Advanced Combat System with Voice Commands V 2.0 
+Release Notes
+Version 2.0
+
+USAGE: 
+   1 - Create a new macro on your UO STEAM, paste the script, name it (suggestion: advcom2 ) and save.
+   2 - Assign a hot button for your new macro
+   3 - Run it
+   4 - Assign a stop macro button to stop it when you need to  (or just say '.halt')
+
+New Features
+   Reporting: 
+      Shows informations about the system and it's state
+      Commands:
+         .status: Shows on your journal the status of each feature.
+         .timers: Shows on your journal all timers for debuging.
+   Logging:
+      There are 5 levels of Logging. Set it on @pushlist 'logLevel' 'X', where X is:
+            No messages = 0, Errors = 1, Warnings = 2, Info =3, Trace = 4, all messages = 5
+      Note: Run the system on logLevel 5 for a while at the begining.
+   Setup: 
+      Initial setup of the system is very simple.
+      All configurations and values are persistent and durable, meaning that you can close your UO and everything will be the same when you come back.
+      Commands: 
+         .reload - Forces all variables, lists and timers to be reloaded and repopulated. You should execute this after changing any value from the script.
+         .halt - Forces the system to stop.
+   Targeting: 
+      This system improves targeting for you.
+      It will identify most of the champions and lock your target on it when close to it.
+      Configurations: 
+         lockChampionMode: Turns this feature on
+         championMsgText: A text to show when a champion is found
+         championMsgDelay: A timer to prevent spam the champion found message
+   Auto Healing 
+      Heals yourself using bandages
+      Voice Command: .ah
+      Comments: *You must disable your UOSteam self healing option (configure it to friends only)*
+      Configurations:
+         autoHealingMode: 'on' turns on, 'off' turns off
+         healingDelay: time between bandages 
+         healthLimit: min health to start healing
+   Combat Modes:
+      Champion mode
+         Enables a combat mode focused on group battles
+         Voice Command: .cmode
+         Comments: starts spamming whirlwind attack 
+         Configurations: 
+            cmodeSpecial: Ability or spell name, like 'secondary' or 'Momentum Strike'. Always use any powerful group move
+            cmodeSpecialRate: How often, in milliseconds, should this special move be cast
+      Single Mode
+         Enables a combat mode oriented on 1x1 (pvm) battles
+         Voice Command: .smode
+         Comments: Starts spamming your primary hability or Lighting Strike
+         Configurations: 
+            smodeSpecial: Ability or spell name, like 'primary' or 'Lighting Strike'. Always use any powerful 1x1 move
+            smodeSpecialRate: How often, in milliseconds, should this special move be cast
+   Auto Divine Fury
+      Autocast Divine fury
+      Voice Command: None. Always on.
+      Configurations: 
+         divineFuryDelay: How often, in milliseconds, should Divine Fury be cast
+   Auto Consecrate Weapon: 
+      Auto cast Consecrate Weapon
+      Voice Command: None. Always on.
+      Configurations: 
+         consecrateWeaponDelay: How often, in milliseconds, should consecrate Weapon be cast
+   Auto Evasion 
+      Toggles automatically cast Evasion
+      Notes: Check Evasion delays and durations on the web.
+      Voice command: .eva
+      Configurations: 
+         autoEvasionDelay: How often, in milliseconds, should Evasion be cast
+   Auto Counter Attack:
+      Toggles automatically cast Counter Attack syncronous with Evasion
+      Notes: Counter attack will be cast only when Evasion is on delay
+      Voice Command: .ca
+      Configurations: 
+         autoCounterAttackDelay: How often, in milliseconds, should Counter Attack be cast. Note that it won't be casted when Evasion is on effect.
+   Auto Honor: 
+      Toggles automatically mark enemies with Honor.
+      Notes: Make sure that possible targets have line of sight all the time.
+      Voice Command: .hon
+      Configurations: 
+         autoHonorDelay: How often, in milliseconds, should we honor targets
+         autoHonorHonoredListCleanupDelay: How often should we cleanup the honor list.
+   Auto Enemy of One: 
+      Toggles automatically cast Enemy of One on a timed basis
+      Voice Command: .eoo
+      Configurations: 
+         autoEnemyOfOneDelay: How often Enemy of One should be cast
+   Auto Triple Slash
+      Toggles automatically cast Triple Slash.
+      Voice Command: .tps
+      Note 1: This is still under development.
+      Note 2: You should have at least 165 Armslore.
+      Configurations: 
+         tpsModeDelay: HOw often should Triple Slash be called
+         regsKeyID: What is your reagents key ID?
+   Auto Shield of Spikes         
+      Toggles automatically cast Shield of Spikes.
+      Voice Command: .sps
+      Note 1: This is still under development.
+      Note 2: You should have at least 165 Armslore.
+      Configurations: 
+         spsModeDelay: HOw often should Shield of Spikes be called
+         regsKeyID: What is your reagents key ID?
+   Auto Jewelry Looter
+      Toggles the Jewelry Looter feature
+      Voice Command: .jl
+      Note: It will open corpses and loot jewelry with more than 'minSkillforLoot' on a selected list of skills.
+      Configurations: 
+         minSkillforLoot: Will loot jewelry with at list this amount of skill
+         lootCorpseDistance: Will look from this distance.
+         lootCorpseDelay: Delay between loots. 
+   Gold Grabber
+      Makes your character grab all gold piles from the ground.
+      Voice command: .gg
+   Equipment Helper
+      Helps you to dress a correct set of gear on the correct order
+      Voice Commands: 
+         .eq1: Force equip your main melee weapons
+         .eq2: Force equip your ranged weapon
+
+
+Known Issues: 
+   Conflicts between some skill timings.
+   tps and dps not working properlly
+   Enemy of One still needs a lock target system.
+Todo: 
+   v2.1 - Correct timings
+   v2.2 - Lock target system for Enemy of One
+   v2.5 - Tps and sps working fine

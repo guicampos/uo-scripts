@@ -1,0 +1,293 @@
+// Author: Enkil Velland
+// Description: Carpentry BOD Filler
+if not @findobject 'Bulk Source'
+  promptalias 'Bulk Source'
+endif
+if not @findobject 'Bulk Destination'
+  promptalias 'Bulk Destination'
+endif
+if not @findobject 'Restock'
+  promptalias 'Restock'
+endif
+if not @findobject 'Trash BODs Destination'
+  promptalias 'Trash BODs Destination'
+endif
+if not @findobject 'Trash Barrel'
+  promptalias 'Trash Barrel'
+endif
+// Craft info placeholder
+if not listexists 'Craft'
+  @createlist 'Craft'
+  // 0: Category, 1: Button, 2: Graphic, 3: Resource Button, 4: Resource Color
+endif
+// Search for a BOD to fill
+if @findtype 0x2258 0x483 'backpack' and @property 'small' 'found'
+  // Reset craft state
+  @clearlist 'Craft'
+  @unsetalias 'crafting'
+  // Define and open new BOD
+  @setalias 'bod' 'found'
+  useobject! 'bod'
+  waitforgump 0x5afbd742 15000
+  // Combine items
+  if not targetexists 'server'
+    replygump 0x5afbd742 2
+    waitforgump 0x5afbd742 15000
+    waitfortarget 5000
+  endif
+  // Check for tools (nails)
+  if @findtype 0x102e 0 'backpack'
+    pause 1500
+    @setalias 'tool' 'found'
+    useobject! 'tool'
+    waitforgump 0x38920abd 15000
+    // Craft
+    while targetexists 'server'
+      // Craft requirements
+      if @findalias 'board'
+        if not @findalias 'crafting'
+            // 0: Category, 1: Button, 2: Graphic, 3: Resource Button, 4: Resource Color
+          if @ingump 0x5afbd742 'quarterstaff'
+            @pushlist 'Craft' 1
+            @pushlist 'Craft' 2
+            @pushlist 'Craft' 0x0E89
+          elseif @ingump 0x5afbd742 'chair'
+            @pushlist 'Craft' 1
+            @pushlist 'Craft' 9
+            @pushlist 'Craft' 0x0B5B
+            elseif @ingump 0x5afbd742 'chair2'
+            @pushlist 'Craft' 1
+            @pushlist 'Craft' 9
+            @pushlist 'Craft' 0x0B53
+          elseif @ingump 0x5afbd742 'table'
+            @pushlist 'Craft' 1
+            @pushlist 'Craft' 16
+            @pushlist 'Craft' 0x0B90
+          elseif @ingump 0x5afbd742 'drum'
+            @pushlist 'Craft' 1
+            @pushlist 'Craft' 23
+            @pushlist 'Craft' 0x0E9C
+          elseif @ingump 0x5afbd742 'wooden bench'
+            @pushlist 'Craft' 1
+            @pushlist 'Craft' 30
+            @pushlist 'Craft' 0x0B2D
+          else
+            break
+          endif
+        endif
+      else
+        if not @findalias 'crafting'
+          // Leather
+          if @ingump 0x5afbd742 'leather gorget'
+            @pushlist 'Craft' 36
+            @pushlist 'Craft' 23
+            @pushlist 'Craft' 0x13c7
+          elseif @ingump 0x5afbd742 'leather cap'
+            @pushlist 'Craft' 36
+            @pushlist 'Craft' 30
+            @pushlist 'Craft' 0x1db9
+          elseif @ingump 0x5afbd742 'leather gloves'
+            @pushlist 'Craft' 36
+            @pushlist 'Craft' 37
+            @pushlist 'Craft' 0x13c6
+          elseif @ingump 0x5afbd742 'leather sleeves'
+            @pushlist 'Craft' 36
+            @pushlist 'Craft' 44
+            @pushlist 'Craft' 0x13cd
+          elseif @ingump 0x5afbd742 'leather leggings'
+            @pushlist 'Craft' 36
+            @pushlist 'Craft' 51
+            @pushlist 'Craft' 0x13cb
+          elseif @ingump 0x5afbd742 'leather tunic'
+            @pushlist 'Craft' 36
+            @pushlist 'Craft' 58
+            @pushlist 'Craft' 0x13cc
+            // Studded
+          elseif @ingump 0x5afbd742 'studded gorget'
+            @pushlist 'Craft' 43
+            @pushlist 'Craft' 2
+            @pushlist 'Craft' 0x13d6
+          elseif @ingump 0x5afbd742 'studded gloves'
+            @pushlist 'Craft' 43
+            @pushlist 'Craft' 9
+            @pushlist 'Craft' 0x13d5
+          elseif @ingump 0x5afbd742 'studded sleeves'
+            @pushlist 'Craft' 43
+            @pushlist 'Craft' 16
+            @pushlist 'Craft' 0x13dc
+          elseif @ingump 0x5afbd742 'studded leggings'
+            @pushlist 'Craft' 43
+            @pushlist 'Craft' 23
+            @pushlist 'Craft' 0x13da
+          elseif @ingump 0x5afbd742 'studded tunic'
+            @pushlist 'Craft' 43
+            @pushlist 'Craft' 30
+            @pushlist 'Craft' 0x13db
+            // Female Armor
+          elseif @ingump 0x5afbd742 'leather shorts'
+            @pushlist 'Craft' 50
+            @pushlist 'Craft' 2
+            @pushlist 'Craft' 0x1c00
+          elseif @ingump 0x5afbd742 'leather skirt'
+            @pushlist 'Craft' 50
+            @pushlist 'Craft' 9
+            @pushlist 'Craft' 0x1c08
+          elseif @ingump 0x5afbd742 'leather bustier'
+            @pushlist 'Craft' 50
+            @pushlist 'Craft' 16
+            @pushlist 'Craft' 0x1c0a
+          elseif @ingump 0x5afbd742 'studded bustier'
+            @pushlist 'Craft' 50
+            @pushlist 'Craft' 23
+            @pushlist 'Craft' 0x1c0c
+          elseif @ingump 0x5afbd742 'female leather armor'
+            @pushlist 'Craft' 50
+            @pushlist 'Craft' 30
+            @pushlist 'Craft' 0x1c06
+          elseif @ingump 0x5afbd742 'studded armor'
+            @pushlist 'Craft' 50
+            @pushlist 'Craft' 37
+            @pushlist 'Craft' 0x1c02
+          elseif @ingump 0x5afbd742 'thigh boots'
+            @pushlist 'Craft' 29
+            @pushlist 'Craft' 51
+            @pushlist 'Craft' 0x1711
+          elseif @ingump 0x5afbd742 'shoes'
+            @pushlist 'Craft' 29
+            @pushlist 'Craft' 37
+            @pushlist 'Craft' 0x170f
+          elseif @ingump 0x5afbd742 'sandals'
+            @pushlist 'Craft' 29
+            @pushlist 'Craft' 30
+            @pushlist 'Craft' 0x170d
+          elseif @ingump 0x5afbd742 'boots'
+            @pushlist 'Craft' 29
+            @pushlist 'Craft' 44
+            @pushlist 'Craft' 0x170b
+          else
+            break
+          endif
+          // Define resource
+          if @ingump 0x5afbd742 'pine wood'
+            @pushlist 'Craft' 13
+            @pushlist 'Craft' 1262
+          elseif @ingump 0x5afbd742 'ash wood'
+            @pushlist 'Craft' 20
+            @pushlist 'Craft' 961
+          elseif @ingump 0x5afbd742 'mohogany wood'
+            @pushlist 'Craft' 27
+            @pushlist 'Craft' 355
+            elseif @ingump 0x5afbd742 'yew wood'
+            @pushlist 'Craft' 34
+            @pushlist 'Craft' 1281
+            elseif @ingump 0x5afbd742 'oak wood'
+            @pushlist 'Craft' 41
+            @pushlist 'Craft' 488
+            elseif @ingump 0x5afbd742 'zircote wood'
+            @pushlist 'Craft' 48
+            @pushlist 'Craft' 1271
+            elseif @ingump 0x5afbd742 'ebony wood'
+            @pushlist 'Craft' 55
+            @pushlist 'Craft' 43
+            elseif @ingump 0x5afbd742 'bamboo wood'
+            @pushlist 'Craft' 62
+            @pushlist 'Craft' 1152
+            elseif @ingump 0x5afbd742 'heart wood'
+            @pushlist 'Craft' 69
+            @pushlist 'Craft' 114
+            elseif @ingump 0x5afbd742 'bloodwood'
+            @pushlist 'Craft' 76
+            @pushlist 'Craft' 37
+            elseif @ingump 0x5afbd742 'frostwood'
+            @pushlist 'Craft' 83
+            @pushlist 'Craft' 1153
+          else
+            @pushlist 'Craft' 6
+            @pushlist 'Craft' 0
+          endif
+        endif
+        // Check for leathers
+        if @counttype 0x1081 Craft[4] 'backpack' < 50
+          while @movetype 0x1081 'backpack' 'Restock'
+            pause 1500
+          endwhile
+          if @movetype 0x1081 'Restock' 'backpack' 0 0 0 Craft[4] 100
+            pause 1500
+          else
+            sysmsg 'Out of leathers!' 25
+            @canceltarget
+            stop
+          endif
+        endif
+      endif
+      // Search for existing items
+      while @findtype Craft[2] 'any' 'backpack'
+        target! 'found'
+        waitfortarget 5000
+        if not targetexists 'server' and @injournal 'must be exceptional' 'system'
+          // Recycle this item
+          if usetype! 0xf9f
+            waitfortarget 5000
+            target! 'found'
+            pause 1500
+          endif
+          // Unable to recycle, trash item
+          if @findobject 'found'
+            @moveitem! 'found' 'Trash Barrel'
+            pause 1500
+          endif
+          replygump 0x5afbd742 2
+          waitforgump 0x5afbd742 15000
+          waitfortarget 5000
+          clearjournal
+        endif
+      endwhile
+      // Craft new items if necessary
+      if targetexists 'server'
+        // Check tool before craft
+        if not @findobject 'tool'
+          break
+        endif
+        // Swap resource and category only once per BOD
+        if not @findobject 'crafting' 'any' 'backpack'
+          @setalias 'crafting' 'bod'
+          // Resource
+          if list 'Craft' == 5
+            replygump 0x38920abd 7
+            waitforgump 0x38920abd 5000
+            replygump 0x38920abd Craft[3]
+            waitforgump 0x38920abd 5000
+          endif
+          // Category
+          replygump 0x38920abd Craft[0]
+          waitforgump 0x38920abd 5000
+        endif
+        replygump 0x38920abd Craft[1]
+        waitforgump 0x38920abd 5000
+        pause 250
+      endif
+    endwhile
+    // BOD is complete, move to destination
+    if not targetexists 'server'
+      @moveitem 'bod' 'Bulk Destination'
+      // Trash BOD or missing definitions
+    elseif not @findalias 'crafting'
+      @moveitem 'bod' 'Trash BODs Destination'
+    endif
+    // Out of tools
+  elseif not @movetype 0xf9d 'Restock' 'backpack'
+    sysmsg 'Out of sewing kits!' 25
+    @canceltarget
+    stop
+  endif
+  pause 1500
+elseif not property 'Deeds In Book: 0' 'Bulk Source'
+  useobject! 'Bulk Source'
+  waitforgump 0x54f555df 15000
+  replygump 0x54f555df 5
+  pause 1500
+else
+  sysmsg 'Unable to find BODs to fill.' 64
+  @canceltarget
+  stop
+endif

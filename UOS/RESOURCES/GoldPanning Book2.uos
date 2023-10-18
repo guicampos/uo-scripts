@@ -1,0 +1,178 @@
+///////////////////////////////////////////////////////////////////////////////
+//Macro Name: GoldPanning Book2
+//Macro Author: Maelune
+//Macro Purpose: This is an example of how to set up your 2nd book for gold
+//               panning. If you have not yet set up your first book, go
+//               open the OTHER script called "GoldPanning Book1"
+//
+//Macro Instruction: 1. In order to set up your 2nd (and all future) book, you
+//                   simply need to rename all of the lists, replacing the
+//                   1 with a 2, 2 with a 3, 3 with a 4, etc for each
+//                   additional book you end up adding. For this book, we
+//                   will be renaming GPRunes1, GPX1, GPY1, and GPZ1 to
+//                   GPRunes2, GPX2, GPY2, and GPZ2 respectively. It is
+//                   SUPER important that you get EVERY one of them in the
+//                   script!
+//                   2. You will then need to replace the coordinate values
+//                   in GPX2, GPY2, and GPZ2 to reflect the values for your
+//                   runes in your second runebook.
+//                   3. Don't forget to change the runebook alias so that it
+//                   contains your 2nd runebook's serial ID!
+//////////////////////////////////////////////////////////////////////////////
+if not findalias 'runebook2'
+  //set this to the serial of you runebook
+  setalias 'runebook2' 0x4ca14944
+endif
+//Declare lists for runes, X, Y, and Z coords.
+if not listexists 'GPRunes2'
+  createlist 'GPRunes2'
+endif
+if not listexists 'GPX2'
+  createlist 'GPX2'
+endif
+if not listexists 'GPY2'
+  createlist 'GPY2'
+endif
+if not listexists 'GPZ2'
+  createlist 'GPZ2'
+endif
+//Initialize lists. Values in GPRunes1 should not require changing.
+if list 'GPRunes2' < 1
+  pushlist 'GPRunes2' 7 //Rune #1
+  pushlist 'GPRunes2' 13 //Rune #2
+  pushlist 'GPRunes2' 19 //Rune #3
+  pushlist 'GPRunes2' 25 //Rune #4
+  pushlist 'GPRunes2' 31 //Rune #5
+  pushlist 'GPRunes2' 37 //Rune #6
+  pushlist 'GPRunes2' 43 //Rune #7
+  pushlist 'GPRunes2' 49 //Rune #8
+  pushlist 'GPRunes2' 55 //Rune #9
+  pushlist 'GPRunes2' 61 //Rune #10
+  pushlist 'GPRunes2' 67 //Rune #11
+  pushlist 'GPRunes2' 73 //Rune #12
+  pushlist 'GPRunes2' 79 //Rune #13
+  pushlist 'GPRunes2' 85 //Rune #14
+  pushlist 'GPRunes2' 91 //Rune #15
+  pushlist 'GPRunes2' 97 //Rune #16
+endif
+if list 'GPX2' < 1
+  pushlist 'GPX2' 452 //X coord of rune #1
+  pushlist 'GPX2' 473 //X coord of rune #2
+  pushlist 'GPX2' 282 //X coord of rune #3
+  pushlist 'GPX2' 454 //X coord of rune #4
+  pushlist 'GPX2' 312 //X coord of rune #5
+  pushlist 'GPX2' 375 //X coord of rune #6
+  pushlist 'GPX2' 438 //X coord of rune #7
+  pushlist 'GPX2' 491 //X coord of rune #8
+  pushlist 'GPX2' 554 //X coord of rune #9
+  pushlist 'GPX2' 617 //X coord of rune #10
+  pushlist 'GPX2' 675 //X coord of rune #11
+  pushlist 'GPX2' 739 //X coord of rune #12
+  pushlist 'GPX2' 794 //X coord of rune #13
+  pushlist 'GPX2' 813 //X coord of rune #14
+  pushlist 'GPX2' 874 //X coord of rune #15
+  pushlist 'GPX2' 937 //X coord of rune #16
+endif
+if list 'GPY2' < 1
+  pushlist 'GPY2' 277 //Y coord of rune #1
+  pushlist 'GPY2' 305 //Y coord of rune #2
+  pushlist 'GPY2' 345 //Y coord of rune #3
+  pushlist 'GPY2' 259 //Y coord of rune #4
+  pushlist 'GPY2' 314 //Y coord of rune #5
+  pushlist 'GPY2' 371 //Y coord of rune #6
+  pushlist 'GPY2' 432 //Y coord of rune #7
+  pushlist 'GPY2' 494 //Y coord of rune #8
+  pushlist 'GPY2' 555 //Y coord of rune #9
+  pushlist 'GPY2' 617 //Y coord of rune #10
+  pushlist 'GPY2' 673 //Y coord of rune #11
+  pushlist 'GPY2' 738 //Y coord of rune #12
+  pushlist 'GPY2' 799 //Y coord of rune #13
+  pushlist 'GPY2' 813 //Y coord of rune #14
+  pushlist 'GPY2' 874 //Y coord of rune #15
+  pushlist 'GPY2' 932 //Y coord of rune #16
+endif
+if list 'GPZ2' < 1
+  pushlist 'GPZ2' -5 //Z coord of rune #1
+  pushlist 'GPZ2' -5 //Z coord of rune #2
+  pushlist 'GPZ2' -5 //Z coord of rune #3
+  pushlist 'GPZ2' -5 //Z coord of rune #4
+  pushlist 'GPZ2' -5 //Z coord of rune #5
+  pushlist 'GPZ2' -5 //Z coord of rune #6
+  pushlist 'GPZ2' -5 //Z coord of rune #7
+  pushlist 'GPZ2' -5 //Z coord of rune #8
+  pushlist 'GPZ2' -5 //Z coord of rune #9
+  pushlist 'GPZ2' -5 //Z coord of rune #10
+  pushlist 'GPZ2' -5 //Z coord of rune #11
+  pushlist 'GPZ2' -5 //Z coord of rune #12
+  pushlist 'GPZ2' -5 //Z coord of rune #13
+  pushlist 'GPZ2' -5 //Z coord of rune #14
+  pushlist 'GPZ2' -5 //Z coord of rune #15
+  pushlist 'GPZ2' -5 //Z coord of rune #16
+endif
+for 0 to GPRunes2
+  //Sacred Journey
+  useobject runebook2
+  if @injournal "time to recharge"
+    pause 6000
+    useobject runebook2
+  endif
+  waitforgump 0x554b87f3 15000
+  replygump 0x554b87f3 GPRunes2[0]
+  pause 2000
+  clearjournal
+  //Panning begins
+  while not @injournal "to be any nuggets"
+    while not @findtype 0x9d7 '0' 'backpack'
+    endwhile
+    usetype 0x9d7 '0' 'backpack'
+    waitfortarget 15000
+    targettile GPX2[0] GPY2[0] GPZ2[0]
+    pause 150
+    while not @findtype 0x9d8 '0' 'backpack'
+      //if statement catches if you failed your panning.
+      //@200, this should never run.
+      if @injournal 'but fail to find any'
+        usetype 0x9d7 '0' 'backpack'
+        waitfortarget 15000
+        targettile GPX2[0] GPY2[0] GPZ2[0]
+        pause 150
+        clearjournal
+      endif
+      //If statement to handle being overweighted
+      //The following number should be max weight -50
+      if weight > 520
+        ////////////////////////////////////////////////////////
+        //This section is for what you want your macro to do when you
+        //become overweight. You should have something to handle
+        //MiBs, footwear, nuggets, and large gems. Below is an example
+        //of how to use an organizer properly so that it doesn't interfere
+        //with the rest of the macro - the 'while organizing' will form
+        //a dynamic pause while the organizer is running. For any additional
+        //methods you add for weight control, make sure you take into
+        //consideration how long the operation will take!
+        ////////////////////////////////////////////////////////
+        organizer 'GPOrganizer' //Setup Organizers in the Agents tab of UOS
+        while organizing
+        endwhile
+      endif
+      //If statement handles if spot is empty
+      if @injournal "to be any nuggets"
+        break
+      endif
+      //If statement pauses script while world is saving
+      if @injournal "world is saving"
+        while not @injournal "save complete"
+        endwhile
+        clearjournal
+      endif
+    endwhile
+    usetype 0x9d8 '0' 'backpack'
+  endwhile
+  //progressing script to the next rune
+  poplist 'GPRunes2' 'front'
+  poplist 'GPX2' 'front'
+  poplist 'GPY2' 'front'
+  poplist 'GPZ2' 'front'
+endfor
+//playmacro 'GPBook3' //Uncomment this line to add a 3rd book.
+//playmacro 'GPBook1' //Uncomment this line to loop back to the first book

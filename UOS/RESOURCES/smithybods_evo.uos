@@ -1,0 +1,519 @@
+//Initial set up of macro
+if not @findobject 'MasterBook'
+  sysmsg "please Select the Master BOD book"
+  promptalias 'MasterBook'
+endif
+if not @findobject 'Recycle'
+  sysmsg "Selecte recycle bag destination"
+  promptalias 'Recycle'
+endif
+if not @findobject 'Done'
+  sysmsg "Selecte completed BOD bag destination"
+  promptalias 'Done'
+endif
+if not @findobject 'uncompleted'
+  sysmsg "select uncompleted BOD Destination"
+  promptalias 'uncompleted'
+endif
+//activate BS bod to use
+if @findtype 0x2258 1102 'backpack'
+  @setalias 'BOD' 'found'
+  useobject! 'BOD'
+  waitforgump 0x5afbd742 15000
+  //combine
+  if not targetexists 'server'
+    replygump 0x5afbd742 2
+    waitforgump 0x5afbd742 15000
+    waitfortarget 5000
+    pause 500
+  endif
+  //use hammer
+  if @findtype 0x13e3  'backpack'
+    @usetype 0x13e3 'backpack'
+    pause 500
+    //if no hammers found
+  else
+    sysmsg 'Out of hammers' 25
+    @canceltarget
+    stop
+  endif
+  if @ingump 0x5afbd742 'crafted with dull copper'
+    replygump 0x38920abd 7
+    waitforgump 0x38920abd 15000
+    replygump 0x38920abd 13
+    waitforgump 0x38920abd 15000
+  elseif @ingump 0x5afbd742 'crafted with shadow iron'
+    replygump 0x38920abd 7
+    waitforgump 0x38920abd 15000
+    replygump 0x38920abd 20
+    waitforgump 0x38920abd 15000
+  elseif @ingump 0x5afbd742 'crafted with copper'
+    replygump 0x38920abd 7
+    waitforgump 0x38920abd 15000
+    replygump 0x38920abd 27
+    waitforgump 0x38920abd 15000
+  elseif @ingump 0x5afbd742 'crafted with bronze'
+    replygump 0x38920abd 7
+    waitforgump 0x38920abd 15000
+    replygump 0x38920abd 34
+    waitforgump 0x38920abd 15000
+  elseif @ingump 0x5afbd742 'crafted with gold'
+    replygump 0x38920abd 7
+    waitforgump 0x38920abd 15000
+    replygump 0x38920abd 41
+    waitforgump 0x38920abd 15000
+  elseif @ingump 0x5afbd742 'crafted with agapite'
+    replygump 0x38920abd 7
+    waitforgump 0x38920abd 15000
+    replygump 0x38920abd 48
+    waitforgump 0x38920abd 15000
+  elseif @ingump 0x5afbd742 'crafted with verite'
+    replygump 0x38920abd 7
+    waitforgump 0x38920abd 15000
+    replygump 0x38920abd 55
+    waitforgump 0x38920abd 15000
+  elseif @ingump 0x5afbd742 'crafted with valorite'
+    replygump 0x38920abd 7
+    waitforgump 0x38920abd 15000
+    replygump 0x38920abd 62
+    waitforgump 0x38920abd 15000
+  elseif @ingump 0x5afbd742 'crafted with blaze'
+    replygump 0x38920abd 7
+    waitforgump 0x38920abd 15000
+    replygump 0x38920abd 69
+    waitforgump 0x38920abd 15000
+  elseif @ingump 0x5afbd742 'crafted with ice'
+    replygump 0x38920abd 7
+    waitforgump 0x38920abd 15000
+    replygump 0x38920abd 76
+    waitforgump 0x38920abd 15000
+  elseif @ingump 0x5afbd742 'crafted with toxic'
+    replygump 0x38920abd 7
+    waitforgump 0x38920abd 15000
+    replygump 0x38920abd 83
+    waitforgump 0x38920abd 15000
+  elseif @ingump 0x5afbd742 'crafted with electrum'
+    replygump 0x38920abd 7
+    waitforgump 0x38920abd 15000
+    replygump 0x38920abd 90
+    waitforgump 0x38920abd 15000
+  elseif @ingump 0x5afbd742 'crafted with platinum'
+    replygump 0x38920abd 7
+    waitforgump 0x38920abd 15000
+    replygump 0x38920abd 97
+    waitforgump 0x38920abd 15000
+  else
+    replygump 0x38920abd 7
+    waitforgump 0x38920abd 15000
+    replygump 0x38920abd 6
+    waitforgump 0x38920abd 15000
+  endif
+  //craft
+  while targetexists 'server'
+    if @findtype 0x13e3  'backpack'
+      @usetype 0x13e3 'backpack'
+      pause 500
+    else
+      sysmsg 'Out of hammers' 25
+      @canceltarget
+      stop
+    endif
+    //look in gump for item to create
+    //ex for future input
+    //if @ingump (serial) (text)
+    //the gump commands to create said item
+    //pause 250
+    //@tartgettype! (serial) 'any' 'backpack'
+    //continue on adding more items using else if
+    //ringmail
+    if @ingump 0x5afbd742 'ringmail gloves'
+      replygump 0x38920abd 1
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 2
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x13eb 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'ringmail leggings'
+      replygump 0x38920abd 1
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 9
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x13f0 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'ringmail sleeves'
+      replygump 0x38920abd 1
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 16
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x13EE
+    elseif @ingump 0x5afbd742 'ringmail tunic'
+      replygump 0x38920abd 1
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 23
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x13ec
+      // Chainmail
+    elseif @ingump 0x5afbd742 'chainmail coif'
+      replygump 0x38920abd 8
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 2
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x13bb 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'chainmail leggings'
+      replygump 0x38920abd 8
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 9
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x13BE
+    elseif @ingump 0x5afbd742 'chainmail tunic'
+      replygump 0x38920abd 8
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 16
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x13bf 'any' 'backpack'
+      // Platemail
+    elseif @ingump 0x5afbd742 'platemail arms'
+      replygump 0x38920abd 15
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 2
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1410
+    elseif @ingump 0x5afbd742 'platemail gloves'
+      replygump 0x38920abd 15
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 9
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1414
+    elseif @ingump 0x5afbd742 'platemail gorget'
+      replygump 0x38920abd 15
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 16
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1413
+    elseif @ingump 0x5afbd742 'platemail legs'
+      replygump 0x38920abd 15
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 23
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1411
+    elseif @ingump 0x5afbd742 'platemail tunic'
+      replygump 0x38920abd 15
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 30
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1415 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'female plate'
+      replygump 0x38920abd 15
+      waitforgump 0x38920abd 15000
+      replygump 0x38920abd 37
+      waitforgump 0x38920abd 15000
+      pause 250
+      @targettype! 0x1c04 'any' 'backpack'
+      // Helmets
+    elseif @ingump 0x5afbd742 'bascinet'
+      replygump 0x38920abd 22
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 2
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x140C
+    elseif @ingump 0x5afbd742 'close helmet'
+      replygump 0x38920abd 22
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 9
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1408
+    elseif @ingump 0x5afbd742 'helmet'
+      replygump 0x38920abd 22
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 16
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x140a 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'norse helm'
+      replygump 0x38920abd 22
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 23
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x140E
+    elseif @ingump 0x5afbd742 'plate helm'
+      replygump 0x38920abd 22
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 30
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1412
+      // Shields
+    elseif @ingump 0x5afbd742 'buckler'
+      replygump 0x38920abd 29
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 2
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1B73
+    elseif @ingump 0x5afbd742 'bronze shield'
+      replygump 0x38920abd 29
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 9
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1b72 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'heater shield'
+      replygump 0x38920abd 29
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 16
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1b76 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'metal shield'
+      replygump 0x38920abd 29
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 23
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1b7b 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'metal kite shield'
+      replygump 0x38920abd 29
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 30
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1B74
+    elseif @ingump 0x5afbd742 'tear kite shield'
+      replygump 0x38920abd 29
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 37
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1B79
+      // Bladed
+    elseif @ingump 0x5afbd742 'broadsword'
+      replygump 0x38920abd 43
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 9
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0xf5e 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'cutlass'
+      replygump 0x38920abd 43
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 23
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1441 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'dagger'
+      replygump 0x38920abd 43
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 30
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0xf52 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'katana'
+      replygump 0x38920abd 43
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 37
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x13FF
+    elseif @ingump 0x5afbd742 'kryss'
+      replygump 0x38920abd 43
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 44
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1401
+    elseif @ingump 0x5afbd742 'longsword'
+      replygump 0x38920abd 43
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 51
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0xf61 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'scimitar'
+      replygump 0x38920abd 43
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 58
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x13b6 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'viking sword'
+      replygump 0x38920abd 43
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 65
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x13b9 'any' 'backpack'
+      // Axes
+    elseif @ingump 0x5afbd742 'large battle axe'
+      replygump 0x38920abd 50
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 30
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x13fb 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'double axe'
+      replygump 0x38920abd 50
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 16
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x0F4B
+    elseif @ingump 0x5afbd742 "executioner's axe"
+      replygump 0x38920abd 50
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 23
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x0F45
+    elseif @ingump 0x5afbd742 'battle axe'
+      replygump 0x38920abd 50
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 9
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0xf47 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'two handed axe'
+      replygump 0x38920abd 50
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 37
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1443 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'war axe'
+      replygump 0x38920abd 50
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 44
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x13b0 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'axe'
+      replygump 0x38920abd 50
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 2
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x0F49
+      // Polearms
+    elseif @ingump 0x5afbd742 'bardiche'
+      replygump 0x38920abd 57
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 2
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0xf4d 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'halberd'
+      replygump 0x38920abd 57
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 23
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x143E
+    elseif @ingump 0x5afbd742 'short spear'
+      replygump 0x38920abd 57
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 44
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1403 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'spear'
+      replygump 0x38920abd 57
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 58
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0xf62 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'war fork'
+      replygump 0x38920abd 57
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 65
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1405
+      // Bashing
+    elseif @ingump 0x5afbd742 'war mace'
+      replygump 0x38920abd 64
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 30
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1407 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'hammer pick'
+      replygump 0x38920abd 64
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 2
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x143d 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'mace'
+      replygump 0x38920abd 64
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 9
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0xf5c 'any' 'backpack'
+    elseif @ingump 0x5afbd742 'maul'
+      replygump 0x38920abd 64
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 16
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x143B
+    elseif @ingump 0x5afbd742 'war hammer'
+      replygump 0x38920abd 64
+      waitforgump 0x38920abd 6000
+      replygump 0x38920abd 37
+      waitforgump 0x38920abd 6000
+      pause 250
+      @targettype! 0x1439 'any' 'backpack'
+    else
+      //BOD not set up
+      @canceltarget
+      @moveitem! 'bod' 'uncompleted'
+    endif
+    if @ingump 0x38920abd 'failed'
+      pause 1500
+      continue
+    elseif @ingump 0x38920abd 'not have sufficient'
+      @moveitem! 'bod' 'uncompleted'
+      replay
+    endif
+    pause 500
+  endwhile
+  if not targetexists and @injournal 'must be exceptional' 'system'
+    // Recycle this item
+    moveitem 'last' 0x406bf6ec
+    clickobject 'Recycle'
+    pause 2000
+    waitforcontext 0x406bf6ec 0 15000
+    clearjournal
+    replay
+  elseif not targetexists 'server'
+    @moveitem! 'bod' 'Done'
+  endif
+else @findalias 'masterbook'
+  useobject 'masterbook'
+  waitforgump 0x6abce12 15000
+  replygump 0x6abce12 1
+  pause 2500
+  replygump 0xb2f21f1a 100
+  pause 2000
+  if not @findtype 0x2258 1102 'backpack'
+    //play another macro
+    playmacro 'Fletching BOD filler'
+    stop
+  endif
+endif
+pause 2000
+replay

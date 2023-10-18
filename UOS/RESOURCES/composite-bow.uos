@@ -1,0 +1,158 @@
+////////////////////////////
+//Title: Composite Bow Armor Ignore
+//Author: Maelune
+//Version: 1.0
+//Purpose: Auto select nearest enemy and focus that one enemy until it is
+//         either dead, or has moved too far away to hit.
+//
+//Requirements: A composite bow
+//              Combat skills maxed
+//
+//Instructions: Copy this entire text into a UOSteam Macro! Replace the serial
+//              ID of the bow where prompted (first nested if statement)
+//              with that of your own bow.
+//
+//Notes: This macro will focus one enemy down at a time. It will not attempt
+//to change targets until your target is dead, or has gotten further than
+//10 tiles away (the maximum range of a composite bow)
+////////////////////////////
+while @findobject 0x41e8b69f 'any' 'backpack' //replace serial with that of your bow
+  clearhands right
+  pause 300
+  equipitem 0x41e8b69f 1  //replace serial with that of your bow (Leave the 1 at the end)
+endwhile
+clearignorelist
+while @getenemy 'murderer' 'enemy' 'gray' 'criminal' 'closest'
+  //while @getenemy 'enemy' 'gray' 'criminal' 'closest'
+  //***Prevents you from attacking gray pets directly***///
+  if @property 'Loyalty' 'enemy' == "Wonderfully Happy" or @property 'Loyalty' 'enemy' == "Extremely Happy"
+    ignoreobject 'enemy'
+    pause 150
+    //@getenemy 'murderer' 'enemy' 'gray' 'criminal' 'closest'
+    @getenemy 'enemy' 'gray' 'criminal' 'closest'
+  endif
+  if @property 'Loyalty' 'enemy' == "Very Happy" or @property 'Loyalty' 'enemy' == "Happy"
+    ignoreobject 'enemy'
+    pause 150
+    //@getenemy 'murderer' 'enemy' 'gray' 'criminal' 'closest'
+    @getenemy 'enemy' 'gray' 'criminal' 'closest'
+  endif
+  /////********************************************//////
+  if not @findobject 'enemy'
+    stop
+  elseif @findobject 'enemy' and @inrange 'enemy' 10
+    //if hits 'enemy' == maxhits 'enemy'
+    //virtue 'honor'
+    // waitfortarget 5000
+    // target! 'enemy'
+    //pause 300
+    //endif
+  endif
+  @setability 'primary' 'on'
+  attack! 'enemy'
+  settimer 'discord' 15000
+  while @findtype 0xeed '0' 'backpack' or @findtype 0xeed '0' 'ground'
+    useobject 'found'
+    ignoreobject 'found'
+  endwhile
+  while @findobject 'enemy' 'any' 'ground' 'any' 10
+    if @injournal 'Vortex Strike' 'system'
+      //  pause 300
+      replygump 0x7ec42f38 1005
+      waitforgump 0x7ec42f38 1000
+      sysmsg 'vortex Rearmed' '1950'
+      @clearjournal
+    endif
+    if @injournal 'failed the augment skill check' 'system'
+      //  pause 300
+      replygump 0x7ec42f38 1005
+      waitforgump 0x7ec42f38 1000
+      sysmsg 'Vortex Rearmed' '1950'
+      @clearjournal
+    endif
+    if dead 'self'
+      stop
+    endif
+    if @findobject 0x41e8b69f 'any' 'backpack' //replace serial with that of your bow 
+      clearhands right
+      equipitem 0x41e8b69f 1 //replace serial with that of your bow (Leave the 1 at the end)
+    endif
+    //Change this serial ID to whatever your bow is!
+    if @findobject 'enemy' and @inrange 'enemy' 10
+      if hits 'enemy' == maxhits 'enemy'
+        virtue 'honor'
+        waitfortarget 5000
+        target! 'enemy'
+        pause 300
+      endif
+    endif
+    //@setability 'secondary' 'on'
+    //clearability
+    @setability 'primary' 'on'
+    attack! 'enemy'
+    if not timerexists 'castconcentrate'
+      createtimer 'castconcentrate'
+      settimer 'castconcentrate' 100000
+    endif
+    //if not timerexists 'castcursew'
+    //  createtimer 'castcursew'
+    //  settimer 'castcursew' 30000
+    //endif
+    //if timer 'castcursew' > 30000 and timer 'casttime' > 1490
+    //  cast "Curse Weapon"
+    //  settimer 'casttime' 0
+    //  settimer 'castcursew' 0
+    //endif
+    if not buffexists "Consecrate Weapon"
+      if timer 'castconcentrate' > 9000
+        cast 'Consecrate Weapon'
+        settimer 'castconcentrate' 0
+      endif
+    endif
+    if stam < 20
+      cast "Divine Fury"
+      pause 500
+    endif
+    if not buffexists "Bless"
+      cast "Bless"
+      waitfortarget 3000
+      target! 'self'
+      pause 150
+    endif
+    if @findtype 0xfc7 1126 'backpack'
+      if counttype 0xf8c 0 'backpack' > 3
+        if not timerexists 'Fire Horn Timer'
+          createtimer 'Fire Horn Timer'
+          settimer 'Fire Horn Timer' 5000
+        elseif timer 'Fire Horn Timer' > 5000 and @inrange 'enemy' 2
+          useobject 'found'
+          waitfortarget 3000
+          target! 'enemy'
+          settimer 'Fire Horn Timer' 0
+        endif
+      endif
+    endif
+    //if not buffexists 'enemy of one'
+    //  cast 'enemy of one'
+    //  pause 1500
+    //endif
+    //if @injournal 'Shield of Spikes!' 'system'
+    // replygump 0x4239a64f 1004
+    //waitforgump 0x4239a64f 15000
+    //sysmsg 'SOS Rearmed' '1950'
+    //endif
+    //if @injournal 'You failed the augment skill check' 'system'
+    //replygump 0x4239a64f 1004
+    //waitforgump 0x4239a64f 15000
+    //sysmsg 'SOS Rearmed' '1950'
+    //endif
+    //@clearjournal
+    //if weight >= 400 or contents 'backpack' > 160
+    //  waitforcontext 0x507b956d 2 15000
+    //  while @findtype 0xeed '0' 'backpack'
+    //    useobject! 'found'
+    //    ignoreobject 'found'
+    //  endwhile
+    //endif
+  endwhile
+endwhile

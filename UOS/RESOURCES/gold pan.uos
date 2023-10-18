@@ -1,0 +1,35 @@
+if @findtype 0x9d8 'any' 'backpack'
+  useobject 'found'
+endif
+if @findtype 0x9d7 'any' 'backpack'
+  useobject 'found'
+  waitfortarget 15000
+  pause 500
+  targettile 'last'
+  pause 9000
+  if injournal 'Target cannot be seen.'
+    @findtype 0x9d7 'any' 'backpack'
+    useobject 'found'
+    sysmsg 'Target a different tile!' 32
+    waitfortarget 15000
+    clearjournal
+  elseif injournal 'seem to be any nuggets left here.'
+    @findtype 0x9d7 'any' 'backpack'
+    useobject 'found'
+    sysmsg 'Area emptied, go find a new one.' 32
+    waitfortarget 15000
+    clearjournal
+  elseif injournal 'pan for gold there!'
+    @findtype 0x9d7 'any' 'backpack'
+    useobject 'found'
+    sysmsg 'Find a proper water tile!' 32
+    waitfortarget 15000
+    clearjournal
+  elseif injournal 'You need to be closer to the water for panning!'
+    @findtype 0x9d7 'any' 'backpack'
+    useobject 'found'
+    sysmsg 'Too far away!' 32
+    waitfortarget 15000
+    clearjournal
+  endif
+endif

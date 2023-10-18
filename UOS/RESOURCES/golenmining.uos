@@ -1,0 +1,92 @@
+////******************************************************////
+//Title: Mining Golem - Smelter
+//Author: Maelune
+//Version: 0.2
+//Purpose: Automatically removes ore from a crafted mining golem
+//         in order to smelt the ore with an Orcish Forge.
+//
+//Requirements: A crafted mining golem
+//              An orcish forge
+//
+//Instructions: Copy this entire text into a UOSteam Macro! Run the macro
+//              once in order to select your golem for use.
+//
+//Notes: This will frequently leave single small piles of ore on
+//       the ground. There is no *clean* way to prevent this.
+//
+//       If enough desire is expressed for this macro to allow
+//       for more than a single mining golem, I will happily
+//       modify it to compensate!
+////******************************************************////
+if not @findalias 'golem'
+  headmsg 'Select your golem!'
+  pause 200
+  promptalias 'golem'
+  waitfortarget 25000 //replace me with golem's serial!
+endif
+if not @findobject 'Golem' 'any' 'ground'
+  headmsg 'Golem not found! Please select your golem!'
+  promptalias 'golem'
+endif
+while @findtype 0x19b9 'any' 'golem'
+  moveitemoffset 'found' 'ground' 0 1 0
+  pause 625
+  useobject 'found'
+  waitfortarget 15000
+  targettype 0xfb1 'any'
+  @ignoreobject 'found'
+endwhile
+while @findtype 0x19ba 'any' 'golem'
+  moveitemoffset 'found' 'ground' 0 1 0
+  pause 625
+  useobject 'found'
+  waitfortarget 15000
+  targettype 0xfb1 'any'
+  @ignoreobject 'found'
+endwhile
+while @findtype 0x19b7 'any' 'golem'
+  moveitemoffset 'found' 'ground' 0 1 0
+  pause 625
+  useobject 'found'
+  waitfortarget 15000
+  targettype 0xfb1 'any'
+  @ignoreobject 'found'
+endwhile
+while @findtype 0x19b8 'any' 'golem'
+  moveitemoffset 'found' 'ground' 0 1 0
+  pause 625
+  useobject 'found'
+  waitfortarget 15000
+  targettype 0xfb1 'any'
+  @ignoreobject 'found'
+endwhile
+@clearignorelist
+while @findtype 0x19b9 'any' 'ground'
+  useobject 'found'
+  waitfortarget 15000
+  targettype 0xfb1 'any'
+  ignoreobject 'found'
+  pause 325
+endwhile
+while @findtype 0x19ba 'any' 'ground'
+  useobject 'found'
+  waitfortarget 15000
+  targettype 0xfb1 'any'
+  ignoreobject 'found'
+  pause 325
+endwhile
+while @findtype 0x19b7 'any' 'ground'
+  useobject 'found'
+  waitfortarget 15000
+  targettype 0xfb1 'any'
+  ignoreobject 'found'
+  pause 325
+endwhile
+while @findtype 0x19b8 'any' 'ground'
+  useobject 'found'
+  waitfortarget 15000
+  targettype 0xfb1 'any'
+  ignoreobject 'found'
+  pause 325
+endwhile
+@clearignorelist

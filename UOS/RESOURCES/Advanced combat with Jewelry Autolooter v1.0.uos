@@ -1,0 +1,279 @@
+////******************************************************////
+//Title: Advanced combat with Jewelry Autolooter
+//Author: Guilherme Campos (Enkil) by hacking together some other macros. I didn't create anything, just build from existing pieces of code.
+//Version: 1.1
+if not @findobject 'LootBag'
+  promptalias 'LootBag'
+endif
+if not listexists 'Jewelry'
+  @createlist 'Jewelry'
+endif
+if list 'Jewelry' == 0
+  @pushlist 'Jewelry' 0x108a
+  @pushlist 'Jewelry' 0x1f09
+  @pushlist 'Jewelry' 0x1086
+  @pushlist 'Jewelry' 0x1f06
+endif
+if not listexists 'cmode'
+  createlist 'cmode'
+  pushlist 'cmode' 'champ'
+endif
+if not listexists 'jewelryMode'
+  createlist 'jewelryMode'
+  pushlist 'jewelryMode' 'ON'
+endif
+while @getenemy 'murderer' 'enemy' 'gray' 'criminal' 'closest'
+  if @injournal 'chelp' 'Enkil Velland'
+    headmsg 'cmode - champion mode|smode - single mode|pmode - pet mode|whatmode - show mode|sps - spiked shield|tps - tipleslash' 25
+    @clearjournal
+  endif
+  if @injournal 'jwon' 'Enkil Velland'
+    @clearlist 'jewelryMode'
+    pushlist 'jewelryMode' 'ON'
+    headmsg 'jewelryMode ON' 4
+    @clearjournal
+  elseif @injournal 'jwoff' 'Enkil Velland'
+    @clearlist 'jewelryMode'
+    pushlist 'jewelryMode' 'OFF'
+    headmsg 'jewelryMode OFF' 25
+    @clearjournal
+  endif
+  if @injournal 'cmode' 'Enkil Velland'
+    @clearlist 'cmode'
+    pushlist 'cmode' 'champ'
+    headmsg 'SWITCHED TO CHAMPION MODE' 4
+    @clearjournal
+  elseif @injournal 'smode' 'Enkil Velland'
+    @clearlist 'cmode'
+    pushlist 'cmode' 'single'
+    headmsg 'SWITCHED TO SINGLE MODE' 4
+    @clearjournal
+  elseif @injournal 'pmode' 'Enkil Velland'
+    @clearlist 'cmode'
+    pushlist 'cmode' 'pet'
+    headmsg 'SWITCHED TO PET MODE' 4
+    @clearjournal
+  endif
+  if @injournal 'whatmode' 'Enkil Velland'
+    if @inlist 'cmode' 'champ'
+      headmsg 'CURRENTLY CHAMPION MODE' 10
+      @clearjournal
+    elseif @inlist 'cmode' 'single'
+      headmsg 'CURRENTLY SINGLE MODE' 10
+      @clearjournal
+    elseif @inlist 'cmode' 'pet'
+      headmsg 'CURRENTLY PET MODE' 10
+      @clearjournal
+    endif
+  endif
+  if not timerexists 'specialTimer'
+    createtimer 'specialTimer'
+    settimer 'specialTimer' 0
+  elseif timer 'specialTimer' > 1000
+    if @inlist 'cmode' 'champ'
+      @setability 'secondary' 'on'
+    elseif @inlist 'cmode' 'single'
+      if hits 'enemy' == maxhits 'enemy'
+        virtue 'honor'
+        waitfortarget 1000
+        target! 'enemy'
+        pause 300
+      endif
+      //      @setability 'primary' 'on'
+      @cast 'lightning strike'
+    endif
+    if @inlist 'cmode' 'pet'
+      if not timerexists 'petkillTimer'
+        createtimer 'petkillTimer'
+        settimer 'petkillTimer' 0
+      elseif timer 'petkillTimer' > 10000
+        msg 'all kill'
+        @autotargetenemy 'enemy'
+        target! 'enemy'
+        settimer 'petkillTimer' 0
+      endif
+    endif
+    settimer 'specialTimer' 0
+  endif
+  attack! 'enemy'
+  if not timerexists 'ConsecrateWeaponTimer'
+    createtimer 'ConsecrateWeaponTimer'
+    settimer 'ConsecrateWeaponTimer' 0
+  elseif timer 'ConsecrateWeaponTimer' > 8000
+    cast 'Consecrate Weapon'
+    settimer 'ConsecrateWeaponTimer' 0
+  endif
+  if not timerexists 'EvasionTimer'
+    createtimer 'EvasionTimer'
+    settimer 'EvasionTimer' 0
+  elseif timer 'EvasionTimer' > 23000
+    msg '[cs evasion'
+    settimer 'EvasionTimer' 0
+  endif
+  if stam < 50
+    cast 'divine fury'
+    pause 600
+  endif
+  if @injournal 'sps' 'Enkil Velland'
+    replygump 0x4239a64f 1004
+    waitforgump 0x4239a64f 600
+    if @injournal 'Need 3 PigIron to perform Shield of Spikes' 'system'
+      useobject  0x47a7aac5
+      waitforgump 0x6abce12 600
+      replygump 0x6abce12 10
+      replygump 0x6abce12 0
+    endif
+    if @injournal 'defend with Shield of Spikes!' 'system'
+      replygump 0x4239a64f 1004
+      waitforgump 0x4239a64f 600
+      headmsg 'Shield of spikes activated. Rearmed.' '1950'
+    endif
+    if @injournal 'You failed the augment skill check' 'system'
+      replygump 0x4239a64f 1004
+      waitforgump 0x4239a64f 600
+      headmsg 'shield of spikes Rearmed' '1950'
+    endif
+    @clearjournal
+  endif
+  if @injournal 'tps' 'Enkil Velland'
+    replygump 0x7ec42f38 1000
+    waitforgump 0x7ec42f38 600
+    if @injournal 'Need 1 MandrakeRoot to perform Triple Slash' 'system'
+      useobject 0x47a7aac5
+      headmsg 'TPS NOREGS! Rearmed.' '1950'
+      waitforgump 0x6abce12 600
+      replygump 0x6abce12 3
+      replygump 0x6abce12 0
+    endif
+    if @injournal 'strike with Triple Slash!' 'system'
+      replygump 0x7ec42f38 1000
+      waitforgump 0x7ec42f38 600
+      headmsg 'TPS OK! Rearmed.' '1950'
+    endif
+    if @injournal 'You failed the augment skill check' 'system'
+      replygump 0x7ec42f38 1000
+      waitforgump 0x7ec42f38 600
+      headmsg 'TPS failed. Rearmed' '1950'
+    endif
+    @clearjournal
+  endif
+  if @inlist 'jewelryMode' 'ON'
+    // Find a valid corpse in range
+    if @findtype '0x2006' 'any' 'ground' '1' '2'
+      @setalias 'corpse' 'found'
+      @useobject 'corpse'
+      //Locate Jewelry
+      for 0 to Jewelry
+        // it will search up to 5 jewels
+        for 5
+          if @findtype Jewelry[] 0 'corpse'
+            @setalias 'Jewelry' 'found'
+            waitforproperties 'Jewelry' 3000
+            if @property 'Swordsmanship' 'Jewelry' >= 13
+              sysmsg 'yay, Swords!' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Parry' 'Jewelry' >= 13
+              sysmsg 'yay, Parry!' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Tactics' 'Jewelry' >= 13
+              sysmsg 'yay, Tactics!' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Animal Taming' 'Jewelry' >= 13
+              sysmsg 'yay, Taming!' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Animal Lore' 'Jewelry' >= 13
+              sysmsg 'yay, Animal Lore!' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Evaluating Intelligence ' 'Jewelry' >= 13
+              sysmsg 'yay, Eval!' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Archery' 'Jewelry' >= 13
+              sysmsg 'yay, Archery!' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Stealth' 'Jewelry' >= 13
+              sysmsg 'yay, Stealth!' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Provocation' 'Jewelry' >= 13
+              sysmsg 'yay, Provocation!' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Mace Fighting' 'Jewelry' >= 13
+              sysmsg 'yay, Mace!' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Stealing' 'Jewelry' >= 13
+              sysmsg 'yay, Stealing!' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Discordance' 'Jewelry' >= 13
+              sysmsg 'yay, Discordance!' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Musicianship' 'Jewelry' >= 13
+              sysmsg 'yay, Musicianship!' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Bushido' 'Jewelry' >= 13
+              sysmsg 'yay, Bushido!' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Necromancy' 'Jewelry' >= 13
+              sysmsg 'yay, Necromancy!' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Resisting Spells' 'Jewelry' >= 13
+              sysmsg 'yay, Resisting Spells!' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Magery' 'Jewelry' >= 13
+              sysmsg 'yay, Magery !' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+            if @property 'Luck' 'Jewelry' >= 99
+              sysmsg 'yay, Luck !' '1990'
+              @moveitem 'Jewelry' 'LootBag'
+              pause 600
+            endif
+          endif
+        endfor
+      endfor
+      ignoreobject 'corpse'
+      @canceltarget
+      @cancelautotarget
+    endif // end 'if there is a corpse here'
+  endif
+  if @injournal 'ggold' 'Enkil Velland'
+    while @findtype 0xeed 'any' 'ground' '6' '6'
+      @setalias 'gold' 'found'
+      @useobject! 'gold'
+      @ignoreobject 'gold'
+      // sysmsg 'gold' 2415
+    endwhile
+    @clearjournal
+  endif
+endwhile

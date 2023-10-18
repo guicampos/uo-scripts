@@ -1,0 +1,178 @@
+// Author: Kraz // Description: Tailoring BOD Filler
+// v2.1: fixed issue where it could not craft footwear
+// v2.0: (1) easier to update, read and edit craft info, (2) search, recycle and combine existing items before crafting, (3) faster crafting due to gump category swap improvements, (4) added resource handler
+if not @findobject 'Bulk Source'
+  promptalias 'Bulk Source'
+endif
+if not @findobject 'Bulk Destination'
+  promptalias 'Bulk Destination'
+endif
+if not @findobject 'Trash BODs Destination'
+  promptalias 'Trash BODs Destination'
+endif
+if not @findobject 'Trash Bag'
+  promptalias 'Trash Bag'
+endif
+// Craft info placeholder
+if not listexists 'Craft'
+  @createlist 'Craft'
+  // 0: Category, 1: Button, 2: Graphic, 3: Resource Button, 4: Resource Color
+endif
+// Search for a BOD to fill
+if @findtype 0x2258 0x483 'backpack' and @property 'small' 'found'
+  // Reset craft state
+  @clearlist 'Craft'
+  @unsetalias 'crafting'
+  // Define and open new BOD
+  @setalias 'bod' 'found'
+  useobject! 'bod'
+  waitforgump 0x5afbd742 15000
+  // Combine items
+  if not targetexists 'server'
+    replygump 0x5afbd742 2
+    waitforgump 0x5afbd742 15000
+    waitfortarget 5000
+  endif
+  // Check for tools
+  if @findtype 0x102e 0 'backpack'
+    pause 1500
+    @setalias 'tool' 'found'
+    useobject! 'tool'
+    waitforgump 0x38920abd 15000
+    // Craft
+    while targetexists 'server'
+      // Define BOD material type
+      @setalias 'cloth' 'bod'
+      // Craft requirements
+      if @findalias 'cloth'
+        // Check for cut cloths
+        if @ingump 0x5afbd742 'pine wood'
+          @pushlist 'Craft' 13
+          @pushlist 'Craft' 1262
+        elseif @ingump 0x5afbd742 'ash wood'
+          @pushlist 'Craft' 20
+          @pushlist 'Craft' 961
+        elseif @ingump 0x5afbd742 'mohogany wood'
+          @pushlist 'Craft' 27
+          @pushlist 'Craft' 355
+        elseif @ingump 0x5afbd742 'yew wood'
+          @pushlist 'Craft' 34
+          @pushlist 'Craft' 1281
+        elseif @ingump 0x5afbd742 'oak wood'
+          @pushlist 'Craft' 41
+          @pushlist 'Craft' 488
+        elseif @ingump 0x5afbd742 'zircote wood'
+          @pushlist 'Craft' 48
+          @pushlist 'Craft' 1271
+        elseif @ingump 0x5afbd742 'ebony wood'
+          @pushlist 'Craft' 55
+          @pushlist 'Craft' 43
+        elseif @ingump 0x5afbd742 'bamboo wood'
+          @pushlist 'Craft' 62
+          @pushlist 'Craft' 1152
+        elseif @ingump 0x5afbd742 'heart wood'
+          @pushlist 'Craft' 69
+          @pushlist 'Craft' 114
+        elseif @ingump 0x5afbd742 'bloodwood'
+          @pushlist 'Craft' 76
+          @pushlist 'Craft' 37
+        elseif @ingump 0x5afbd742 'frostwood'
+          @pushlist 'Craft' 83
+          @pushlist 'Craft' 1153
+        else
+          @pushlist 'Craft' 6
+          @pushlist 'Craft' 0
+        endif
+        if not @findalias 'crafting'
+          if @ingump 0x5afbd742 'quarterstaff'
+            @pushlist 'Craft' 1
+            @pushlist 'Craft' 2
+            @pushlist 'Craft' 0x0E89
+          elseif @ingump 0x5afbd742 'chair'
+            @pushlist 'Craft' 1
+            @pushlist 'Craft' 9
+            @pushlist 'Craft' 0x0B5B
+          elseif @ingump 0x5afbd742 'chair2'
+            @pushlist 'Craft' 1
+            @pushlist 'Craft' 9
+            @pushlist 'Craft' 0x0B53
+          elseif @ingump 0x5afbd742 'table'
+            @pushlist 'Craft' 1
+            @pushlist 'Craft' 16
+            @pushlist 'Craft' 0x0B90
+          elseif @ingump 0x5afbd742 'drum'
+            @pushlist 'Craft' 1
+            @pushlist 'Craft' 23
+            @pushlist 'Craft' 0x0E9C
+          elseif @ingump 0x5afbd742 'wooden bench'
+            @pushlist 'Craft' 1
+            @pushlist 'Craft' 30
+            @pushlist 'Craft' 0x0B2D
+          else
+            break
+          endif
+        endif
+        // Search for existing items
+        while @findtype Craft[2] 'any' 'backpack'
+          target! 'found'
+          waitfortarget 5000
+          if not targetexists 'server' and @injournal 'must be exceptional' 'system'
+            // Unable to recycle, trash item
+            if @findobject 'found'
+              @moveitem! 'found' 'Trash Bag'
+              pause 1000
+            endif
+            replygump 0x5afbd742 2
+            waitforgump 0x5afbd742 15000
+            waitfortarget 5000
+            clearjournal
+          endif
+        endwhile
+        // Craft new items if necessary
+        if targetexists 'server'
+          // Swap resource and category only once per BOD
+          if not @findobject 'crafting' 'any' 'backpack'
+            @setalias 'crafting' 'bod'
+            // Resource
+            if list 'Craft' == 5
+              replygump 0x38920abd 7
+              waitforgump 0x38920abd 5000
+              replygump 0x38920abd Craft[3]
+              waitforgump 0x38920abd 5000
+            endif
+            // Category
+            replygump 0x38920abd Craft[0]
+            waitforgump 0x38920abd 5000
+          endif
+          replygump 0x38920abd Craft[1]
+          waitforgump 0x38920abd 5000
+          pause 250
+        endif
+      endwhile
+      // BOD is complete, move to destination
+      if not targetexists 'server'
+        useobject 0x42f56201
+        waitforgump 0x6abce12 15000
+        replygump 0x6abce12 29
+        waitforgump 0x6abce12 15000
+        waitforgump 0x6abce12 15000
+        // Trash BOD or missing definitions
+      elseif not @findalias 'crafting'
+        @moveitem 'bod' 'Trash BODs Destination'
+      endif
+      // Out of tools
+    endif
+    pause 1500
+  elseif not property 'Deeds In Book: 0' 'Bulk Source'
+    useobject! 'Bulk Source'
+    waitforgump 0x6abce12 15000
+    replygump 0x6abce12 2
+    pause 2500
+    replygump 0xb2f21f1a 100
+    pause 2000
+  else
+    sysmsg 'Unable to find BODs to fill.' 64
+    @canceltarget
+    stop
+  endif
+endif

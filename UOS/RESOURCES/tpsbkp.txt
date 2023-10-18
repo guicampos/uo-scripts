@@ -1,0 +1,194 @@
+         //# asps - Auto Shield of Spikes
+         if @injournal '.sps' characterName[0]
+            @clearjournal
+            if @gumpexists 'spsGumpID' 
+               if @inlist 'spsMode' 'on'
+                  @clearlist 'spsMode'
+                  @pushlist 'spsMode' 'off'
+                  @clearlist 'spsStatus'
+                  @pushlist 'spsStatus' 'disarmed'
+                  headmsg 'Auto Shield of Spikes is now OFF' 1990
+               else
+                  @clearlist 'spsMode'
+                  @pushlist 'spsMode' 'on'
+                  @clearlist 'spsStatus'
+                  @pushlist 'spsStatus' 'disarmed'
+                  headmsg 'Auto Shield of Spikes is now ON' 1990
+               endif
+            else
+               //@clearlist 'spsMode'
+               //@pushlist 'spsMode' 'disabled'
+               @clearlist 'spsStatus'
+               @pushlist 'spsStatus' 'disarmed'
+               headmsg "Opening Shield of Spikes gump."
+               @equipitem 'mainShield' 2
+            endif
+         endif //#.asps
+
+         //#atps - Auto Tiple Shield
+         if @injournal '.tps' characterName[0]
+            @clearjournal
+            if @gumpexists 'tpsGumpID' 
+               if @inlist 'tpsMode' 'on'
+                  @clearlist 'tpsMode'
+                  @pushlist 'tpsMode' 'off'
+                  @clearlist 'tpsStatus'
+                  @pushlist 'tpsStatus' 'disarmed'
+                  @replygump 'tpsGumpID' 1000
+                  waitforgump 'tpsGumpID' 600
+                  headmsg 'Auto Triple Slash is now OFF' 1990
+               else
+                  @clearlist 'tpsMode'
+                  @pushlist 'tpsMode' 'on'
+                  @clearlist 'tpsStatus'
+                  @pushlist 'tpsStatus' 'disarmed'
+                  headmsg 'Auto Triple Slash is now ON' 1990
+               endif
+            else 
+               //@clearlist 'tpsMode'
+               //@pushlist 'tpsMode' 'disabled'
+               @clearlist 'tpsStatus'
+               @pushlist 'tpsStatus' 'disarmed'
+               @equipitem 'mainWeapon' 1
+               headmsg "Opening Tripleslash gump."
+            endif
+         endif //#.atps
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+         
+-------------------------------------
+
+         //# sps handling
+         
+         if not @gumpexists 'spsGumpID' and not @inlist 'spsMode' 'disabled'
+            @clearlist 'spsMode'
+            @pushlist 'spsMode' 'disabled'
+            headmsg "You need to open the weapon's Shield of Spikes gump first."
+            if @list 'logLevel' >= 0
+               sysmsg 'SPS will never work because the Shield of Spikes gump is not open.' 1990
+            endif           
+         endif
+
+         if @inlist 'spsMode' 'on' and @timer 'spsModeTimer' > spsModeDelay[0]
+            @settimer 'spsModeTimer' 0
+
+            if @inlist 'spsStatus' 'disarmed' and stam >= 20
+               //# Try to Arm the Shield of Spikes
+               replygump 'spsGumpID' 1004
+               waitforgump 'spsGumpID' 600
+               @clearlist 'spsStatus'
+               @pushlist 'spsStatus' 'armed'
+               if @list 'logLevel' > 1
+                  sysmsg 'sps lock and loaded.' '1950'
+               endif 
+            endif
+            if @injournal 'Need 3 PigIron to perform Shield of Spikes' 'system'
+               @clearjournal
+               @clearlist 'spsStatus'
+               @pushlist 'spsStatus' 'disarmed'
+               if @findobject 'regsKeyID'
+                  useobject! 'regsKeyID'
+                  waitforgump 'regsKeyGumpID' 600
+                  replygump 'regsKeyGumpID' 10
+                  waitforgump 'regsKeyGumpID' 600
+                  replygump 'regsKeyGumpID' 0
+               else
+                  @clearlist 'spsMode'
+                  @pushlist 'spsMode' 'off'
+                  headmsg "NO reagents or reagentsKey to cast Shield of Spikes: asps is now disabled."
+               endif
+            endif
+            if @injournal 'defend with Shield of Spikes!' 'system'
+               @clearjournal
+               @clearlist 'spsStatus'
+               @pushlist 'spsStatus' 'disarmed'
+               if @list 'logLevel' > 1
+                  sysmsg 'sps Strike!' '1950'
+               endif 
+            endif
+            //# all that because the failure message does not have 'Shield of Spikes' on it like the others. 
+            //# So to avoid conflicts with the Shield of Spikes feature, we have to make some additional checks here.
+            if @injournal 'You failed the augment skill check' 'system' and @inlist 'spsStatus' 'armed'
+               @clearjournal
+               @clearlist 'spsStatus'
+               @pushlist 'spsStatus' 'disarmed'
+               if @list 'logLevel' > 1
+                  sysmsg 'sps failed skill check.' '1950'
+               endif 
+            endif
+         endif //# sps handling
+         
+         
+         if not @gumpexists 'tpsGumpID' and not @inlist 'tpsMode' 'disabled'
+            @clearlist 'tpsMode'
+            @pushlist 'tpsMode' 'disabled'
+            headmsg "You need to open the weapon's Triple Slash gump first."
+            if @list 'logLevel' >= 0
+               sysmsg 'TPS will never work because the Triple Slash gump is not open.' 1990
+            endif           
+         endif
+
+
+         if @inlist 'tpsMode' 'on' and @timer 'tpsModeTimer' > tpsModeDelay[0]
+            @settimer 'tpsModeTimer' 0
+            if @inlist 'tpsStatus' 'armed' and mana < 50
+               sysmsg 'Need 50 mana to perform Triple Slash. Waiting for mana.'
+               @clearlist 'tpsStatus'
+               @pushlist 'tpsStatus' 'disarmed'
+            endif
+            if @inlist 'tpsStatus' 'disarmed' and mana >= 50
+               //# Try to Arm the tripleslash
+               replygump 'tpsGumpID' 1000
+               waitforgump 'tpsGumpID' 600
+               @clearlist 'tpsStatus'
+               @pushlist 'tpsStatus' 'armed'
+               if @list 'logLevel' > 1
+                  sysmsg 'TPS lock and loaded.' '1950'
+               endif 
+            endif
+            if @injournal 'Need 1 MandrakeRoot to perform Triple Slash' 'system'
+               @clearjournal
+               @clearlist 'tpsStatus'
+               @pushlist 'tpsStatus' 'disarmed'
+               if @findobject 'regsKeyID'
+                  useobject! 'regsKeyID'
+                  waitforgump 'regsKeyGumpID' 600
+                  replygump 'regsKeyGumpID' 3
+                  waitforgump 'regsKeyGumpID' 600
+                  replygump 'regsKeyGumpID' 0
+               else
+                  @clearlist 'tpsMode'
+                  @pushlist 'tpsMode' 'off'
+                  headmsg "NO reagents or reagentsKey to cast Triple Shield: atps is now disabled."
+               endif
+            endif
+            if @injournal 'you strike with Triple Slash!' 'system'
+               @clearjournal
+               @clearlist 'tpsStatus'
+               @pushlist 'tpsStatus' 'disarmed'
+               if @list 'logLevel' > 1
+                  sysmsg 'TPS Strike!' '1950'
+               endif 
+            endif
+            //# all that because the failure message does not have 'triple slash' on it like the others. 
+            //# So to avoid conflicts with the Shield of Spikes feature, we have to make some additional checks here.
+            if @injournal 'You failed the augment skill check' 'system' and @inlist 'tpsStatus' 'armed'
+               @clearjournal
+               @clearlist 'tpsStatus'
+               @pushlist 'tpsStatus' 'disarmed'
+               if @list 'logLevel' > 1
+                  sysmsg 'TPS failed skill check.' '1950'
+               endif 
+            endif
+         endif //# tps handling

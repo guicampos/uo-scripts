@@ -1,0 +1,123 @@
+        //# tps handling
+        if not @gumpexists 'tpsGumpID' and not @inlist 'tpsMode' 'disabled'
+          @clearlist 'tpsMode'
+          @pushlist 'tpsMode' 'disabled'
+          headmsg "You need to open the weapon's Triple Slash gump first."
+          if @list 'logLevel' >= 0
+            sysmsg 'TPS will not work because the Triple Slash gump is not open.' 1990
+          endif
+        endif
+        if @inlist 'tpsMode' 'on' and @timer 'tpsModeTimer' > tpsModeDelay[0]
+          @settimer 'tpsModeTimer' 0
+          if @inlist 'tpsStatus' 'armed' and mana < 50
+            sysmsg 'Need 50 mana to perform Triple Slash. Waiting for mana.'
+            @clearlist 'tpsStatus'
+            @pushlist 'tpsStatus' 'disarmed'
+          endif
+          if @inlist 'tpsStatus' 'disarmed' and mana >= 50
+            //# Try to Arm the tripleslash
+            replygump 'tpsGumpID' 1000
+            waitforgump 'tpsGumpID' 600
+            @clearlist 'tpsStatus'
+            @pushlist 'tpsStatus' 'armed'
+            if @list 'logLevel' > 1
+              sysmsg 'TPS lock and loaded.' '1950'
+            endif
+          endif
+          if @injournal 'Need 1 MandrakeRoot to perform Triple Slash' 'system'
+            @clearjournal
+            @clearlist 'tpsStatus'
+            @pushlist 'tpsStatus' 'disarmed'
+            if @findobject 'regsKeyID'
+              useobject! 'regsKeyID'
+              waitforgump 'regsKeyGumpID' 600
+              replygump 'regsKeyGumpID' 3
+              waitforgump 'regsKeyGumpID' 600
+              replygump 'regsKeyGumpID' 0
+            else
+              @clearlist 'tpsMode'
+              @pushlist 'tpsMode' 'off'
+              headmsg "NO reagents or reagentsKey to cast Triple Shield: atps is now disabled."
+            endif
+          endif
+          if @injournal 'you strike with Triple Slash!' 'system'
+            @clearjournal
+            @clearlist 'tpsStatus'
+            @pushlist 'tpsStatus' 'disarmed'
+            if @list 'logLevel' > 1
+              sysmsg 'TPS Strike!' '1950'
+            endif
+          endif
+          //# all that because the failure message does not have 'triple slash' on it like the others.
+          //# So to avoid conflicts with the Shield of Spikes feature, we have to make some additional checks here.
+          if @injournal 'You failed the augment skill check' 'system' and @inlist 'tpsStatus' 'armed'
+            @clearjournal
+            @clearlist 'tpsStatus'
+            @pushlist 'tpsStatus' 'disarmed'
+            if @list 'logLevel' > 1
+              sysmsg 'TPS failed skill check.' '1950'
+            endif
+          endif
+        endif //# tps handling
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+// Try to find a championBoss by it's graph/color. IF so, finalEnemy will be the championBoss
+         @unsetalias 'championBoss'
+         
+         //# Search for a boss. If and elseif are repetitive, but uosteam seem to use shor-circuit in OR evaluation
+         if @timer 'actionDelayTimer' > actionsDelay[0]
+            if @findtype RikktorGraphic[0] RikktorColor[0] 'ground' 
+               @setalias 'championBoss' 'found'
+            elseif @findtype SemidarGraphic[0] SemidarColor[0] 'ground' 
+               @setalias 'championBoss' 'found'
+            elseif @findtype MOAGraphic[0] MOAColor[0] 'ground' 
+               @setalias 'championBoss' 'found'
+            elseif @findtype SeradoGraphic[0] SeradoColor[0] 'ground' 
+               @setalias 'championBoss' 'found'
+            elseif @findtype MephitisGraphic[0] MephitisColor[0] 'ground' 
+               @setalias 'championBoss' 'found'
+            elseif @findtype PrimevalLichGraphic[0] PrimevalLichColor[0] 'ground' 
+               @setalias 'championBoss' 'found'
+            elseif @findtype NeiraGraphic[0] NeiraColor[0] 'ground' 
+               @setalias 'championBoss' 'found'
+            elseif @findtype BarracoonGraphic[0] BarracoonColor[0] 'ground' 
+               @setalias 'championBoss' 'found'
+            elseif @findtype RagnarGraphic[0] RagnarColor[0] 'ground' 
+               @setalias 'championBoss' 'found'
+            elseif @findtype TwauloGraphic[0] TwauloColor[0] 'ground' 
+               @setalias 'championBoss' 'found'
+            elseif @findtype LordOaksGraphic[0] LordOaksColor[0] 'ground'
+               @setalias 'championBoss' 'found'
+            endif
+            @settimer 'actionDelayTimer' 0
+         endif    
+         
+
+
+         // if there is a boss nearby
+         if @findobject 'championBoss'
+            // warn it
+            if @timer 'championMSGTimer' > championMsgDelay[0]
+               headmsg championMsgText[0] '1990' 'championBoss'
+               @settimer 'championMSGTimer' 0
+            endif
+            
+            
+            // if lockChampionMode, switch finalEnemy to it
+            if @inlist 'lockChampionMode' 'on' 
+               @setalias 'finalEnemy' 'championBoss'
+            endif
+         endif
+      

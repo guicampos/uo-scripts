@@ -1,0 +1,984 @@
+//# Advanced Combat System With Voice Commands V 2.2.14112022
+//    Author: Velland@UO Evolution
+//    Release notes for 14112022
+//#################### README ################
+//# This script took me a lot of time, effort and brain.
+//# Please do not share without asking me.
+//# Do not mark 'loop' on uosteam
+//# READ ALL INSTRUCTIONS AND COMMENTS CAREFULLY
+
+while not dead
+  if @inlist 'status' 'setup'
+    //#characterName is the only MANDATORY thing to change:
+    @pushlist 'characterName' 'Velland' // #Place here your Character Name including spaces. This is the heart of the voice command feature.
+    //# Logging. Pay atention to your Jounal when using the logger.
+    @pushlist 'logLevel' 0 // # Defines a level of system messages. No messages = 0, Errors = 1, Warnings = 2, Info =3, Trace = 4, all messages = 5.
+    //# All toggles settings.  Change at will.
+    @pushlist 'autoHealingMode' 'on' //# When 'on', heal yourself using this macro system. If on, *You must disable your UOSteam self healing option (configure it to friends only)*
+    @pushlist 'autoEvasionMode' 'on' // #Toggles autoEvasionMode feature. It will be enabled for all combat modes. 'on' or 'off'
+    @pushlist 'autoHonorMode' 'on' // #Toggles autoHonorMode feature. 'on' or 'off'.
+    @pushlist 'autoCounterAttackMode' 'on' // #Toggles autoCounterAttackMode feature. 'on' or 'off'.
+    @pushlist 'autoEnemyOfOneMode' 'off'  // #Toggles autoEnemyOfOneMode feature. 'on' or 'off'.
+    @pushlist 'lockChampionMode' 'on' //# When 'on', lock target on a champion boss whenever 2 titles away from it. 'on' or 'off'. DISABLED
+    @pushlist 'autoDiscordanceMode' 'on' // #Toggles autoDiscordance feature. 'on' or 'off'.
+    @pushlist 'autoLooter' 'on' // # Enable or disable the jewelry looter feature. 'on' or 'off'
+    @pushlist 'autoClaim' 'off' // # Enable or disable the auto claim feature. 'on' or 'off'
+    //# Combat related configuration. Remember: Excute the voice command '.reload' after any change.
+    @pushlist 'combatMode' 'cmode' // #Your default Combat mode. Can be cmode or smode. More modes to come.
+    @pushlist 'cmodeSpecial' 'secondary' // #Any ability or spell that affects in area. Recomended values: 'primary','secondary' (for whirlwind weapons),'Momentum Strike', etc.
+    @pushlist 'smodeSpecial' 'Lightning Strike' // #Any ability or spell that allows emphasize damage and to use on SMODE. Recomended values: 'primary','secondary','Lightning Strike',<any fight spell> .
+    // Timers and delay limits. Avoid changing.
+    //actionsDelay is THE most important delay in the system. This will determine how much time your script will cycle between attacks and loot.
+    //actionsDelay makes a HUGE role in the entire script. If it's too high, the entire script will be slow and skip cycles. Too low and it may skip jewelry or healing. 
+    @pushlist 'actionsDelay' '600' //A general rule for this should be 600+your server ping(check it with -ping command) up to your swing speed. Keep it bellow 1500ms
+    @pushlist 'lootCorpseDelay' '600' // #Delay to retry looting.
+    @pushlist 'championMsgDelay' '10000' // # Time between champion found warning.
+    @pushlist 'healingDelay' '4000' //# Check your [mystats for your perfect delay. 4000 is 4000 seconds
+    @pushlist 'healthLimit' '250' //# The lowest health we should start healing
+    @pushlist 'divineFuryDelay' '19000' // #How often Divine Fury will be toggled. Should be 18-21 seconds.
+    @pushlist 'consecrateWeaponDelay' '9000' // #consecrate weapon delay timer. Adjust based on your Karma.
+    @pushlist 'autoEvasionDelay' '24000' //# How often Evasion will be toggled. According to uo guide, delay should be 23-26 seconds.
+    @pushlist 'autoHonorDelay' '1000' //# How often Honor will be toggled. The script will honor only mobs with full HP
+    @pushlist 'listsCleanerDelay' '180000'//# How often the list of already honored creatures must be cleaned. 3 minutes is fine.
+    @pushlist 'autoEnemyOfOneDelay' '120000'  //# How often Enemy of One will be cast
+    @pushlist 'autoCounterAttackDelay' '10000' //# How often Counter attack will be toggled.
+    @pushlist 'cmodeSpecialRate' '600' // #how often script will use cmodeSpecial. 300 is a good start to find a good value.
+    @pushlist 'smodeSpecialRate' '600' // #how often script will use smodeSpecial. This should be near to your swing speed. check on [mystats ingame command.
+    @pushlist 'autoDiscordanceDelay' '14000'  // #how often script will use Discordance. 
+    @pushlist 'castDelay' '800' // # Based on your cast speed and recovery value in milliseconds
+    // #Other settings. Change at will but be careful.
+    @pushlist 'championMsgText' '↓CHAMPS!↓' // # A message to display over a champion when it appears.
+    @pushlist 'instrumentGraphic' 0xe9d // Instrument Graphic to be used by the Discordance Skill
+    @pushlist 'instrumentColor' 0 // Color for the Instrument  to be used by the Discordance Skill.
+    @pushlist 'corpseGraphic' 0x2006 //0x2006 is a corpse. 0x2DF3 or any other container graphic on the ground for testing
+    @pushlist 'masterKeySerial' 0x4257c632 // if you own a master key, place it's serial number here
+    @pushlist 'minSkillforLoot' '13' //# How much of a skill a jewelry must have in order to be looted
+    @pushlist 'howManySkillsforLoot' '2' // How many skill found is needed to be looted
+    @pushlist 'autoclaimMessage' '[claim -c' // what autoclaim should use? [claim -c, [grab?
+    @pushlist 'filterCorpses' 'on' // if 'on', only corpses with items will be opened
+    @pushlist 'lootCorpseDistance' '2' // #Max Distance to loot a corpse.
+    @pushlist 'weightLimitWarningDelay' '20000' // timer to show the weightLimit message
+    @pushlist 'weightLimitStones' 525 // weightLimitStones
+    @pushlist 'weightLimitCount' 110 // weightLimitCount
+    // #-----------END OF USER CONFIGURATION. DO NOT EDIT---------------
+    // #Flag ending of setup phase
+    @clearlist 'status'
+    // #Flag start of startup phase
+    @pushlist 'status' 'startup'
+  elseif @inlist 'status' 'startup'
+    //Prepare the logger
+    while @list 'logLevel' <= logLevel[0]
+       @pushlist 'logLevel' ''
+     endwhile
+    @poplist 'logLevel' 'front'
+    // #Startup phase. Set aliases based on setup and pre-battle actions
+    if name 'self' != characterName[0]
+      headmsg "*'characterName' IS MANDATORY and must be equal to your character name. Change the variable 'characterName'. Exiting.*" 1990
+      stop
+    endif
+    //# A greet.
+    if @list 'logLevel' >= 0
+      sysmsg 'System Startup.' 1990
+      msg '.status' msgclr[0]
+    endif
+    //# reseting timers and status
+    @clearignorelist
+    @settimer 'actionDelayTimer' actionsDelay[0]
+    @settimer 'autoEnemyOfOneTimer' autoEnemyOfOneDelay[0]
+    @settimer 'autoEvasionTimer' autoEvasionDelay[0]
+    @settimer 'listsCleanerTimer' listsCleanerDelay[0]
+    @settimer 'autoHonorTimer' autoHonorDelay[0]
+    @settimer 'championMSGTimer' championMsgDelay[0]
+    @settimer 'cmodeSpecialRateTimer' cmodeSpecialRate[0]
+    @settimer 'consecrateWeaponTimer' consecrateWeaponDelay[0]
+    @settimer 'divineFuryTimer' divineFuryDelay[0]
+    @settimer 'healingDelayTimer' healingDelay[0]
+    @settimer 'loopTime' 0
+    @settimer 'lootCorpseTimer' lootCorpseDelay[0]
+    @settimer 'smodeSpecialRateTimer' smodeSpecialRate[0]
+    @settimer 'weightLimitWarningTimer' weightLimitWarningDelay[0]
+    @unsetalias 'smodeSpecialAbility'
+    if @inlist 'smodeSpecial' 'primary' or @inlist 'smodeSpecial' 'secondary'
+      @setalias 'smodeSpecialAbility' 'self'
+    endif
+    @unsetalias 'cmodeSpecialAbility'
+    if @inlist 'cmodeSpecial' 'primary' or @inlist 'cmodeSpecial' 'secondary'
+      @setalias 'cmodeSpecialAbility' 'self'
+    endif
+    // #Last line before start fighting
+    //@clearlist 'status'
+    // ==============================
+    // ======= MAIN LOOP ========
+    // ==============================
+    while not dead
+       @settimer 'loopTime' 0
+      //# Reset Setup
+      if @injournal '.reload' characterName[0]
+        @clearjournal
+        @clearlist 'status'
+        headmsg 'Right. Reload all variables and lists.'
+        break //# to exit the while not dead
+      endif //#.reload
+      //# stop and exit
+      if @injournal '.halt' characterName[0]
+        @clearjournal
+        headmsg 'Right. Stop and exit.'
+        stop
+      endif //#.halt
+
+      //# HEALING ROUTINE
+      //# Healing here, so you can use UO Steam to heal your friends
+      if @inlist 'autoHealingMode' 'on'
+        if poisoned 'self' or hits < healthLimit[0]
+          if timer 'healingDelayTimer' > healingDelay[0]
+            bandageself
+            waitfortarget actionsDelay[0]
+            target! 'self'
+            settimer 'healingDelayTimer' 0
+          endif
+        endif
+      endif
+      
+      //world save
+      if @injournal 'The world is saving' 'system'
+         headmsg 'Pausing for World Save.'
+         waitforjournal 'World save complete' 60000 'system'
+         headmsg 'World Save Complete. Continue.'
+         @clearjournal
+      endif
+         //# BEGIN ACQUIRING TARGET
+        
+         // Search any closest target 
+         @getenemy 'murderer' 'enemy' 'gray' 'criminal' 'closest'
+         if @findobject 'enemy' 'any' 'ground' '0' 16
+            @setalias 'finalEnemy' 'enemy'
+            @clearlist 'silentMode'
+            @pushlist 'silentMode' 'off'
+            
+            // Champion Targeting
+            @unsetalias 'championBoss'
+         
+            //# Search for a boss. If and elseif are repetitive, but uosteam seem to use shor-circuit in OR evaluation
+            if @timer 'actionDelayTimer' > actionsDelay[0]
+               if @findtype RikktorGraphic[0] RikktorColor[0] 'ground' 
+                  @setalias 'championBoss' 'found'
+               elseif @findtype SemidarGraphic[0] SemidarColor[0] 'ground' 
+                  @setalias 'championBoss' 'found'
+               elseif @findtype MOAGraphic[0] MOAColor[0] 'ground' 
+                  @setalias 'championBoss' 'found'
+               elseif @findtype SeradoGraphic[0] SeradoColor[0] 'ground' 
+                  @setalias 'championBoss' 'found'
+               elseif @findtype MephitisGraphic[0] MephitisColor[0] 'ground' 
+                  @setalias 'championBoss' 'found'
+               elseif @findtype PrimevalLichGraphic[0] PrimevalLichColor[0] 'ground' 
+                  @setalias 'championBoss' 'found'
+               elseif @findtype NeiraGraphic[0] NeiraColor[0] 'ground' 
+                  @setalias 'championBoss' 'found'
+               //elseif @findtype BarracoonGraphic[0] BarracoonColor[0] 'ground' 
+               //   @setalias 'championBoss' 'found'
+               elseif @findtype RagnarGraphic[0] RagnarColor[0] 'ground' 
+                  @setalias 'championBoss' 'found'
+               elseif @findtype TwauloGraphic[0] TwauloColor[0] 'ground' 
+                  @setalias 'championBoss' 'found'
+               elseif @findtype LordOaksGraphic[0] LordOaksColor[0] 'ground'
+                  @setalias 'championBoss' 'found'
+               endif
+               @settimer 'actionDelayTimer' 0
+            endif    
+
+            // if there is a boss nearby
+            if @findobject 'championBoss'
+               // if lockChampionMode, switch finalEnemy to it
+               if @inlist 'lockChampionMode' 'on' 
+                  // warn it
+                  if @timer 'championMSGTimer' > championMsgDelay[0]
+                     headmsg championMsgText[0] '1990' 'championBoss'
+                     @settimer 'championMSGTimer' 0
+                  endif
+                  @setalias 'finalEnemy' 'championBoss'
+               endif
+            endif
+         
+         else //else findobject, set silent mode
+            @unsetalias 'finalEnemy'
+            if @inlist 'silentMode' 'off'
+               headmsg 'No Enemy found. Entering Silent Mode' '1990'
+              @clearlist 'silentMode'
+              @pushlist 'silentMode' 'on'
+            endif
+         endif //findobject
+         
+      if @findalias 'finalEnemy' 
+        //# Combat Modes Routines procedures.
+        //# START OF BATTLE ROUTINES
+        //# Place things that need a target here
+
+        //#combatMode handling before attacking
+        if @inlist 'combatMode' 'cmode'
+          if @timer 'cmodeSpecialRateTimer' > cmodeSpecialRate[0] and @timer 'castDelayTimer' > castDelay[0]
+            if @findalias 'cmodeSpecialAbility'
+              if @list 'logLevel' > 4
+                sysmsg 'Executing setability cmodeSpecial' msgclr[0]
+              endif
+              @setability cmodeSpecial[0] 'on'
+            else
+              if @list 'logLevel' > 4
+                sysmsg 'Executing cast cmodeSpecial' msgclr[0]
+              endif
+              cast cmodeSpecial[0]
+            endif
+            @settimer 'cmodeSpecialRateTimer' 0
+          endif
+        elseif @inlist 'combatMode' 'smode'
+          if @timer 'smodeSpecialRateTimer' > smodeSpecialRate[0] and @timer 'castDelayTimer' > castDelay[0]
+            if @findalias 'smodeSpecialAbility'
+              if @list 'logLevel' > 4
+                sysmsg 'Executing setability smodeSpecial (ON)' msgclr[0]
+              endif
+              @setability smodeSpecial[0] 'on'
+            else
+              if @list 'logLevel' > 4
+                sysmsg 'Executing cast smodeSpecial' msgclr[0]
+              endif
+              cast smodeSpecial[0]
+            endif
+            @settimer 'smodeSpecialRateTimer' 0
+          endif
+        elseif @inlist 'combatMode' 'pmode'
+          headmsg 'pmode: TODO'
+        else
+          //# oops, combatMode should never 'else' anything. Assuming the default cmode
+          @clearlist 'combatMode'
+          @pushlist 'combatMode' 'cmode'
+        endif //#combatMode handling
+        
+        // #-----Attack!-----------
+        attack! 'finalEnemy'
+        
+        if @list 'logLevel' > 4
+          headmsg '↓Attacking↓' '1990' 'finalEnemy'
+        endif
+       
+        //# Pre-combat routines. For example, defensive manouvers.
+        //# Divine Fury.
+        if @timer 'divineFuryTimer' > divineFuryDelay[0] and @timer 'castDelayTimer' > castDelay[0]
+          if @list 'logLevel' > 2
+            sysmsg 'Casting Divine Fury' msgclr[0]
+          endif
+          cast 'Divine Fury'
+          @settimer 'divineFuryTimer' 0
+          @settimer 'castDelayTimer' 0
+        endif
+        //# autoEvasionMode
+        if @inlist 'autoEvasionMode' 'on'
+          if @timer 'autoEvasionTimer' > autoEvasionDelay[0] and @timer 'castDelayTimer' > castDelay[0]
+            if @list 'logLevel' > 2
+              sysmsg 'Casting Evasion (autoEvasionMode is on)' msgclr[0]
+            endif
+            @cast 'evasion'
+            @settimer 'autoEvasionTimer' 0
+            @settimer 'castDelayTimer' 0
+          endif
+        endif
+        //# Auto autoCounterAttackMode
+        if @inlist 'autoCounterAttackMode' 'on'
+          if @timer 'autoCounterAttackTimer' > autoCounterAttackDelay[0] and @timer 'castDelayTimer' > castDelay[0]
+            if @timer 'autoEvasionTimer' > 8300
+              if @list 'logLevel' > 2
+                sysmsg 'Casting Counter Attack (autoCounterAttackMode is on)' msgclr[0]
+              endif
+              @cast 'Counter Attack'
+              @settimer 'autoCounterAttackTimer' 0
+              @settimer 'castDelayTimer' 0
+            endif
+          endif
+        endif
+        if @timer 'consecrateWeaponTimer' > consecrateWeaponDelay[0] and @timer 'castDelayTimer' > castDelay[0]
+          if @list 'logLevel' > 2
+            sysmsg 'Consecrate Weapon' msgclr[0]
+          endif
+          cast 'Consecrate Weapon'
+          @settimer 'consecrateWeaponTimer' 0
+          @settimer 'castDelayTimer' 0
+        endif
+        //# Proc EnemyOfOne
+        if @inlist 'autoEnemyOfOneMode' 'on'
+          if @timer 'autoEnemyOfOneTimer' > autoEnemyOfOneDelay[0] and @timer 'castDelayTimer' > castDelay[0]
+            if @list 'logLevel' > 2
+              sysmsg 'Casting autoEnemyOfOneTimer (ON)' msgclr[0]
+            endif
+            cast 'enemy of one'
+            @settimer 'autoEnemyOfOneTimer' 0
+            @settimer 'castDelayTimer' 0
+          endif
+        endif //# Proc EnemyOfOne
+        
+         // proc discord
+        if @inlist 'autoDiscordanceMode' 'on'
+            if not @findtype instrumentGraphic[0] instrumentColor[0] 'backpack'
+               headmsg 'No Instrument found on your backpack. AutoDiscordance Disabled' 1990 'self'
+               @clearlist 'autoDiscordanceMode' 
+               @pushlist 'autoDiscordanceMode' 'off'
+               continue
+            endif
+           if @timer 'autoDiscordanceTimer' > autoDiscordanceDelay[0]
+             if not @inlist 'discordedEnemyList' 'finalEnemy' and @inrange 'finalEnemy' 8
+
+               @useskill 'Discordance'
+               waitfortarget actionsDelay[0]
+               if @injournal 'What instrument shall you play?' 'system'
+                  @clearjournal
+                  if @findtype instrumentGraphic[0] instrumentColor[0] 'backpack'
+                     @target! 'found'
+                  else 
+                     headmsg 'No Instrument found on your backpack. AutoDiscordance Disabled' 1990 'self'
+                     @clearlist 'autoDiscordanceMode' 
+                     @pushlist 'autoDiscordanceMode' 'off'
+                  endif
+               elseif @injournal 'to use another skill' 'system'
+                  @clearjournal
+                  @settimer 'autoDiscordanceTimer' 0
+               else 
+                  @target! 'finalEnemy' 
+                  //pause 10
+                  if @injournal 'You play jarring music' 'system'
+                     @clearjournal
+                     @pushlist 'discordedEnemyList' 'finalEnemy'
+                     @settimer 'autoDiscordanceTimer' 0
+                  endif 
+               endif
+               @canceltarget
+               @cancelautotarget
+             endif
+
+           endif
+        endif
+        
+        //# Proc honor
+        if @inlist 'autoHonorMode' 'on' and @inrange 'finalEnemy' 6
+          if @timer 'autoHonorTimer' > autoHonorDelay[0] and not @inlist 'autoHonorHonoredList' 'finalEnemy'
+            if hits 'finalEnemy' == maxhits 'finalEnemy'
+              if @list 'logLevel' > 2
+                sysmsg 'Executing autoHonorMode (ON)' msgclr[0]
+              endif
+              virtue 'honor'
+              waitfortarget actionsDelay[0]
+              target! 'finalEnemy'
+              @pushlist 'autoHonorHonoredList' 'finalEnemy'
+              @settimer 'autoHonorTimer' 0
+              @canceltarget
+              @cancelautotarget
+            endif
+          endif
+        endif //# Proc honor
+
+      endif //# findalias 'finalEnemy'
+      
+      
+      //# END OF TARGETED ROUTINES
+      //# END OF BATTLE ROUTINES
+      // #-----------Claim and Loot procedures-------------
+      // #--------AUTO LOOTER-----------
+      if @inlist 'autoLooter' 'on' and @timer 'lootCorpseTimer' > lootCorpseDelay[0]
+         if @timer 'weightLimitWarningTimer' > weightLimitWarningDelay[0]
+            @settimer 'overweightWarningTimer' 0
+            if weight >= weightLimitStones[0]
+               sysmsg 'Warning: Check your weight limit!' 1990
+               headmsg 'Warning: Check your weight limit!' 1990 'self'
+            endif
+            if @contents 'backpack' >= weightLimitCount[0]
+               sysmsg 'Warning: Check your inventory quantity!' 1990
+               headmsg 'Warning: Check your inventory quantity!' 1990 'self'
+            endif
+            @settimer 'weightLimitWarningTimer' 0
+         endif
+        if @findtype corpseGraphic[0] 'any' 'ground' '0' lootCorpseDistance[0]
+          @setalias 'corpse' 'found'
+          if @list 'logLevel' > 3
+            headmsg '↓Corpse here↓' '1950' 'corpse'
+          endif
+          
+          if @inlist 'filterCorpses' 'on'
+            if contents 'corpse' > 0
+               useobject 'corpse'
+            endif
+          endif
+          //@clearlist 'shouldLoot'
+          //For each type of jewelry
+          for 0 to jewelryList
+               // while finding a jewelry (don't worry, ignoreobject will empty the list and make the while exits naturally)
+              while @findtype jewelryList[] 'any' 'corpse'
+                @setalias 'jewelryFound' 'found'
+                // actionsDelay makes a HUGE role here. If it's too high, the entire script will be slow and skip cycles. Too low and it may skip jewelry. Keep it between 300-1500 but test it carefully.
+                @clearlist 'SkillListFound'
+                for 0 to SkillList
+                  if @property SkillList[] 'jewelryFound' >= minSkillforLoot[0]
+                     @pushlist 'SkillListFound' SkillList[]
+                  endif
+                endfor
+                // Check for howManySkillsforLoot[0] and then moveitem
+                if list 'SkillListFound' >= howManySkillsforLoot[0]
+                  while @findobject 'jewelryFound' 'any' 'corpse'
+                    @moveitem 'jewelryFound' 'lootBag'
+                  endwhile
+                  if @findobject 'jewelryFound' 'any' 'backpack'
+                    pause 25
+                    msg '[e yea'
+                    sysmsg '↓↓Found Jewelry with:↓↓' '1990'
+                    for 0 to SkillListFound
+                        sysmsg SkillListFound[] '1990'
+                    endfor
+                  endif
+                endif
+                @ignoreobject 'jewelryFound'
+                if @list 'logLevel' > 1
+                  timermsg 'loopTime'
+                endif
+              endwhile
+          endfor //end for jewelryList
+
+         // Auto Claim
+         if @inlist 'autoClaim' 'on'
+            msg autoclaimMessage[0]
+            waitfortarget actionsDelay[0]
+            @target! 'corpse'
+            pause 25
+            //***  Auto Proccess resources here. Repeat the same structure as presented.
+               // ** autoproc leather
+            //while @findtype '0x1079' 'any' 'backpack'
+            //   @setalias 'leather' 'found'
+            //   if @findtype '0xf9f' 'any' 'backpack'
+            //      @setalias 'scissors' 'found'
+            //      @useobject 'scissors'
+            //      waitfortarget 2000
+            //      @target! 'leather'
+            //   endif
+            //  pause 5
+            //endwhile
+            
+            // ** implement a new autoproc here
+
+            @canceltarget
+            @cancelautotarget
+         endif
+
+          @settimer 'lootCorpseTimer' 0
+          @ignoreobject 'corpse'
+          @canceltarget
+          
+            // ** auto masterkey if it exists
+            if @findobject masterKeySerial[0]
+               msg '[ffp'
+            endif
+        endif // if corpse
+      endif //# end AUTO LOOTER
+      // #-------Messages-Handling-----
+      // # Message service should be the last in loop
+      //#help
+      if @injournal '.help' characterName[0]
+        @clearjournal
+        sysmsg 'Help for Advanced Combat System with Voice Commands.' 1990
+        sysmsg 'All commands starts with ".". Available Commands:'  1990
+        sysmsg '-=|Combat Modes|=-' 1990
+        sysmsg '  .cmode - switch to the champion mode' 1281
+        sysmsg '  .smode - switch to the single mode' 1281
+        sysmsg '  .pmode - switch to the pet mode' 1281
+        sysmsg '-=|Combat Configurations|=-' 1990
+        sysmsg '  .ah  - Toggles Auto Healing' 1281
+        sysmsg '  .eva - Toggles Auto Evasion' 1281
+        sysmsg '  .ca  - Toggles Auto Counter Attack' 1281
+        sysmsg '  .hon - Toggles Auto Honor' 1281
+        sysmsg '  .ad - Toggles Auto Discordance' 1281
+        sysmsg '  .eoo - Toggles Auto Enemy of One' 1281
+        sysmsg '  .eq1 - Equips your main melee weapons' 1281
+        sysmsg '  .eq2 - Equips your main ranged weapon' 1281
+        sysmsg '-=|Targeting|=-' 1990
+        sysmsg '  .lc - Toggles the Lock Champion Mode' 1281
+        sysmsg '-=|Reports|=-' 1990
+        sysmsg '  .status - shows ON JOUNAL the status for all voice commands features' 1281
+        sysmsg '  .timers - shows ON JOUNAL the time of all timers' 1281
+        sysmsg '-=|Auto Looter|=-' 1990
+        sysmsg '  .al - toggles the auto looter feature' 1281
+        sysmsg '  .ac - toggles the auto claim feature' 1281
+        sysmsg '  .gg - grabs all in range gold piles.' 1281
+        sysmsg '-=|SETUP|=-' 1990
+        sysmsg '  .reload - Reset all the setups and start over. *Executed after any changes to settings.*' 1990
+        sysmsg '  .halt - Stop and exit the system' 1990
+      endif
+      //# set Combat Mode
+      if @injournal '.cmode' characterName[0]
+        @clearjournal
+        @clearlist 'combatMode'
+        pushlist 'combatMode' 'cmode'
+        headmsg 'SWITCHED TO CHAMPION MODE' 1990
+      elseif @injournal '.smode' characterName[0]
+        @clearjournal
+        @clearlist 'combatMode'
+        pushlist 'combatMode' 'smode'
+        headmsg 'SWITCHED TO SINGLE MODE' 1990
+      elseif @injournal '.pmode' characterName[0]
+        @clearjournal
+        @clearlist 'combatMode'
+        pushlist 'combatMode' 'pmode'
+        headmsg 'SWITCHED TO PET MODE (unimplemented)' 1990
+      endif //#.cmode
+      //# Set special combat modes
+
+      //#equipment switchers
+      if @injournal '.eq1' characterName[0]
+        dress 'melee'
+        @clearjournal
+      endif
+      if @injournal '.eq2' characterName[0]
+        dress 'ranged'
+        @clearjournal
+      endif
+
+      //# .ah - auto healing
+      if @injournal '.ah' characterName[0]
+        @clearjournal
+        if @inlist 'autoHealingMode' 'on'
+          @clearlist 'autoHealingMode'
+          @pushlist 'autoHealingMode' 'off'
+          headmsg 'Auto Healing is now OFF' 1990
+        else
+          @clearlist 'autoHealingMode'
+          @pushlist 'autoHealingMode' 'on'
+          headmsg 'Auto Healing is now ON' 1990
+        endif
+      endif //# .ah
+      
+      //# .ad - auto discordance
+      if @injournal '.ad' characterName[0]
+        @clearjournal
+        if @inlist 'autoDiscordanceMode' 'on'
+          @clearlist 'autoDiscordanceMode'
+          @pushlist 'autoDiscordanceMode' 'off'
+          headmsg 'Auto Discordance is now OFF' 1990
+        else
+          @clearlist 'autoDiscordanceMode'
+          @pushlist 'autoDiscordanceMode' 'on'
+          headmsg 'Auto Discordance is now ON' 1990
+        endif
+      endif //# .ad
+      
+      //#.hon - toggles auto honor
+      if @injournal '.hon' characterName[0]
+        @clearjournal
+        if @inlist 'autoHonorMode' 'on'
+          @clearlist 'autoHonorMode'
+          @pushlist 'autoHonorMode' 'off'
+          headmsg 'Auto Honor is now OFF' 1990
+        else
+          @clearlist 'autoHonorMode'
+          @pushlist 'autoHonorMode' 'on'
+          headmsg 'Auto Honor is now ON' 1990
+        endif
+      endif //#.hon
+      //#.eva - toggles auto evasion
+      if @injournal '.eva' characterName[0]
+        @clearjournal
+        if @inlist 'autoEvasionMode' 'on'
+          @clearlist 'autoEvasionMode'
+          @pushlist 'autoEvasionMode' 'off'
+          headmsg 'Auto Evasion is now OFF' 1990
+        else
+          @clearlist 'autoEvasionMode'
+          @pushlist 'autoEvasionMode' 'on'
+          headmsg 'Auto Evasion is now ON' 1990
+        endif
+      endif //# .eva
+      //# .ca - auto counter attack
+      if @injournal '.ca' characterName[0]
+        @clearjournal
+        if @inlist 'autoCounterAttackMode' 'on'
+          @clearlist 'autoCounterAttackMode'
+          @pushlist 'autoCounterAttackMode' 'off'
+          headmsg 'Auto Counter Attack is now OFF' 1990
+        else
+          @clearlist 'autoCounterAttackMode'
+          @pushlist 'autoCounterAttackMode' 'on'
+          headmsg 'Auto Counter Attack is now ON' 1990
+        endif
+      endif //#.ca
+      //#.eoo - toggles auto Enemy of One
+      if @injournal '.eoo' characterName[0]
+        @clearjournal
+        if @inlist 'autoEnemyOfOneMode' 'on'
+          @clearlist 'autoEnemyOfOneMode'
+          @pushlist 'autoEnemyOfOneMode' 'off'
+          headmsg 'Auto Enemy of One is now OFF' 1990
+        else
+          @clearlist 'autoEnemyOfOneMode'
+          @pushlist 'autoEnemyOfOneMode' 'on'
+          headmsg 'Auto Enemy of One is now ON' 1990
+        endif
+      endif //#.eoo
+      //# .al - set autoLooter
+      if @injournal '.al' characterName[0]
+        @clearjournal
+        if @inlist 'autoLooter' 'on'
+          @clearlist 'autoLooter'
+          pushlist 'autoLooter' 'off'
+          headmsg 'autoLooter is now OFF' 1990
+        else
+          @clearlist 'autoLooter'
+          pushlist 'autoLooter' 'on'
+          @clearignorelist
+          headmsg 'autoLooter is now ON' 1990
+        endif
+      endif //# .al
+      if @injournal '.gg' characterName[0]
+        @clearjournal
+        while @findtype 0xeed 'any' 'ground' '6' '6'
+          @setalias 'gold' 'found'
+          @useobject! 'gold'
+          @ignoreobject 'gold'
+        endwhile
+      endif //# .ac autoclaim
+      if @injournal '.ac' characterName[0]
+        @clearjournal
+       if @inlist 'autoClaim' 'on'
+          @clearlist 'autoClaim'
+          @pushlist 'autoClaim' 'off'
+          headmsg 'Auto Claim is now OFF' 1990
+        else
+          @clearlist 'autoClaim'
+          @pushlist 'autoClaim' 'on'
+          headmsg 'Auto Claim is now ON' 1990
+        endif
+      endif //# .jl
+      if @injournal '.lc' characterName[0]
+        @clearjournal
+       if @inlist 'lockChampionMode' 'on'
+          @clearlist 'lockChampionMode'
+          @pushlist 'lockChampionMode' 'off'
+          headmsg 'Lock Champion Mode is now OFF' 1990
+        else
+          @clearlist 'lockChampionMode'
+          @pushlist 'lockChampionMode' 'on'
+          headmsg 'Lock Champion Mode is now ON' 1990
+        endif
+      endif //#.lc
+      //# Report Timing
+      if @injournal '.timers' characterName[0]
+        @clearjournal
+        timermsg 'loopTime' msgclr[0]
+        timermsg 'actionDelayTimer' msgclr[0]
+        timermsg 'listsCleanerTimer' msgclr[0]
+        timermsg 'autoHonorTimer' msgclr[0]
+        timermsg 'castDelayTimer' msgclr[0]
+        timermsg 'championMSGTimer' msgclr[0]
+        timermsg 'cmodeSpecialRateTimer' msgclr[0]
+        timermsg 'smodeSpecialRateTimer' msgclr[0]
+        timermsg 'lootCorpseTimer' msgclr[0]
+      endif //# .showTime
+      //# General Report Mode
+      if @injournal '.status' characterName[0]
+        @clearjournal
+        timermsg 'loopTime' msgclr[0]
+        if @inlist 'combatMode' 'cmode'
+          headmsg 'Combat Modes: CMODE' msgclr[0]
+        elseif @inlist 'combatMode' 'smode'
+          headmsg 'Combat Mode: SMODE' msgclr[0]
+        elseif @inlist 'cmode' 'pmode'
+          headmsg 'Combat Mode: PMODE' msgclr[0]
+        endif
+        if @inlist 'autoEvasionMode' 'on'
+          headmsg 'autoEvasion: ON' msgclr[0]
+        else
+          headmsg 'autoEvasion: OFF' msgclr[0]
+        endif
+        if @inlist 'autoCounterAttackMode' 'on'
+          headmsg 'autoCounterAttack: ON' msgclr[0]
+        else
+          headmsg 'autoCounterAttack: OFF' msgclr[0]
+        endif
+        if @inlist 'autoHonorMode' 'on'
+          headmsg 'autoHonor: ON' msgclr[0]
+        else
+          headmsg 'autoHonor: OFF' msgclr[0]
+        endif
+        if @inlist 'autoDiscordanceMode' 'on'
+          headmsg 'autoDiscordance: ON' msgclr[0]
+        else
+          headmsg 'autoDiscordance: OFF' msgclr[0]
+        endif
+        if @inlist 'autoEnemyOfOneMode' 'on'
+          headmsg 'autoEnemyOfOne: ON' msgclr[0]
+        else
+          headmsg 'autoEnemyOfOne: OFF' msgclr[0]
+        endif
+        if @inlist 'autoLooter' 'on'
+          headmsg 'Auto Looter: ON' msgclr[0]
+        else
+          headmsg 'Auto Looter: OFF' msgclr[0]
+        endif
+        if @inlist 'autoClaim' 'on'
+          headmsg 'Auto Claim: ON' msgclr[0]
+        else
+          headmsg 'Auto Claim: OFF' msgclr[0]
+        endif
+        if @inlist 'lockChampionMode' 'on'
+          headmsg 'Lock Champion: ON' msgclr[0]
+        else
+          headmsg 'Lock Champion: OFF' msgclr[0]
+        endif
+      endif //#.showStatus
+      //# Cleanup procedures
+      if @timer 'listsCleanerTimer' > listsCleanerDelay[0]
+        @settimer 'listsCleanerTimer' 0
+        @clearlist 'autoHonorHonoredList'
+        @clearlist 'discordedEnemyList'
+      endif
+      
+    endwhile //#While not dead
+    if dead 'self'
+      headmsg '-=|Dead men tell no tales. Nor play macros|=-' 1990
+      stop
+    endif
+  else
+    sysmsg 'Advanced Combat System with Voice Commands' 1990
+    //# User defined serials
+    if not @findobject 'lootBag'
+      promptalias 'lootBag'
+    endif
+    // ---- Variables ----
+    @createlist 'actionsDelay'
+    @createlist 'autoCounterAttackDelay'
+    @createlist 'autoCounterAttackMode'
+    @createlist 'autoClaim'
+    @createlist 'autoclaimMessage'
+    @createlist 'autoDiscordanceDelay'
+    @createlist 'autoDiscordanceMode'
+    @createlist 'discordedEnemyList'
+    @createlist 'autoEnemyOfOneDelay'
+    @createlist 'autoEnemyOfOneMode'
+    @createlist 'autoEvasionDelay'
+    @createlist 'autoEvasionMode'
+    @createlist 'autoHealingMode'
+    @createlist 'autoHonorDelay'
+    @createlist 'autoHonorHonoredList'
+    @createlist 'listsCleanerDelay'
+    @createlist 'autoHonorMode'
+    @createlist 'castDelay'
+    @createlist 'championMsgDelay'
+    @createlist 'championMsgText'
+    @createlist 'characterName'
+    @createlist 'cmodeSpecial'
+    @createlist 'cmodeSpecialMobsCount'
+    @createlist 'cmodeSpecialRate'
+    @createlist 'combatMode'
+    @createlist 'consecrateWeaponDelay'
+    @createlist 'divineFuryDelay'
+    @createlist 'healingDelay'
+    @createlist 'healthLimit'
+    @createlist 'autoLooter'
+    @createlist 'lockChampionMode'
+    @createlist 'logColor'
+    @createlist 'logLevel'
+    @createlist 'lootCorpseDelay'
+    @createlist 'lootCorpseDistance'
+    @createlist 'filterCorpses'
+    @createlist 'weightLimitWarningDelay'
+    @createlist 'weightLimitStones'
+    @createlist 'weightLimitCount'
+    @createlist 'minSkillforLoot'
+    @createlist 'masterKeySerial'
+    @createlist 'howManySkillsforLoot'
+    @createlist 'reloadCommand'
+    @createlist 'smodeSpecial'
+    @createlist 'smodeSpecialRate'
+    @createlist 'staminaLimit'
+    @createlist 'status'
+    @createlist 'silentMode'
+    @createlist 'shouldLoot'
+    @clearlist 'shouldLoot'
+    @clearlist 'actionsDelay'
+    @clearlist 'autoCounterAttackDelay'
+    @clearlist 'autoCounterAttackMode'
+    @clearlist 'autoClaim'
+    @clearlist 'autoclaimMessage'
+    @clearlist 'autoDiscordanceDelay'
+    @clearlist 'autoDiscordanceMode'
+    @clearlist 'discordedEnemyList'
+    @clearlist 'autoEnemyOfOneDelay'
+    @clearlist 'autoEnemyOfOneMode'
+    @clearlist 'autoEvasionDelay'
+    @clearlist 'autoEvasionMode'
+    @clearlist 'autoHealingMode'
+    @clearlist 'autoHonorDelay'
+    @clearlist 'autoHonorHonoredList'
+    @clearlist 'listsCleanerDelay'
+    @clearlist 'autoHonorMode'
+    @clearlist 'castDelay'
+    @clearlist 'championMsgDelay'
+    @clearlist 'championMsgText'
+    @clearlist 'characterName'
+    @clearlist 'cmodeSpecial'
+    @clearlist 'cmodeSpecialMobsCount'
+    @clearlist 'cmodeSpecialRate'
+    @clearlist 'combatMode'
+    @clearlist 'consecrateWeaponDelay'
+    @clearlist 'divineFuryDelay'
+    @clearlist 'healingDelay'
+    @clearlist 'healthLimit'
+    @clearlist 'autoLooter'
+    @clearlist 'lockChampionMode'
+    @clearlist 'logColor'
+    @clearlist 'logLevel'
+    @clearlist 'lootCorpseDelay'
+    @clearlist 'lootCorpseDistance'
+    @clearlist 'filterCorpses'
+    @clearlist 'masterKeySerial'
+    @clearlist 'weightLimitWarningDelay'
+    @clearlist 'weightLimitStones'
+    @clearlist 'weightLimitCount'
+    @clearlist 'minSkillforLoot'
+    @clearlist 'howManySkillsforLoot'
+    @clearlist 'reloadCommand'
+    @clearlist 'smodeSpecial'
+    @clearlist 'smodeSpecialRate'
+    @clearlist 'staminaLimit'
+    @clearlist 'status'
+    @clearlist 'silentMode'
+    @pushlist 'silentMode' 'off'
+    //# Fixed lists - Do not change
+    //# Colors list
+    @createlist 'colors'
+    @clearlist 'colors'
+    @pushlist 'colors' 1990 //# red
+    @pushlist 'colors' 1986 //# yellow
+    @pushlist 'colors' 1657 //# blue
+    @pushlist 'colors' 1388 //# black
+    @pushlist 'colors' 1281 //# white
+    // Discordance
+    @createlist instrumentGraphic
+    @clearlist instrumentGraphic
+    @createlist instrumentColor
+    @clearlist instrumentColor
+    //#Champion bosses
+    @createlist 'RikktorGraphic'
+    @createlist 'SemidarGraphic'
+    @createlist 'MOAGraphic'
+    @createlist 'SeradoGraphic'
+    @createlist 'MephitisGraphic'
+    @createlist 'PrimevalLichGraphic'
+    @createlist 'NeiraGraphic'
+    @createlist 'BarracoonGraphic'
+    @createlist 'RagnarGraphic'
+    @createlist 'TwauloGraphic'
+    @createlist 'LordOaksGraphic'
+    @createlist 'RikktorColor'
+    @createlist 'SemidarColor'
+    @createlist 'MOAColor'
+    @createlist 'SeradoColor'
+    @createlist 'MephitisColor'
+    @createlist 'PrimevalLichColor'
+    @createlist 'NeiraColor'
+    @createlist 'BarracoonColor'
+    @createlist 'RagnarColor'
+    @createlist 'TwauloColor'
+    @createlist 'LordOaksColor'
+    @clearlist 'RikktorGraphic'
+    @clearlist 'SemidarGraphic'
+    @clearlist 'MOAGraphic'
+    @clearlist 'SeradoGraphic'
+    @clearlist 'MephitisGraphic'
+    @clearlist 'PrimevalLichGraphic'
+    @clearlist 'NeiraGraphic'
+    @clearlist 'BarracoonGraphic'
+    @clearlist 'RagnarGraphic'
+    @clearlist 'TwauloGraphic'
+    @clearlist 'LordOaksGraphic'
+    @clearlist 'RikktorColor'
+    @clearlist 'SemidarColor'
+    @clearlist 'MOAColor'
+    @clearlist 'SeradoColor'
+    @clearlist 'MephitisColor'
+    @clearlist 'PrimevalLichColor'
+    @clearlist 'NeiraColor'
+    @clearlist 'BarracoonColor'
+    @clearlist 'RagnarColor'
+    @clearlist 'TwauloColor'
+    @clearlist 'LordOaksColor'
+    @pushlist 'RikktorGraphic' 0xAC  //# Riktor
+    @pushlist 'SemidarGraphic' 0xAE  //# Semidar
+    @pushlist 'MOAGraphic' 0xB9  //# MOA
+    @pushlist 'SeradoGraphic' 0xF9  //# Serado
+    @pushlist 'MephitisGraphic' 0xAD  //# Mephitis
+    @pushlist 'PrimevalLichGraphic' 0x33E //# Priveval Lich
+    @pushlist 'NeiraGraphic' 0x191  //# Neira, color 33772
+    @pushlist 'BarracoonGraphic' 0x190  //# Barracoon, 33772
+    @pushlist 'RagnarGraphic' 0xB9  //# Ragnar, color 0
+    @pushlist 'TwauloGraphic' 0x65  //# Twaulo color 1109
+    @pushlist 'LordOaksGraphic' 0xAF  //# LordOaks
+    @pushlist 'RikktorColor' 0  //# Riktor
+    @pushlist 'SemidarColor' 0  //# Semidar
+    @pushlist 'MOAColor' 0  //# MOA
+    @pushlist 'SeradoColor' 0  //# Serado
+    @pushlist 'MephitisColor' 0  //# Mephitis
+    @pushlist 'PrimevalLichColor' 0 //# Priveval Lich
+    @pushlist 'NeiraColor' 33772  //# Neira, color 33772
+    @pushlist 'BarracoonColor' 33772  //# Barracoon, 33772
+    @pushlist 'RagnarColor' 0  //# Ragnar, color 0
+    @pushlist 'TwauloColor' 1109  //# Twaulo color 1109
+    @pushlist 'LordOaksColor' 0    //# Lord Oaks
+    //# Jewelry loot system
+    @createlist 'corpseGraphic'
+    @clearlist 'corpseGraphic'
+    @createlist 'jewelryList'
+    @clearlist 'jewelryList'
+    @pushlist 'jewelryList' 0x108a
+    @pushlist 'jewelryList' 0x1f09
+    @pushlist 'jewelryList' 0x1086
+    @pushlist 'jewelryList' 0x1f06
+    @setalias 'regsKeyGumpID' 0x6abce12
+    @setAlias 'spsGumpID' 0x4239a64f
+    @setAlias 'tpsGumpID' 0x7ec42f38
+    @createlist 'jewelryCheck'
+    @clearlist 'jewelryCheck'
+    @createlist 'SkillList'
+    @clearlist 'SkillList'
+    @pushlist 'SkillList' 'Swordsmanship'
+    @pushlist 'SkillList' 'Tactics'
+    @pushlist 'SkillList' 'Anatomy'
+    @pushlist 'SkillList' 'Bushido'
+    @pushlist 'SkillList' 'Parrying'
+    @pushlist 'SkillList' 'Resisting Spells'
+    @pushlist 'SkillList' 'Magery'
+    @pushlist 'SkillList' 'Spirit Speak'
+    @pushlist 'SkillList' 'Necromancy'
+    @pushlist 'SkillList' 'Mace Fighting'
+    @pushlist 'SkillList' 'Archery'
+    @pushlist 'SkillList' 'Animal Taming'
+    @pushlist 'SkillList' 'Animal Lore'
+    @pushlist 'SkillList' 'Evaluating Intelligence'
+    @pushlist 'SkillList' 'Musicianship'
+    @createlist 'SkillListFound'
+    @clearlist 'SkillListFound'
+    // ---- Timers ----
+    @createtimer 'actionDelayTimer'
+    @createtimer 'autoCounterAttackTimer'
+    @createtimer 'autoEnemyOfOneTimer'
+    @createtimer 'autoEvasionTimer'
+    @createtimer 'listsCleanerTimer'
+    @createtimer 'autoHonorTimer'
+    @createtimer 'castDelayTimer'
+    @createtimer 'championMSGTimer'
+    @createtimer 'cmodeSpecialRateTimer'
+    @createtimer 'consecrateWeaponTimer'
+    @createtimer 'discordanceDelayTimer'
+    @createtimer 'divineFuryTimer'
+    @createtimer 'healingDelayTimer'
+    @createtimer 'loopTime'
+    @createtimer 'lootCorpseTimer'
+    @createtimer 'overweightWarningTimer'
+    @createtimer 'smodeSpecialRateTimer'
+    @createtimer 'autoDiscordanceTimer'
+    @createtimer 'weightLimitWarningTimer'
+    // last init line
+    // #Flag start of setup phase
+    @pushlist 'status' 'setup'
+  endif
+endwhile

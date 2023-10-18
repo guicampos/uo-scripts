@@ -1,0 +1,229 @@
+///////////////////////////////////////////////////////////////////////////////
+//Macro Name: GoldPanning Book1
+//Macro Author: Maelune
+//Macro Purpose: Pan an entire runebook worth of marked spots while remembering
+//               while rune the player was previously on in the case that the
+//               player is interrupted for some reason or another.
+//
+//Macro Requirements:1. One full runebook of marked gold nugget locations
+//                   2. The X, Y, and Z coordinates for each rune, in order.
+//                   3. A gold pan, ideally with a lot of charges.
+//
+//Macro Instructions: 1. Create a new macro and name it "GPBook1". Copy and
+//                       paste the script from here into this macro and hit
+//                       "Save".
+//                    2. Replace Serial ID of the runebook1 alias at the start
+//                       of the script
+//                    3. Replace the GPX1, GPY1, and GPZ1 values so that the
+//                       first value in GPX1, GPY1, and GPZ1 are accurate for
+//                       the first rune in your runebook. Do the same for the
+//                       following runes and their coordinates.
+//                    4. Setup trash functionality
+//                    5. Setup additional books if desired
+//                    6. Save it!
+//                    7. Play macro
+//
+//Macro Recommendations: 1. Gold Pan Storage Key
+//                       2. Treasure Hunter's Storage Key
+//                       3. Jeweler's Key
+//                       4. Safe Trash 4 Tokens Backpack (for shoes)
+//                       5. 200 Fishing Skill (never fail panning attempt)
+//
+//Macro Notes: >You do not need the luck stat to be an effective panner.
+//              Luck only impacts the rate at which you get gems and MiBs.
+//             >You should take some time to set up the trash handling function
+//              of this macro noted down below. You will need to do something
+//              to deal with the MiBs, Large Gems, Nuggets, and shoes. How
+//              you choose to deal with them is up to you!
+//             >You might also consider adding an if statement with audio cue
+//              directly before the waitfortarget command after using the gold
+//              pan.
+//
+//Macro Disclaimer: UOEvo has a no-AFK rule for gold panning. If you want to
+//                  avoid getting banned or jailed, don't walk away from this
+//                  macro while it's running.
+//
+//////////////////////////////////////////////////////////////////////////////
+if not findalias 'runebook1'
+  //set this to the serial of you runebook
+  setalias 'runebook1' 0x4ca14944
+endif
+//Declare lists for runes, X, Y, and Z coords.
+if not listexists 'GPRunes1'
+  createlist 'GPRunes1'
+endif
+if not listexists 'GPX1'
+  createlist 'GPX1'
+endif
+if not listexists 'GPY1'
+  createlist 'GPY1'
+endif
+if not listexists 'GPZ1'
+  createlist 'GPZ1'
+endif
+if not listexists 'GPT1'
+  createlist 'GPT1'
+endif
+//Initialize lists. Values in GPRunes1 should not require changing.
+if list 'GPRunes1' < 1
+  pushlist 'GPRunes1' 7 //Rune #1
+  pushlist 'GPRunes1' 13 //Rune #2
+  pushlist 'GPRunes1' 19 //Rune #3
+  pushlist 'GPRunes1' 25 //Rune #4
+  pushlist 'GPRunes1' 31 //Rune #5
+  pushlist 'GPRunes1' 37 //Rune #6
+  pushlist 'GPRunes1' 43 //Rune #7
+  pushlist 'GPRunes1' 49 //Rune #8
+  pushlist 'GPRunes1' 55 //Rune #9
+  pushlist 'GPRunes1' 61 //Rune #10
+  pushlist 'GPRunes1' 67 //Rune #11
+  pushlist 'GPRunes1' 73 //Rune #12
+  pushlist 'GPRunes1' 79 //Rune #13
+  pushlist 'GPRunes1' 85 //Rune #14
+  pushlist 'GPRunes1' 91 //Rune #15
+  pushlist 'GPRunes1' 97 //Rune #16
+endif
+if list 'GPX1' < 1
+  pushlist 'GPX1' 452 //X coord of rune #1
+  pushlist 'GPX1' 473 //X coord of rune #2
+  pushlist 'GPX1' 282 //X coord of rune #3
+  pushlist 'GPX1' 454 //X coord of rune #4
+  pushlist 'GPX1' 312 //X coord of rune #5
+  pushlist 'GPX1' 375 //X coord of rune #6
+  pushlist 'GPX1' 438 //X coord of rune #7
+  pushlist 'GPX1' 491 //X coord of rune #8
+  pushlist 'GPX1' 554 //X coord of rune #9
+  pushlist 'GPX1' 617 //X coord of rune #10
+  pushlist 'GPX1' 675 //X coord of rune #11
+  pushlist 'GPX1' 739 //X coord of rune #12
+  pushlist 'GPX1' 794 //X coord of rune #13
+  pushlist 'GPX1' 813 //X coord of rune #14
+  pushlist 'GPX1' 874 //X coord of rune #15
+  pushlist 'GPX1' 937 //X coord of rune #16
+endif
+if list 'GPY1' < 1
+  pushlist 'GPY1' 277 //Y coord of rune #1
+  pushlist 'GPY1' 305 //Y coord of rune #2
+  pushlist 'GPY1' 345 //Y coord of rune #3
+  pushlist 'GPY1' 259 //Y coord of rune #4
+  pushlist 'GPY1' 314 //Y coord of rune #5
+  pushlist 'GPY1' 371 //Y coord of rune #6
+  pushlist 'GPY1' 432 //Y coord of rune #7
+  pushlist 'GPY1' 494 //Y coord of rune #8
+  pushlist 'GPY1' 555 //Y coord of rune #9
+  pushlist 'GPY1' 617 //Y coord of rune #10
+  pushlist 'GPY1' 673 //Y coord of rune #11
+  pushlist 'GPY1' 738 //Y coord of rune #12
+  pushlist 'GPY1' 799 //Y coord of rune #13
+  pushlist 'GPY1' 813 //Y coord of rune #14
+  pushlist 'GPY1' 874 //Y coord of rune #15
+  pushlist 'GPY1' 932 //Y coord of rune #16
+endif
+if list 'GPZ1' < 1
+  pushlist 'GPZ1' -5 //Z coord of rune #1
+  pushlist 'GPZ1' -5 //Z coord of rune #2
+  pushlist 'GPZ1' -5 //Z coord of rune #3
+  pushlist 'GPZ1' -5 //Z coord of rune #4
+  pushlist 'GPZ1' -5 //Z coord of rune #5
+  pushlist 'GPZ1' -5 //Z coord of rune #6
+  pushlist 'GPZ1' -5 //Z coord of rune #7
+  pushlist 'GPZ1' -5 //Z coord of rune #8
+  pushlist 'GPZ1' -5 //Z coord of rune #9
+  pushlist 'GPZ1' -5 //Z coord of rune #10
+  pushlist 'GPZ1' -5 //Z coord of rune #11
+  pushlist 'GPZ1' -5 //Z coord of rune #12
+  pushlist 'GPZ1' -5 //Z coord of rune #13
+  pushlist 'GPZ1' -5 //Z coord of rune #14
+  pushlist 'GPZ1' -5 //Z coord of rune #15
+  pushlist 'GPZ1' -5 //Z coord of rune #16
+endif
+if list 'GPT1' < 1
+  pushlist 'GPT1' -5 //Tile ID of rune #1
+  pushlist 'GPT1' -5 //Tile ID of rune #2
+  pushlist 'GPT1' -5 //Tile ID of rune #3
+  pushlist 'GPT1' -5 //Tile ID of rune #4
+  pushlist 'GPT1' -5 //Tile ID of rune #5
+  pushlist 'GPT1' -5 //Tile ID of rune #6
+  pushlist 'GPT1' -5 //Tile ID of rune #7
+  pushlist 'GPT1' -5 //Tile ID of rune #8
+  pushlist 'GPT1' -5 //Tile ID of rune #9
+  pushlist 'GPT1' -5 //Tile ID of rune #10
+  pushlist 'GPT1' -5 //Tile ID of rune #11
+  pushlist 'GPT1' -5 //Tile ID of rune #12
+  pushlist 'GPT1' -5 //Tile ID of rune #13
+  pushlist 'GPT1' -5 //Tile ID of rune #14
+  pushlist 'GPT1' -5 //Tile ID of rune #15
+  pushlist 'GPT1' -5 //Tile ID of rune #16
+endif
+for 0 to GPRunes1
+  //Sacred Journey
+  useobject runebook1
+  if @injournal "time to recharge"
+    pause 6000
+    useobject runebook1
+  endif
+  waitforgump 0x554b87f3 15000
+  replygump 0x554b87f3 GPRunes1[0]
+  pause 2000
+  clearjournal
+  //Panning begins
+  while not @injournal "to be any nuggets"
+    while not @findtype 0x9d7 '0' 'backpack'
+    endwhile
+    usetype 0x9d7 '0' 'backpack'
+    waitfortarget 15000
+    //uncomment following lines to read out current target tile.
+    //headmsg GPX1[0]
+    //headmsg GPY1[0]
+    //headmsg GPZ1[0]
+    targettile GPX1[0] GPY1[0] GPZ1[0] GPT1[0]
+    pause 150
+    while not @findtype 0x9d8 '0' 'backpack'
+      //if statement catches if you failed your panning.
+      //@200, this should never run.
+      if @injournal 'but fail to find any'
+        usetype 0x9d7 '0' 'backpack'
+        waitfortarget 15000
+        targettile GPX1[0] GPY1[0] GPZ1[0] GPT1[0]
+        pause 150
+        clearjournal
+      endif
+      //If statement to handle being overweighted
+      //The following number should be max weight -50
+//#      if weight > 520
+        ////////////////////////////////////////////////////////
+        //This section is for what you want your macro to do when you
+        //become overweight. You should have something to handle
+        //MiBs, footwear, nuggets, and large gems. Below is an example
+        //of how to use an organizer properly so that it doesn't interfere
+        //with the rest of the macro - the 'while organizing' will form
+        //a dynamic pause while the organizer is running. For any additional
+        //methods you add for weight control, make sure you take into
+        //consideration how long the operation will take!
+        ////////////////////////////////////////////////////////
+//# IDEA: Implement a pan key organizer 
+//#        organizer 'GPOrganizer' //Setup Organizers in the Agents tab of UOS
+//#        while organizing
+//#        endwhile
+//#      endif
+      //If statement handles if spot is empty
+      if @injournal "to be any nuggets"
+        break
+      endif
+      //If statement pauses script while world is saving
+      if @injournal "world is saving"
+        while not @injournal "save complete"
+        endwhile
+        clearjournal
+      endif
+    endwhile
+    usetype 0x9d8 '0' 'backpack'
+  endwhile
+  //progressing script to the next rune
+  poplist 'GPRunes1' 'front'
+  poplist 'GPX1' 'front'
+  poplist 'GPY1' 'front'
+  poplist 'GPZ1' 'front'
+  poplist 'GPT1' 'front'
+endfor
+//playmacro 'GPBook2' //Uncomment this line to add a 2nd book.

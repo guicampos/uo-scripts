@@ -1,0 +1,581 @@
+// Spot 1
+useobject 0x4e1c567d
+waitforgump 0x554b87f3 15000
+replygump 0x554b87f3 7
+pause 500
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1768 2931 -5
+pause 10000
+pause 500
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1768 2931 -5
+pause 10000
+pause 500
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1768 2931 -5
+pause 10000
+pause 500
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1768 2931 -5
+pause 10000
+pause 500
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1768 2931 -5
+pause 10000
+sysmsg 'RUNE 1 COMPLETE' '1994'
+// Spot 2
+useobject 0x4e1c567d
+waitforgump 0x554b87f3 15000
+replygump 0x554b87f3 13
+pause 500
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1789 2919 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1789 2919 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1789 2919 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1789 2919 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1789 2919 -5
+pause 10000
+sysmsg 'RUNE 2 COMPLETE' '1994'
+// Spot 3
+useobject 0x4e1c567d
+waitforgump 0x554b87f3 15000
+replygump 0x554b87f3 19
+pause 500
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1807 3075 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1807 3075 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1807 3075 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1807 3075 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1807 3075 -5
+pause 10000
+sysmsg 'RUNE 3 COMPLETE' '1994'
+// Spot 4
+useobject 0x4e1c567d
+waitforgump 0x554b87f3 15000
+replygump 0x554b87f3 25
+pause 500
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1837 3061 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1837 3061 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1837 3061 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1837 3061 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1837 3061 -5
+pause 10000
+sysmsg 'RUNE 4 COMPLETE' '1994'
+// Spot 5
+useobject 0x4e1c567d
+waitforgump 0x554b87f3 15000
+replygump 0x554b87f3 31
+pause 500
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1967 3026 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1967 3026 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1967 3026 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1967 3026 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 1967 3026 -5
+pause 10000
+sysmsg 'RUNE 5 COMPLETE' '1994'
+// Spot 6
+useobject 0x4e1c567d
+waitforgump 0x554b87f3 15000
+replygump 0x554b87f3 37
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2080 2996 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2080 2996 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2080 2996 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2080 2996 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2080 2996 -5
+pause 10000
+sysmsg 'RUNE 6 COMPLETE' '1994'
+// Spot 7
+useobject 0x4e1c567d
+waitforgump 0x554b87f3 15000
+replygump 0x554b87f3 43
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2128 2972 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2128 2972 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2128 2972 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2128 2972 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2128 2972 -5
+pause 10000
+sysmsg 'RUNE 7 COMPLETE' '1994'
+// Spot 8
+useobject 0x4e1c567d
+waitforgump 0x554b87f3 15000
+replygump 0x554b87f3 49
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2141 3016 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2141 3016 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2141 3016 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2141 3016 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2141 3016 -5
+pause 10000
+sysmsg 'RUNE 8 COMPLETE' '1994'
+// Spot 9
+useobject 0x4e1c567d
+waitforgump 0x554b87f3 15000
+replygump 0x554b87f3 55
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2114 3026 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2114 3026 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2114 3026 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2114 3026 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2114 3026 -5
+pause 10000
+sysmsg 'RUNE 9 COMPLETE' '1994'
+// Spot 10
+useobject 0x4e1c567d
+waitforgump 0x554b87f3 15000
+replygump 0x554b87f3 61
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2060 3052 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2060 3052 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2060 3052 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2060 3052 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2060 3052 -5
+pause 10000
+sysmsg 'RUNE 10 COMPLETE' '1994'
+//Spot 11
+useobject 0x4e1c567d
+waitforgump 0x554b87f3 15000
+replygump 0x554b87f3 67
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2101 3103 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2101 3103 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2101 3103 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2101 3103 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2101 3103 -5
+pause 10000
+sysmsg 'RUNE 11 COMPLETE' '1994'
+// Spot 12
+useobject 0x4e1c567d
+waitforgump 0x554b87f3 15000
+replygump 0x554b87f3 73
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2184 3036 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2184 3036 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2184 3036 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2184 3036 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2184 3036 -5
+pause 10000
+sysmsg 'RUNE 12 COMPLETE' '1994'
+// Spot 13
+useobject 0x4e1c567d
+waitforgump 0x554b87f3 15000
+replygump 0x554b87f3 79
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2084 3230 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2084 3230 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2084 3230 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2084 3230 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2084 3230 -5
+pause 10000
+sysmsg 'RUNE 13 COMPLETE' '1994'
+// Spot 14
+useobject 0x4e1c567d
+waitforgump 0x554b87f3 15000
+replygump 0x554b87f3 85
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2120 3310 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2120 3310 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2120 3310 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2120 3310 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2120 3310 -5
+pause 10000
+sysmsg 'RUNE 14 COMPLETE' '1994'
+// Spot 15
+useobject 0x4e1c567d
+waitforgump 0x554b87f3 15000
+replygump 0x554b87f3 91
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2170 3312 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2170 3312 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2170 3312 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2170 3312 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2170 3312 -5
+pause 10000
+sysmsg 'RUNE 15 COMPLETE' '1994'
+// Spot 16
+useobject 0x4e1c567d
+waitforgump 0x554b87f3 15000
+replygump 0x554b87f3 97
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2178 3420 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2178 3420 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2178 3420 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2178 3420 -5
+pause 10000
+usetype 0x9d8
+pause 500
+usetype 0x9d7
+waitfortarget 15000
+targettile 2178 3420 -5
+pause 10000
+// COMPLETE
+sysmsg 'RUNE 16 COMPLETE - MACRO COMPLETE' '1994'

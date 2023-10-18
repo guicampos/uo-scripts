@@ -1,0 +1,32 @@
+//------champion Quest
+if @findtype 0x2805 'any' 'ground'
+  headmsg 'Barracoons Song!' 35 'found'
+  playsound 43
+  pause 1000
+endif
+if @findtype 0x2808 'any' 'ground'
+  headmsg 'Mephitis Sac' 35 'found'
+  playsound 43
+  pause 1000
+endif
+if @findtype 0x1bc7 'any' 'ground'
+  headmsg 'Rikktors Scale' 35 'found'
+  playsound 43
+  pause 1000
+endif
+if @findtype 0x2f61 'any' 'ground'
+  headmsg 'Neiras Summoner' 35 'found'
+  playsound 43
+  pause 1000
+endif
+if @findtype 0x909 'any' 'ground'
+  headmsg 'Oaks Wing' 35 'found'
+  playsound 43
+  pause 1000
+endif
+if @findtype 0x2556 'any' 'ground'
+  headmsg 'Semidars Leech' 35 'found'
+  playsound 43
+  pause 1000
+endif
+pause 200

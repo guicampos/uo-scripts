@@ -1,0 +1,468 @@
+////////////////////////////////////////////////////////////////////////////
+//For use on UO:Evolution. Semi-auto mining macro. Will mine in a cone
+//in front of your character. Will smelt all ores using an orcish forge.
+//Will add the smelted ingots to your ingot key, or optionally your Evo key
+////////////////////////////////////////////////////////////////////////////
+//
+//Set weight to whatever you wish. May cause problems if set too high or
+//too low for your character.
+if not @findobject pick
+  @unsetalias 'pick'
+endif
+if not @findalias 'pick'
+  if @findtype 0xe86 'any' 'backpack' or @findtype 0xe85 'any' 'backpack'
+    setalias 'pick' 'found'
+  endif
+endif
+if weight 'self' > 407 or @injournal 'no metal here'
+  //Here starts the massive block of smelting. I found it most effective to
+  //segregate all ore types by graphic and by color. This proved the least glitchy.
+  if counttype 0x19b8 0 'backpack' >= 1
+    usetype 0x19b8 0
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19ba 0 'backpack' >= 1
+    usetype 0x19ba 0
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b9 0 'backpack' >= 1
+    usetype 0x19b9 0
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b7 0 'backpack' >= 2
+    usetype 0x19b7 0
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b9 2413 'backpack' >= 1
+    usetype 0x19b9 2413
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b7 2413 'backpack' >= 2
+    usetype 0x19b7 2413
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b8 2413 'backpack' >= 1
+    usetype 0x19b8 2413
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19ba 2413 'backpack' >= 1
+    usetype 0x19ba 2413
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b9 2219 'backpack' >= 1
+    usetype 0x19b9 2219
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b7 2219 'backpack' >= 2
+    usetype 0x19b7 2219
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b8 2219 'backpack' >= 1
+    usetype 0x19b8 2219
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19ba 2219 'backpack' >= 1
+    usetype 0x19ba 2219
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b9 2419 'backpack' >= 1
+    usetype 0x19b9 2419
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b7 2419 'backpack' >= 2
+    usetype 0x19b7 2419
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b8 2419 'backpack' >= 1
+    usetype 0x19b8 2419
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19ba 2419 'backpack' >= 1
+    usetype 0x19ba 2419
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b9 2425 'backpack' >= 1
+    usetype 0x19b9 2425
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b7 2425 'backpack' >= 2
+    usetype 0x19b7 2425
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b8 2425 'backpack' >= 1
+    usetype 0x19b8 2425
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19ba 2425 'backpack' >= 1
+    usetype 0x19ba 2425
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b9 2418 'backpack' >= 1
+    usetype 0x19b9 2418
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b7 2418 'backpack' >= 2
+    usetype 0x19b7 2418
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b8 2418 'backpack' >= 1
+    usetype 0x19b8 2418
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19ba 2418 'backpack' >= 1
+    usetype 0x19ba 2418
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b9 2207 'backpack' >= 1
+    usetype 0x19b9 2207
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b7 2207 'backpack' >= 2
+    usetype 0x19b7 2207
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b8 2207 'backpack' >= 1
+    usetype 0x19b8 2207
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19ba 2207 'backpack' >= 1
+    usetype 0x19ba 2207
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b9 2213 'backpack' >= 1
+    usetype 0x19b9 2213
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b7 2213 'backpack' >= 2
+    usetype 0x19b7 2213
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b8 2213 'backpack' >= 1
+    usetype 0x19b8 2213
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19ba 2213 'backpack' >= 1
+    usetype 0x19ba 2213
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b9 2406 'backpack' >= 1
+    usetype 0x19b9 2406
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b7 2406 'backpack' >= 2
+    usetype 0x19b7 2406
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b8 2406 'backpack' >= 1
+    usetype 0x19b8 2406
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19ba 2406 'backpack' >= 1
+    usetype 0x19ba 2406
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b9 1161 'backpack' >= 1
+    usetype 0x19b9 1161
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b7 1161 'backpack' >= 2
+    usetype 0x19b7 1161
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b8 1161 'backpack' >= 1
+    usetype 0x19b8 1161
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19ba 1161 'backpack' >= 1
+    usetype 0x19ba 1161
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b9 1152 'backpack' >= 1
+    usetype 0x19b9 1152
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b7 1152 'backpack' >= 2
+    usetype 0x19b7 1152
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b8 1152 'backpack' >= 1
+    usetype 0x19b8 1152
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19ba 1152 'backpack' >= 1
+    usetype 0x19ba 1152
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b9 1272 'backpack' >= 1
+    usetype 0x19b9 1272
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b7 1272 'backpack' >= 2
+    usetype 0x19b7 1272
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b8 1272 'backpack' >= 1
+    usetype 0x19b8 1272
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19ba 1272 'backpack' >= 1
+    usetype 0x19ba 1272
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b9 1278 'backpack' >= 1
+    usetype 0x19b9 1278
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b7 1278 'backpack' >= 2
+    usetype 0x19b7 1278
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b8 1278 'backpack' >= 1
+    usetype 0x19b8 1278
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19ba 1278 'backpack' >= 1
+    usetype 0x19ba 1278
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b9 1153 'backpack' >= 1
+    usetype 0x19b9 1153
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b7 1153 'backpack' >= 2
+    usetype 0x19b7 1153
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19b8 1153 'backpack' >= 1
+    usetype 0x19b8 1153
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  if counttype 0x19ba 1153 'backpack' >= 1
+    usetype 0x19ba 1153
+    waitfortarget 15000
+    targettype 0xfb1
+    pause 500
+  endif
+  //////////////////////////////////////////////////////////////////
+  //if you do NOT have an ingot key, but DO have an Evo key:
+  //remove the comment notations on the following block of code.
+  //useobject 0x11c6
+  //waitforgump 0x6abce12 15000
+  //replygump 0x6abce12 33
+  //waitforgump 0x6abce12 15000
+  //replygump 0x6abce12 0
+  //////////////////////////////////////////////////////////////////
+  //opens ingot key and stores ingots.
+  usetype 0x1be8
+  waitforgump 0x6abce12 15000
+  replygump 0x6abce12 31
+  waitforgump 0x6abce12 15000
+  replygump 0x6abce12 0
+  pause 300
+  //////////////////////////////////////////////////////////////////////////////
+  //Create organizers to place ores into another bag and move them back if you
+  //have any trouble with unstacked small ore piles.
+  //  if @injournal 'metal-bearing''system'
+  //    clearjournal
+  //    organizer 'Ore'
+  //    while organizing
+  //   endwhile
+  //    organizer 'OreRev'
+  //    while organizing
+  //    endwhile
+  //  endif
+  //////////////////////////////////////////////////////////////////////////////
+endif
+clearjournal
+if not listexists 'miningerrormessages'
+  createlist 'miningerrormessages'
+  pushlist 'miningerrormessages' 'no metal here'
+  pushlist 'miningerrormessages' "You can't mine there"
+  pushlist 'miningerrormessages' "Target cannot be seen"
+  pushlist 'miningerrormessages' "You can't mine that"
+endif
+//finds picks or shovels and binds them to 'found' var. Uses if found
+if @findobject pick
+  useobject 'found'
+else
+  headmsg 'Out of picks!'
+endif
+waitfortarget 500
+//beginning of macro which picks where to mine based on which
+//direction your character is facing
+if direction == 0
+  targettileoffset 0 -1 0
+elseif direction == 1
+  targettileoffset 1 -1 0
+elseif direction == 2
+  targettileoffset 1 0 0
+elseif direction == 3
+  targettileoffset 1 1 0
+elseif direction == 4
+  targettileoffset 0 1 0
+elseif direction == 5
+  targettileoffset -1 1 0
+elseif direction == 6
+  targettileoffset -1 0 0
+elseif direction == 7
+  targettileoffset -1 -1 0
+endif
+pause 1800
+if @findobject pick
+  useobject 'found'
+else
+  headmsg 'Out of picks!'
+endif
+waitfortarget 500
+if direction == 1
+  targettileoffset 0 -1 0
+elseif direction == 2
+  targettileoffset 1 -1 0
+elseif direction == 3
+  targettileoffset 1 0 0
+elseif direction == 4
+  targettileoffset 1 1 0
+elseif direction == 5
+  targettileoffset 0 1 0
+elseif direction == 6
+  targettileoffset -1 1 0
+elseif direction == 7
+  targettileoffset -1 0 0
+elseif direction == 0
+  targettileoffset -1 -1 0
+endif
+pause 1800
+if @findobject pick
+  useobject 'found'
+else
+  headmsg 'Out of picks!'
+endif
+waitfortarget 500
+if direction == 7
+  targettileoffset 0 -1 0
+elseif direction == 0
+  targettileoffset 1 -1 0
+elseif direction == 1
+  targettileoffset 1 0 0
+elseif direction == 2
+  targettileoffset 1 1 0
+elseif direction == 3
+  targettileoffset 0 1 0
+elseif direction == 4
+  targettileoffset -1 1 0
+elseif direction == 5
+  targettileoffset -1 0 0
+elseif direction == 6
+  targettileoffset -1 -1 0
+endif
+pause 1800

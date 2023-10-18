@@ -1,0 +1,10 @@
+// Looks for rotting corpses and revenant lions within six tiles of you, and casts banish evil on them to kill them instantly. Check do not auto interrupt and select a keybinding, and if surrounded you can hold it and it will keep casting, or you can just hit it to single use.
+if @findtype! 0x9b 'any' 0 0 6 or @findtype! 0xfb 'any' 0 0 6
+  if hits >= 150
+    msg '[cs banishevil'
+    waitfortarget 1400
+    target! 'found'
+    clearignorelist
+    ignoreobject 'found'
+  endif
+endif

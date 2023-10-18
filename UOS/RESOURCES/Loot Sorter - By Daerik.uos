@@ -1,0 +1,263 @@
+////////////////////////////////////
+//   This macro is designed for   //
+//        looting chests.         //
+//                                //
+//      ~~Made by Daerik~~        //
+////////////////////////////////////
+promptalias 'Treasure Chest'
+@setalias 'Loot Bag' 0x42d5bda8
+@setalias 'Trash Bag' 0x42d5bda9
+@clearlist 'Loot'
+@createlist 'Loot'
+pushlist 'Loot' 0x1f35 // Agility
+pushlist 'Loot' 0xf25  // Amber
+pushlist 'Loot' 0xf16  // Amethyst
+pushlist 'Loot' 0x1f45 // Arch Cure
+pushlist 'Loot' 0x1f46 // Arch Protection
+pushlist 'Loot' 0xf3f  // Arrows
+pushlist 'Loot' 0xf78  // Batwings
+pushlist 'Loot' 0x1f05 // Bead Necklace [Silver]
+pushlist 'Loot' 0x108b // Beads
+pushlist 'Loot' 0xf7a  // Black Pearl
+pushlist 'Loot' 0xef3  // Blank Scrolls
+pushlist 'Loot' 0x1f3d // Bless
+pushlist 'Loot' 0xf7b  // Blood Moss
+pushlist 'Loot' 0x1086 // Bracelet [Gold]
+pushlist 'Loot' 0x1f06 // Bracelet [Silver]
+pushlist 'Loot' 0x1f5d // Chain Lightning
+pushlist 'Loot' 0xf15  // Citrine
+pushlist 'Loot' 0x1f2e // Clumsy
+pushlist 'Loot' 0x1f2f // Create Food
+pushlist 'Loot' 0x1f36 // Cunning
+pushlist 'Loot' 0x1f37 // Cure
+pushlist 'Loot' 0xf07  // Cure Potion
+pushlist 'Loot' 0x1f47 // Curse
+pushlist 'Loot' 0xf7d  // Daemon Blood
+pushlist 'Loot' 0x14f0 // Deeds
+pushlist 'Loot' 0xf26  // Diamond
+pushlist 'Loot' 0x1f4e // Dispel Field
+pushlist 'Loot' 0x1f55 // Dispel
+pushlist 'Loot' 0x1087 // Earrings [Gold w/ Pear]
+pushlist 'Loot' 0x1f07 // Earrings [Silver]
+pushlist 'Loot' 0x1f65 // Earthquake
+pushlist 'Loot' 0xf10  // Emerald
+pushlist 'Loot' 0x1f56 // Energy Bolt
+pushlist 'Loot' 0x1f5e // Energy Field
+pushlist 'Loot' 0x1f66 // Energy Vortex
+pushlist 'Loot' 0x1f57 // Explosion
+pushlist 'Loot' 0x1f30 // Feeblemind
+pushlist 'Loot' 0x1f48 // Fire Field
+pushlist 'Loot' 0x1f3e // Fireball
+pushlist 'Loot' 0xdca  // Fishing Net
+pushlist 'Loot' 0x1f5f // Flamestrike
+pushlist 'Loot' 0x4211 // Gargish Bracelet
+pushlist 'Loot' 0x4213 // Gargish Earrings
+pushlist 'Loot' 0x4210 // Gargish Necklace
+pushlist 'Loot' 0x4212 // Gargish Ring
+pushlist 'Loot' 0xf84  // Garlic
+pushlist 'Loot' 0x1f60 // Gate Travel
+pushlist 'Loot' 0xf85  // Ginseng
+pushlist 'Loot' 0xeed  // Gold
+pushlist 'Loot' 0xf8f  // Grave Dust
+pushlist 'Loot' 0x1f49 // Greater Heal
+pushlist 'Loot' 0x1f38 // Harm
+pushlist 'Loot' 0x1f31 // Heal
+pushlist 'Loot' 0xf0c  // Heal Potion
+pushlist 'Loot' 0x1f4f // Incognito
+pushlist 'Loot' 0x1f58 // Invisibility
+pushlist 'Loot' 0x1f4a // Lightning
+pushlist 'Loot' 0x1f32 // Magic Arrow
+pushlist 'Loot' 0x1f3f // Magic Lock
+pushlist 'Loot' 0x1f50 // Magic Reflection
+pushlist 'Loot' 0x1f39 // Magic Trap
+pushlist 'Loot' 0x1f3a // Magic Untrap
+pushlist 'Loot' 0x1f4b // Mana Drain
+pushlist 'Loot' 0x1f61 // Mana Vampire
+pushlist 'Loot' 0xf86  // Mandrake Root
+pushlist 'Loot' 0x1f59 // Mark
+pushlist 'Loot' 0x1f5a // Mass Curse
+pushlist 'Loot' 0x1f62 // Mass Dispel
+pushlist 'Loot' 0x1f63 // Meteor Swarm
+pushlist 'Loot' 0x1f51 // Mind Blast
+pushlist 'Loot' 0x1085 // Necklace [Gold Beads]
+pushlist 'Loot' 0x1089 // Necklace [Gold Luxury]
+pushlist 'Loot' 0x1088 // Necklace [Gold w/ Pearl]
+pushlist 'Loot' 0x1f08 // Necklace [Silver w/ Pearl]
+pushlist 'Loot' 0x1f33 // Night Sight
+pushlist 'Loot' 0xf88  // Nightshade
+pushlist 'Loot' 0xf8e  // Nox Crystals
+pushlist 'Loot' 0x1f52 // Paralyze
+pushlist 'Loot' 0x1f5b // Paralyze
+pushlist 'Loot' 0xe86  // Pickaxe
+pushlist 'Loot' 0xf8a  // Pig Iron
+pushlist 'Loot' 0x1f40 // Poison
+pushlist 'Loot' 0x1f53 // Poison
+pushlist 'Loot' 0xf0a  // Poison Potion
+pushlist 'Loot' 0xf9d  // Polar Runic Sewing Kit
+pushlist 'Loot' 0x1f64 // Polymorph
+pushlist 'Loot' 0x1f3b // Protection
+pushlist 'Loot' 0x1f2d // Reactive Armor
+pushlist 'Loot' 0x1f4c // Recall
+pushlist 'Loot' 0xf0b  // Reresh Potion
+pushlist 'Loot' 0x1f67 // Ressurrection
+pushlist 'Loot' 0x1f5c // Reveal
+pushlist 'Loot' 0x108a // Ring [Gold]
+pushlist 'Loot' 0x1f09 // Ring [Silver]
+pushlist 'Loot' 0xf13  // Ruby
+pushlist 'Loot' 0xf19  // Sapphire
+pushlist 'Loot' 0x1f0a // Silver Necklace [Luxury]
+pushlist 'Loot' 0xf8d  // Spider's Silk
+pushlist 'Loot' 0xf21  // Star Sapphire
+pushlist 'Loot' 0x1f3c // Strength
+pushlist 'Loot' 0xf09  // Strength Potion
+pushlist 'Loot' 0xf8c  // Sulphurous Ash
+pushlist 'Loot' 0x1f68 // Summon Air Elemental
+pushlist 'Loot' 0x1f54 // Summon Creature
+pushlist 'Loot' 0x1f69 // Summon Daemon
+pushlist 'Loot' 0x1f6a // Summon Earth Elemental
+pushlist 'Loot' 0x1f6b // Summon Fire Elemental
+pushlist 'Loot' 0x1f6c // Summon Water Elemental
+pushlist 'Loot' 0x2d74 // Tattered Wall Map
+pushlist 'Loot' 0x1f41 // Telekinesis
+pushlist 'Loot' 0x1f42 // Teleport
+pushlist 'Loot' 0xf2d  // Tourmaline
+pushlist 'Loot' 0x14ec // Treasure Maps
+pushlist 'Loot' 0x1f43 // Unlock
+pushlist 'Loot' 0x1f44 // Wall of Stone
+pushlist 'Loot' 0x1f34 // Weaken
+@clearlist 'Trash'
+@createlist 'Trash'
+pushlist 'Trash' 0xf08  // Agility Potion
+pushlist 'Trash' 0xf49  // Axe
+pushlist 'Trash' 0x1540 // Bandana
+pushlist 'Trash' 0xf4d  // Bardiche
+pushlist 'Trash' 0x140c // Bascinet
+pushlist 'Trash' 0xf47  // Battle Axe
+pushlist 'Trash' 0x1545 // Bear Mask
+pushlist 'Trash' 0xdf0  // Black Staff
+pushlist 'Trash' 0x1f4d // Blade Spirit
+pushlist 'Trash' 0x26bd // Bladed Staff
+pushlist 'Trash' 0x144f // Bone Armor
+pushlist 'Trash' 0x144e // Bone Arms
+pushlist 'Trash' 0x1450 // Bone Gloves
+pushlist 'Trash' 0x1451 // Bone Helmet
+pushlist 'Trash' 0x1452 // Bone Leggings
+pushlist 'Trash' 0x26bb // Bones Harvester
+pushlist 'Trash' 0x1719 // Bonnet
+pushlist 'Trash' 0x13b2 // Bow
+pushlist 'Trash' 0xf5e  // Broadsword
+pushlist 'Trash' 0x1b72 // Bronze Shield
+pushlist 'Trash' 0x1b73 // Buckler
+pushlist 'Trash' 0x13f6 // Butcher Knife
+pushlist 'Trash' 0x1715 // Cap
+pushlist 'Trash' 0x13bb // Chainmail Coif
+pushlist 'Trash' 0x13be // Chainmail Leggins
+pushlist 'Trash' 0x13bf // Chainmail Tunic
+pushlist 'Trash' 0x1bc3 // Chaos Shield
+pushlist 'Trash' 0xec3  // Cleaver
+pushlist 'Trash' 0x26c2 // Composite Bow
+pushlist 'Trash' 0x1408 // Close Helmet
+pushlist 'Trash' 0x13b4 // Club
+pushlist 'Trash' 0x26c1 // Crescent Blade
+pushlist 'Trash' 0xf50  // Crossbow
+pushlist 'Trash' 0x1441 // Cutlass
+pushlist 'Trash' 0xf52  // Dagger
+pushlist 'Trash' 0x1547 // Deer Mask
+pushlist 'Trash' 0xf4b  // Double Axe
+pushlist 'Trash' 0x26bf // Double Bladed Staff
+pushlist 'Trash' 0xf45  // Executioner's Axe
+pushlist 'Trash' 0x171a // Feathered Hat
+pushlist 'Trash' 0x1c06 // Female Leather Armor
+pushlist 'Trash' 0x1c0a // Female Leather Bustier
+pushlist 'Trash' 0x1c00 // Female Leather Shorts
+pushlist 'Trash' 0x1c08 // Female Leather Skirt
+pushlist 'Trash' 0x1c04 // Female Plate
+pushlist 'Trash' 0x1c02 // Female Studded Armor
+pushlist 'Trash' 0x1c0c // Female Studded Bustier
+pushlist 'Trash' 0x1713 // Floppy Hat
+pushlist 'Trash' 0x2306 // Flower Garland
+pushlist 'Trash' 0x13f8 // Gnarled Staff
+pushlist 'Trash' 0x143e // Halberd
+pushlist 'Trash' 0x143d // Hammer Pick
+pushlist 'Trash' 0xf43  // Hatchet
+pushlist 'Trash' 0x1b76 // Heater Shield
+pushlist 'Trash' 0x13fd // Heavy Crossbow
+pushlist 'Trash' 0x140a // Helmet
+pushlist 'Trash' 0x171c // Jester Hat
+pushlist 'Trash' 0x13ff // Katana
+pushlist 'Trash' 0x1401 // Kryss
+pushlist 'Trash' 0x26c0 // Lance
+pushlist 'Trash' 0x13fb // Large Battle Axe
+pushlist 'Trash' 0x1db9 // Leather Cap
+pushlist 'Trash' 0x13c6 // Leather Gloves
+pushlist 'Trash' 0x13c7 // Leather Gorget
+pushlist 'Trash' 0x13cb // Leather Pants
+pushlist 'Trash' 0x13cd // Leather Sleeves
+pushlist 'Trash' 0x13cc // Leather Tunic
+pushlist 'Trash' 0xf61  // Longsword
+pushlist 'Trash' 0xf5c  // Mace
+pushlist 'Trash' 0x143b // Maul
+pushlist 'Trash' 0x1b74 // Metal Kite Shield
+pushlist 'Trash' 0x1b7b // Metal Shield
+pushlist 'Trash' 0x140e // Norse Helm
+pushlist 'Trash' 0x1f0b // Orc Helm
+pushlist 'Trash' 0x1bc4 // Order Shield Field
+pushlist 'Trash' 0x26be // Pike
+pushlist 'Trash' 0xe87  // Pitchfork
+pushlist 'Trash' 0x1415 // Plate Chest
+pushlist 'Trash' 0x1413 // Plate Gorget
+pushlist 'Trash' 0x1412 // Plate Helm
+pushlist 'Trash' 0x1410 // Platemail Arms
+pushlist 'Trash' 0x1414 // Platemail Gloves
+pushlist 'Trash' 0x1411 // Platemail Legs Field
+pushlist 'Trash' 0xe89  // Quarter Staff
+pushlist 'Trash' 0x26c3 // Repeating Crossbow
+pushlist 'Trash' 0x13eb // Ringmail Gloves
+pushlist 'Trash' 0x13f0 // Ringmail Leggins
+pushlist 'Trash' 0x13ee // Ringmail Sleeves
+pushlist 'Trash' 0x13ec // Ringmail Tunic
+pushlist 'Trash' 0x26bc // Scepter
+pushlist 'Trash' 0x13b6 // Scimitar
+pushlist 'Trash' 0x26ba // Scythe
+pushlist 'Trash' 0xe81  // Shepard's Crook
+pushlist 'Trash' 0x1403 // Short Spear
+pushlist 'Trash' 0xec4  // Skinning Knife
+pushlist 'Trash' 0x1544 // Skullcap
+pushlist 'Trash' 0xf62  // Spear
+pushlist 'Trash' 0x1717 // Straw Hat
+pushlist 'Trash' 0x13d5 // Studded Gloves
+pushlist 'Trash' 0x13d6 // Studded Gorget
+pushlist 'Trash' 0x13da // Studded Leggings
+pushlist 'Trash' 0x13dc // Studded Sleeves
+pushlist 'Trash' 0x13db // Studded Tunic
+pushlist 'Trash' 0x1716 // Tall Straw Hat
+pushlist 'Trash' 0x1b79 // Tear Kite Shield
+pushlist 'Trash' 0x171b // Tricorne Hat
+pushlist 'Trash' 0x1fa1 // Tunic
+pushlist 'Trash' 0x1443 // Two Handed Axe
+pushlist 'Trash' 0x13b9 // Viking Sword
+pushlist 'Trash' 0x13b0 // War Axe
+pushlist 'Trash' 0x1405 // War Fork
+pushlist 'Trash' 0x1439 // War Hammer
+pushlist 'Trash' 0x1407 // War Mace
+pushlist 'Trash' 0x1714 // Wide-Brim Hat
+pushlist 'Trash' 0x1718 // Wizard's Hat
+pushlist 'Trash' 0x1b7a // Wooden Shield
+for 0 to 'Loot'
+  while @movetype Loot[] 'Treasure Chest' 'Loot Bag' 'any' 'all'
+    pause 600
+  endwhile
+endfor
+for 0 to 'Trash'
+  while @findtype Trash[] 0x0 'Treasure Chest'
+    moveitem 'found' 'Trash Bag' 'all'
+    if contents 'backpack' >= 200 or diffweight <= 50
+      waitforcontext 'Trash Bag' 0 15000
+    endif
+    pause 600
+  endwhile
+endfor
+headmsg 'Done!' 1990
+if contents 'Trash Bag' >= 1
+  waitforcontext 'Trash Bag' 0 15000
+endif
