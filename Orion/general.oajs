@@ -318,3 +318,76 @@ function _timer_to_string(timer)
 
     return time_string;
 }
+
+
+/**
+ * Suspends the system's handlers
+ * @method suspendScripts
+ * @return 
+ */
+function suspendScripts()
+{
+    Orion.ClearJournal();
+    Orion.PauseScript("all", "reload_globals|call_function|system_initialization|loop_world_saves|showStatistics");
+    Orion.Wait(pulse_time/15);
+    Orion.Print("All scripts suspended.");
+}
+
+/**
+ * Resume the system's handlers
+ * @method resumeScripts
+ * @return 
+ */
+function resumeScripts()
+{
+    Orion.ClearJournal();
+    Orion.ResumeScript("all");
+    Orion.Wait(pulse_time/15);
+    Orion.Print("Resuming all scripts.");
+}
+
+
+/**
+ * Halt the system's handlers
+ * @method haltAllScripts
+ * @return 
+ */
+function haltAllScripts()
+{
+    for (var i = 0; i < loops_list.length; i++)
+    {
+        Orion.PauseScript(loops_list[i]);
+        Orion.Wait(pulse_time/15);
+        Orion.Terminate(loops_list[i]);
+        Orion.Wait(pulse_time/15);
+    }
+}
+
+
+/**
+ * Pauses all system's loops when the world is saving
+ * @method loop_world_saves
+ * @return 
+ */
+function loop_world_saves()
+{
+    while (true)
+    {
+        if (Orion.InJournal("The world is saving, please wait.", "system"))
+        {
+            suspendScripts();
+            Orion.Print(1990, "Pausing all scrips for world save");
+            Orion.AddDisplayTimer("worldSaveTimer", 60000, "AboveChar", "circle|bar", "WorldSave");
+            if (Orion.InJournal("World save complete.", "system") || Orion.WaitJournal("World save complete.", Orion.Now(), Orion.Now() + 60000, "system"))
+            {
+                Orion.Wait(pulse_time);
+                Orion.RemoveDisplayTimer("worldSaveTimer");
+                Orion.ClearJournal();
+                resumeScripts();
+            }
+            Orion.Wait(pulse_time/3);
+        }
+
+        Orion.Wait(pulse_time/25);
+    }
+}

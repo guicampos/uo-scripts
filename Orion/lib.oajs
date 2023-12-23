@@ -5,6 +5,7 @@ const pulse_time = 300;
 var _recall = 4;
 var gatetravel = 5;
 var sacredtravel = 6;
+var global_runebook_id = 0x554B87F3;
 
 /**
  * Description
@@ -71,7 +72,7 @@ function _getSortOrder(prop)
  * @param {} equals
  * @return arr
  */
-function _removeDuplicates(arr, equals)
+function _removeDuplicates(arr, equal_function)
 {
     var originalArr = arr.slice(0);
     var i, len, val;
@@ -82,27 +83,13 @@ function _removeDuplicates(arr, equals)
         val = originalArr[i];
         if (!arr.some(function(item)
             {
-                return equals(item, val);
+                return equal_function(item, val);
             }))
         {
             arr.push(val);
         }
     }
     return arr;
-}
-
-/**
- * Description
- * @method _arrayEquals
- * @param {} thing1
- * @param {} thing2
- * @return LogicalExpression
- */
-function _arrayEquals(thing1, thing2)
-{
-    return thing1.X() === thing2.X() &&
-        thing1.Y() === thing2.Y() &&
-        thing1.Z() === thing2.Z();
 }
 
 /**
@@ -390,4 +377,74 @@ var dates = {
     {
         return Math.floor(date2 - date1);
     }
+}
+
+// https://github.com/uxitten/polyfill/blob/master/string.polyfill.js
+// https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/String/padStart
+if (!String.prototype.padStart) {
+  String.prototype.padStart = function padStart(targetLength, padString) {
+    targetLength = targetLength >> 0; //truncate if number, or convert non-number to 0;
+    padString = String(typeof padString !== "undefined" ? padString : " ");
+    if (this.length >= targetLength) {
+      return String(this);
+    } else {
+      targetLength = targetLength - this.length;
+      if (targetLength > padString.length) {
+        padString += padString.repeat(targetLength / padString.length); //append to original to ensure we are longer than needed
+      }
+      return padString.slice(0, targetLength) + String(this);
+    }
+  };
+}
+
+// https://github.com/uxitten/polyfill/blob/master/string.polyfill.js
+// https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Reference/Global_Objects/String/padEnd
+if (!String.prototype.padEnd) {
+  String.prototype.padEnd = function padEnd(targetLength, padString) {
+    targetLength = targetLength >> 0; //floor if number or convert non-number to 0;
+    padString = String(typeof padString !== "undefined" ? padString : " ");
+    if (this.length > targetLength) {
+      return String(this);
+    } else {
+      targetLength = targetLength - this.length;
+      if (targetLength > padString.length) {
+        padString += padString.repeat(targetLength / padString.length); //append to original to ensure we are longer than needed
+      }
+      return String(this) + padString.slice(0, targetLength);
+    }
+  };
+}
+
+if (!String.prototype.repeat) {
+  String.prototype.repeat = function (count) {
+
+
+    var str = "" + this;
+    count = +count;
+    if (count != count) {
+      count = 0;
+    }
+    if (count < 0) {
+      throw false;
+    }
+    if (count == Infinity) {
+      throw false;
+    }
+    count = Math.floor(count);
+    if (str.length == 0 || count == 0) {
+      return "";
+    }
+
+    // Ao Garantir que count seja um inteiro de 31 bits nos dá uma grande otimização
+    // na parte principal. Porém, navegadores atuais (de agosto de 2014 pra cá)
+    // não conseguem mais manipular strings de 1 << 28 chars ou maiores, então:
+    if (str.length * count >= 1 << 28) {
+      throw false;
+    }
+    var rpt = "";
+    for (var i = 0; i < count; i++) {
+      rpt += str;
+    }
+    return rpt;
+  };
 }
