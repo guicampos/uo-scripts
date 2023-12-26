@@ -5,7 +5,7 @@
 
 
 
-// YOU MUST CHANGE THOSE
+// YOU MUST CHANGE THOSE - Use the ingame command '_info' to check IDs and Graphics
 var bankCrystal = 0x42a30987; // your bank crystal item ID
 var dressName = 'Paning'; //  Your dress paning set name. You can add a set in the Agents tab. This is mandatory. Also make sure that all pieces of the set is inside your backpack (or a subconteiner inside it). If any piece of the set is missing, the script will loop forever and won't work.
 var recallHomeMacro = 'gohome'; // a recall macro recalling to your home or a safe place
@@ -349,11 +349,11 @@ function _clearMiBs()
 
 /**
  * Description
- * @method _checkPole
+ * @method _checkSkill
  * @param {} dressName
  
  */
-function _checkPole(dressName)
+function _checkSkill(dressName)
 {
 
     while (Orion.SkillValue('fishing', 'base') < 2000)
@@ -376,7 +376,7 @@ function _checkPole(dressName)
 function _panTile(tiledata)
 {
     _checkGoldpan();
-    _checkPole(dressName);
+    _checkSkill(dressName);
 
     Orion.Wait(middlePause * 2);
 
@@ -410,7 +410,7 @@ function _handlePanResult(tiledata)
         Orion.Now() + paningDelay, "system");
     Orion.RemoveDisplayTimer('paningTimer');
 
-    if (Orion.InJournal("seem to be any|pan for gold there|to be closer|Target cannot", "system"))
+    if (Orion.InJournal("seem to be any|pan for gold there|to be closer|Target cannot|You can't pan for gold there", "system"))
     {
         Orion.ClearJournal();
         return undefined;
@@ -709,7 +709,7 @@ function paning_search_new_spot(waterTilesRange)
 
                 if (panResult == "large")
                 {
-                    //>check_marked = _checkIfTileIsMarked(waterTileObjs[i]);
+                    check_marked = _checkIfTileIsMarked(waterTileObjs[i]);
 
                     if (check_marked == false)
                     {
@@ -759,10 +759,11 @@ function paning_search_new_spot(waterTilesRange)
 function paning_runebook_travel()
 {
     // 1 - get books
-    // 2 - open books
-    // 3 - list spots
-    // 4 - recall spot
+    // 2 - open one book
+    // 3 - read spots
+    // 4 - recall to spot
     // 5 - pan spot
+    // 6 - clean up
     Orion.Exec('afkCheck', true);
     Orion.Exec('loop_world_saves', true);
 
@@ -774,8 +775,8 @@ function paning_runebook_travel()
         {
 
             runebook = all_runebooks[i];
-            book_name = _getNuggetsBookName(runebook);
-            if (book_name != false)
+            isLargeNuggetBook = _getNuggetsBookName(runebook);
+            if (isLargeNuggetBook != false)
             {
                 paning_books.push(runebook);
             }
@@ -789,37 +790,39 @@ function paning_runebook_travel()
         return false;
     }
 
-    for (var i = 0; i < paning_books.length; i++)
+    for (var i = 0; i < paning_books.length; i++) // for each book
     {
         Orion.UseObject(paning_books[i]);
-        Orion.Wait(3000);
+        Orion.Wait(4000);
         positions = null;
         positions = _readRunebookPositions(paning_books[i]);
-        for (var j = 0; j < positions.length; j++)
+        for (var j = 0; j < positions.length; j++) // for each spot on the book
         {
-            Orion.Wait(3000);
-            Orion.UseObject(paning_books[i]);
-            gumpButton = 6 * (j + 1) + 1;
-            Orion.Print("Recalling to spot #{0}@{1} coord. X{2}/Y{3}/Z{4}".format(
-                (j + 1), getNuggetsBookName(paning_books[i]),
-                positions[j].X, positions[j].Y, positions[j].Z));
-            Orion.WaitGump(Orion.CreateGumpHook(gumpButton));
 
+	            Orion.Print("Recalling to spot #{0}, book {1},  coord. X{2}/Y{3}/Z{4}".format(
+                (j + 1), _getNuggetsBookName(paning_books[i]),
+                positions[j].X, positions[j].Y, positions[j].Z));
+
+				_runebook_travel(paning_books[i], j+1)
+
+                Orion.Wait(4000);
             do {
                 panResult = _handlePanResult(positions[j]);
-                //Orion.Print("Got " + panResult);
-            } while (panResult != false)
+            } while (panResult != undefined)
 
+			_handlePanResult(positions[j]);
         }
 
     }
-    Orion.Wait(1500);
+    Orion.Wait(3000);
     _trashLoot();
     Orion.Wait(middlePause);
     _fillGoldKey();
     Orion.Wait(middlePause);
     _clearMiBs(extractMiBs);
     Orion.Print("All books panned. Returning Home");
+    
+    Orion.PlayMacro(recallHomeMacro)
 
     return true;
 }

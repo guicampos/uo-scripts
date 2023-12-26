@@ -24,7 +24,7 @@ var pulse_time = 150; // A small  pause
 
 
 //hidden
-const _crtr_s = '0x000E7E51 0x001A9CA2'
+const _crtr_s = ''
 
 const _own_s = ''
 const _own_n = ''

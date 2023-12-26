@@ -371,6 +371,7 @@ function haltAllScripts()
  */
 function loop_world_saves()
 {
+    Orion.ClearJournal();
     while (true)
     {
         if (Orion.InJournal("The world is saving, please wait.", "system"))
