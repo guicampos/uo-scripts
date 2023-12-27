@@ -180,7 +180,7 @@ function _runebook_get_gump()
     for (var i = 0; i < Orion.GumpCount(); i++)
     {
         runebookgump = Orion.GetGump(i);
-        if (runebookgump != null && runebookgump.ID() == '0x542832BA')
+        if (runebookgump != null && runebookgump.ID() == global_runebook_id)
         {
             return runebookgump;
         }
