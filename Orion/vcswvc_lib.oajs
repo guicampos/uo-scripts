@@ -3,6 +3,7 @@
 //#include targeting.oajs
 //#include bandage.oajs
 //#include pets.oajs
+//#include panning.oajs
 
 /** 
  * System Name.

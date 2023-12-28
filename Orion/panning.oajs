@@ -7,24 +7,24 @@
 
 // YOU MUST CHANGE THOSE - Use the ingame command '_info' to check IDs and Graphics
 var bankCrystal = 0x42a30987; // your bank crystal item ID
-var dressName = 'Paning'; //  Your dress paning set name. You can add a set in the Agents tab. This is mandatory. Also make sure that all pieces of the set is inside your backpack (or a subconteiner inside it). If any piece of the set is missing, the script will loop forever and won't work.
+var dressName = 'panning'; //  Your dress panning set name. You can add a set in the Agents tab. This is mandatory. Also make sure that all pieces of the set is inside your backpack (or a subconteiner inside it). If any piece of the set is missing, the script will loop forever and won't work.
 var recallHomeMacro = 'gohome'; // a recall macro recalling to your home or a safe place
 
 // YOU MAY HAVE TO CHANGE THOSE
-var colorTrashbag = '0x0495'; // the color of your trashbag
+var trashbag_color = '0x0495'; // the color of your trashbag
 var treasureKeyColor = '0x0745'; // your treasure key color
 var extractMiBs = true; // if you want the system to auto extract the MIBs
-
 
 // YOU SHOULDNT CHANGE THOSE
 var bankBag = '0x46775617'; // a bank bag item id
 var pankeyGraphic = '0x09D7'; 
 var fullPanGraph = '0x9D8';
+var trashbag_graphic = '0x09B2'
 var waterTilesRange = 3;
 var smallPause = 25;
 var middlePause = 300;
 var moveItemPause = 600;
-var paningDelay = 10000;
+var panningDelay = 10000;
 var fakeTitleDelay = 600000;
 var bottleType = '0x99F';
 var treasureKeyType = '0x14EE';
@@ -257,7 +257,7 @@ function _fillGoldKey()
  */
 function _trashLoot()
 {
-    var trashbag = Orion.FindType('0x09B2', '0x0495', 'backpack', 'fast');
+    var trashbag = Orion.FindType(trashbag_graphic, trashbag_color, 'backpack', 'fast');
 
     if (trashbag)
     {
@@ -405,10 +405,10 @@ function _handlePanResult(tiledata)
     _panTile(tiledata);
     Orion.Wait(middlePause);
 
-    Orion.AddDisplayTimer('paningTimer', paningDelay, 'UnderChar', 'Circle|Bar', 'paning');
+    Orion.AddDisplayTimer('panningTimer', panningDelay, 'UnderChar', 'Circle|Bar', 'panning');
     Orion.WaitJournal('your pan is full|seem to be any|pan for gold there|to be closer|Target cannot', Orion.Now() - 1000,
-        Orion.Now() + paningDelay, "system");
-    Orion.RemoveDisplayTimer('paningTimer');
+        Orion.Now() + panningDelay, "system");
+    Orion.RemoveDisplayTimer('panningTimer');
 
     if (Orion.InJournal("seem to be any|pan for gold there|to be closer|Target cannot|You can't pan for gold there", "system"))
     {
@@ -628,7 +628,7 @@ function _tiles_comparison(tile1, tile2)
 }
 
 
-function paning_search_new_spot(waterTilesRange)
+function panning_search_new_spot(waterTilesRange)
 {
     Orion.Exec('afkCheck', true);
     Orion.Exec('loop_world_saves', true);
@@ -638,7 +638,7 @@ function paning_search_new_spot(waterTilesRange)
     if (!_validateRunebook())
     {
         Orion.Print(
-            "This book has no paning spots left to mark. Please choose another book."
+            "This book has no panning spots left to mark. Please choose another book."
         );
         Orion.RemoveObject('LargeSpotBook');
         return false;
@@ -683,7 +683,7 @@ function paning_search_new_spot(waterTilesRange)
 	    tilearray.push(tiledata);
     }
 
-    // paning routine starts
+    // panning routine starts
     for (var i = 0; i < tilearray.length; i++)
     {
         tiledata = tilearray[i];
@@ -721,7 +721,7 @@ function paning_search_new_spot(waterTilesRange)
                         Orion.AddFakeMapObject(tiledata.fakeSerial, '0x1F17', '0x612', tiledata
                             .X, tiledata.Y, tiledata.Z, fakeTitleDelay);
                         Orion.Say('[e woohoo');
-                        return; // break the spot because we're searching for larges, not paning all the nuggets
+                        return; // break the spot because we're searching for larges, not panning all the nuggets
                     }
                     else
                     {
@@ -753,10 +753,10 @@ function paning_search_new_spot(waterTilesRange)
 
 /**
  * Description
- * @method paning_runebook_travel
+ * @method panning_runebook_travel
  
  */
-function paning_runebook_travel()
+function panning_runebook_travel()
 {
     // 1 - get books
     // 2 - open one book
@@ -768,7 +768,7 @@ function paning_runebook_travel()
     Orion.Exec('loop_world_saves', true);
 
     all_runebooks = Orion.FindType('0x22C5', '0x0000');
-    paning_books = [];
+    panning_books = [];
     if (all_runebooks.length > 0)
     {
         for (var i = 0; i < all_runebooks.length; i++)
@@ -778,32 +778,32 @@ function paning_runebook_travel()
             isLargeNuggetBook = _getNuggetsBookName(runebook);
             if (isLargeNuggetBook != false)
             {
-                paning_books.push(runebook);
+                panning_books.push(runebook);
             }
 
         }
     }
 
-    if (all_runebooks.length == 0 || paning_books.length == 0)
+    if (all_runebooks.length == 0 || panning_books.length == 0)
     {
         Orion.Print("no runebook to run");
         return false;
     }
 
-    for (var i = 0; i < paning_books.length; i++) // for each book
+    for (var i = 0; i < panning_books.length; i++) // for each book
     {
-        Orion.UseObject(paning_books[i]);
+        Orion.UseObject(panning_books[i]);
         Orion.Wait(4000);
         positions = null;
-        positions = _readRunebookPositions(paning_books[i]);
+        positions = _readRunebookPositions(panning_books[i]);
         for (var j = 0; j < positions.length; j++) // for each spot on the book
         {
 
 	            Orion.Print("Recalling to spot #{0}, book {1},  coord. X{2}/Y{3}/Z{4}".format(
-                (j + 1), _getNuggetsBookName(paning_books[i]),
+                (j + 1), _getNuggetsBookName(panning_books[i]),
                 positions[j].X, positions[j].Y, positions[j].Z));
 
-				_runebook_travel(paning_books[i], j+1)
+				_runebook_travel(panning_books[i], j+1)
 
                 Orion.Wait(4000);
             do {
