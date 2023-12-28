@@ -1,43 +1,75 @@
-//#include main.oajs
+//#include lib.oajs
+//#include general.oajs
+//#include travelling.oajs
 
-var waterTilesRange = 4;
+
+
+
+// YOU MUST CHANGE THOSE - Use the ingame command '_info' to check IDs and Graphics
+var bankCrystal = 0x42a30987; // your bank crystal item ID
+var dressName = 'panning'; //  Your dress panning set name. You can add a set in the Agents tab. This is mandatory. Also make sure that all pieces of the set is inside your backpack (or a subconteiner inside it). If any piece of the set is missing, the script will loop forever and won't work.
+var recallHomeMacro = 'gohome'; // a recall macro recalling to your home or a safe place
+
+// YOU MAY HAVE TO CHANGE THOSE
+var trashbag_color = '0x0495'; // the color of your trashbag
+var treasureKeyColor = '0x0745'; // your treasure key color
+var extractMiBs = true; // if you want the system to auto extract the MIBs
+
+// YOU SHOULDNT CHANGE THOSE
+var bankBag = '0x46775617'; // a bank bag item id
+var pankeyGraphic = '0x09D7'; 
+var fullPanGraph = '0x9D8';
+var trashbag_graphic = '0x09B2'
+var waterTilesRange = 3;
 var smallPause = 25;
 var middlePause = 300;
 var moveItemPause = 600;
 var panningDelay = 10000;
-var fakeTitleDelay = 400000;
-var colorTrashbag = '0x0495';
-var masterKeyType = '0x176B';
-var bankCrystal = 0x42a30987
-var bankBag = '0x46775617';
-var pankeyGraphic = '0x09D7';
-var fullPanGraph = '0x9D8';
-var extractMiBs = true;
+var fakeTitleDelay = 600000;
 var bottleType = '0x99F';
 var treasureKeyType = '0x14EE';
-var treasureKeyColor = '0x0745';
-var dressName = 'Panning';
-var recallHomeMacro = 'gohome';
+var masterKeyType = '0x176B';
+
+// DO NOT CHANGE 
 var waterTilesGraphs = '0x00A8|0x00A9|0x00AA|0x00AB|0x0136|0x0137|0x1797|0x1798|0x1799|0x179A|0x179B|0x179C|0x17AB';
 
-String.prototype.format = function()
-{
-    var formatted = this;
-    for (var i = 0; i < arguments.length; i++)
-    {
-        var regexp = new RegExp('\\{' + i + '\\}', 'gi');
-        formatted = formatted.replace(regexp, arguments[i]);
-    }
-    return formatted;
-};
 
-function resetRunebook()
+/******************************************************************************** 
+ * SCRIPT START
+ * DO NOT CHANGE, OR CHANGE WITH CAUTION
+ *********************************************************************************/
+
+/**
+ * Description
+ * @method _compare_spots
+ * @param {} spot1
+ * @param {} spot2
+ * @return LogicalExpression
+ */
+function _compare_spots(spot1, spot2)
+{
+    return spot1.X() === spot2.X() &&
+        spot1.Y() === spot2.Y() &&
+        spot1.Z() === spot2.Z();
+}
+
+/**
+ * Description
+ * @method _resetRunebook
+ 
+ */
+function _resetRunebook()
 {
     Orion.RemoveObject("LargeSpotBook");
     Orion.RemoveObject("cleanRune");
 }
 
-function checkRunebook()
+/**
+ * Description
+ * @method _checkRunebook
+ 
+ */
+function _checkRunebook()
 {
     var runebook = Orion.GetSerial('LargeSpotBook');
     var cleanRune = Orion.FindType('0x1f14', 'any', 'backpack', 'fast');
@@ -59,7 +91,13 @@ function checkRunebook()
 
 }
 
-function validateRunebook(runebookSerial)
+/**
+ * Description
+ * @method _validateRunebook
+ * @param {} runebookSerial
+ 
+ */
+function _validateRunebook(runebookSerial)
 {
 
     if (!runebookSerial)
@@ -73,7 +111,12 @@ function validateRunebook(runebookSerial)
     return true;
 }
 
-function emptyGoldpan()
+/**
+ * Description
+ * @method _emptyGoldpan
+ 
+ */
+function _emptyGoldpan()
 {
     Orion.ClearJournal();
     Orion.UseType('0x09D8', '0x0000');
@@ -81,7 +124,12 @@ function emptyGoldpan()
     return true;
 }
 
-function checkGoldpanContents()
+/**
+ * Description
+ * @method _checkGoldpanContents
+ 
+ */
+function _checkGoldpanContents()
 {
 
     if (Orion.InJournal('large gold', 'sys'))
@@ -102,7 +150,12 @@ function checkGoldpanContents()
     return false;
 }
 
-function checkGoldpan()
+/**
+ * Description
+ * @method _checkGoldpan
+ 
+ */
+function _checkGoldpan()
 {
 
     if (Orion.FindType(pankeyGraphic, '0x0000').length > 0)
@@ -111,40 +164,54 @@ function checkGoldpan()
     }
     else if (Orion.FindType('0x09D8', '0x0000').length > 0)
     {
-        return emptyGoldpan();
+        return _emptyGoldpan();
     }
     else
     {
-        return getGoldpan();
+        return _getGoldpan();
     }
 
 }
 
-function processGoldpan()
+/**
+ * Description
+ * @method _processGoldpan
+ 
+ */
+function _processGoldpan()
 {
-    checkGoldpan();
-    return checkGoldpanContents();
+    _checkGoldpan();
+    return _checkGoldpanContents();
 
 }
 
-function findGoldPanKey()
+/**
+ * Description
+ * @method _findGoldPanKey
+ 
+ */
+function _findGoldPanKey()
 {
-    var pankey = Orion.FindType(pankeyGraphic, ('0x7C8|0x7C7'), "backpack")[
-        0]; //0x7C8 is 3 Finger Jack Gold Pan and 0x7C7 is the regular one
+    var pankey = Orion.FindType(pankeyGraphic, ('0x7C8|0x7C7'), "backpack")[0]; //0x7C8 is 3 Finger Jack Gold Pan and 0x7C7 is the regular one
 
     if (!Orion.FindObject(pankey))
     {
         Orion.CharPrint('self', 82,
-            "**** cant find a goldpan storage in your backpack ****");
+            "**** cant find a goldpan key in your backpack ****");
         Orion.Wait(smallPause);
         return false;
     }
     return pankey;
 }
 
-function getGoldpan()
+/**
+ * Description
+ * @method _getGoldpan
+ 
+ */
+function _getGoldpan()
 {
-    pankey = findGoldPanKey();
+    pankey = _findGoldPanKey();
 
     Orion.RequestContextMenu(pankey);
     Orion.WaitContextMenuID(pankey, 0);
@@ -155,9 +222,14 @@ function getGoldpan()
 
 }
 
-function fillGoldKey()
+/**
+ * Description
+ * @method _fillGoldKey
+ 
+ */
+function _fillGoldKey()
 {
-    var pankey = findGoldPanKey();
+    var pankey = _findGoldPanKey();
     if (pankey)
     {
         Orion.RequestContextMenu('0x43BFDB8D');
@@ -178,9 +250,14 @@ function fillGoldKey()
 
 }
 
-function trashLoot()
+/**
+ * Description
+ * @method _trashLoot
+ 
+ */
+function _trashLoot()
 {
-    var trashbag = Orion.FindType('0x09B2', '0x0495', 'backpack', 'fast');
+    var trashbag = Orion.FindType(trashbag_graphic, trashbag_color, 'backpack', 'fast');
 
     if (trashbag)
     {
@@ -212,7 +289,12 @@ function trashLoot()
 
 }
 
-function clearMiBs()
+/**
+ * Description
+ * @method _clearMiBs
+ 
+ */
+function _clearMiBs()
 {
 
     if (extractMiBs)
@@ -265,7 +347,13 @@ function clearMiBs()
     }
 }
 
-function checkPole(dressName)
+/**
+ * Description
+ * @method _checkSkill
+ * @param {} dressName
+ 
+ */
+function _checkSkill(dressName)
 {
 
     while (Orion.SkillValue('fishing', 'base') < 2000)
@@ -276,64 +364,59 @@ function checkPole(dressName)
     Orion.Wait(middlePause);
 }
 
-function panTile(X, Y, Z)
+/**
+ * Description
+ * @method _panTile
+ * @param {} X
+ * @param {} Y
+ * @param {} Z
+ * @param {} graphic
+ 
+ */
+function _panTile(tiledata)
 {
-    worldSave();
-    checkGoldpan();
-    checkPole(dressName);
+    _checkGoldpan();
+    _checkSkill(dressName);
 
-    Orion.Wait(middlePause);
-    runebookGump = getRunebookGump();
-
-    Orion.Wait(middlePause);
+    Orion.Wait(middlePause * 2);
 
     Orion.UseType(pankeyGraphic, '0x0000');
-    Orion.WaitForTarget(1000);
-
-    Orion.TargetTile('water', X, Y, Z);
-    Orion.AddFakeMapObject(X.toString() + Y.toString() + Math.abs(Z).toString(), "0x09D8", '999', X, Y, Z,
+    Orion.WaitForTarget(2000);
+    //Orion.Print('_panTile > '+tiledata.X + ',' + tiledata.Y + ',' + tiledata.Z + ',' + tiledata.Graphic)
+    Orion.TargetTile(tiledata.Graphic, tiledata.X, tiledata.Y, tiledata.Z);
+    Orion.Wait(middlePause);
+    Orion.AddFakeMapObject(tiledata.fakeSerial, "0x09D8", '999', tiledata.X, tiledata.Y, tiledata.Z,
         fakeTitleDelay);
-
+    Orion.Wait(middlePause);
 }
 
-function worldSave()
-{
-    if (Orion.InJournal('The world is saving, please wait.', 'system'))
-    {
-        Orion.CharPrint('self', 82, 'Pausing for world save');
-        Orion.Wait(250);
-        if (Orion.WaitJournal('World save complete.', 0, 60000, 'system'))
-        {
-            HeadMsg('Continuing', 'self', 82)
-            Orion.Wait(250);
-        }
-        Orion.ClearJournal();
-    }
-    return true;
-}
 
-function handlePanResult(tiledata)
+/**
+ * Description
+ * @method _handlePanResult
+ * @param {} tiledata
+ 
+ */
+function _handlePanResult(tiledata)
 {
     Orion.ClearJournal();
-    panTile(tiledata.X(), tiledata.Y(), tiledata.Z());
+
+    Orion.Wait(middlePause);
+    _panTile(tiledata);
     Orion.Wait(middlePause);
 
-    timerID = "timer" + Orion.Random(65535).toString();
-    Orion.AddDisplayTimer(timerID, panningDelay, 'UnderChar', 'Circle|Bar', 'Panning');
-    Orion.WaitJournal('your pan is full|seem to be any|pan for gold there|to be closer|Target cannot', Orion.Now()-1000,
+    Orion.AddDisplayTimer('panningTimer', panningDelay, 'UnderChar', 'Circle|Bar', 'panning');
+    Orion.WaitJournal('your pan is full|seem to be any|pan for gold there|to be closer|Target cannot', Orion.Now() - 1000,
         Orion.Now() + panningDelay, "system");
-    Orion.RemoveDisplayTimer(timerID);
+    Orion.RemoveDisplayTimer('panningTimer');
 
-    if (Orion.InJournal("seem to be any|pan for gold there|to be closer|Target cannot", "system"))
+    if (Orion.InJournal("seem to be any|pan for gold there|to be closer|Target cannot|You can't pan for gold there", "system"))
     {
         Orion.ClearJournal();
-        return {
-            size: undefined,
-            tile: [tiledata.X(), tiledata.Y(), tiledata.Z(), tiledata.Graphic()]
-        };
+        return undefined;
     }
 
-    checkSize = processGoldpan();
+    checkSize = _processGoldpan();
     Orion.Wait(middlePause);
     Orion.ClearJournal();
     if (typeof checkSize == 'string')
@@ -350,24 +433,26 @@ function handlePanResult(tiledata)
         {
             graph = '0x1727';
         }
-        Orion.AddFakeMapObject(Orion.Random(0, 1000),
-            graph, '2997', tiledata.X(), tiledata.Y(), tiledata.Z(), fakeTitleDelay);
-        return {
-            size: checkSize,
-            tile: [tiledata.X(), tiledata.Y(), tiledata.Z(), tiledata.Graphic()]
-        };
+        Orion.AddFakeMapObject(tiledata.fakeSerial,
+            graph, '2997', tiledata.X, tiledata.Y, tiledata.Z, fakeTitleDelay);
+        return checkSize;
+
     }
     else
     {
-        return {
-            size: undefined,
-            tile: [tiledata.X(), tiledata.Y(), tiledata.Z(), tiledata.Graphic()]
-        };
+        return undefined;
     }
 
 }
 
-function IsReachable(tile, _range)
+/**
+ * Description
+ * @method _isReachable
+ * @param {} tile
+ * @param {} _range
+ 
+ */
+function _isReachable(tile, _range)
 {
     var result = Orion.GetTilesInRect('land', (tile.X() - _range), (tile.Y() -
             _range), 0, (tile.X() + _range), (tile.Y() + _range), 255)
@@ -378,7 +463,13 @@ function IsReachable(tile, _range)
 
 var fishedWater = [];
 
-function GetWaterTiles(_range)
+/**
+ * Description
+ * @method _getWaterTiles
+ * @param {} _range
+ 
+ */
+function _getWaterTiles(_range)
 {
 
     if (!_range)
@@ -393,7 +484,13 @@ function GetWaterTiles(_range)
     return waterTiles;
 }
 
-function getNuggetsBookName(runebook)
+/**
+ * Description
+ * @method _getNuggetsBookName
+ * @param {} runebook
+ 
+ */
+function _getNuggetsBookName(runebook)
 {
     runebookObj = Orion.FindObject(runebook);
     props = runebookObj.Properties().split("\n");
@@ -411,7 +508,13 @@ function getNuggetsBookName(runebook)
     return false;
 }
 
-function readRunebookPositions(runebook)
+/**
+ * Description
+ * @method _readRunebookPositions
+ * @param {} runebook
+ 
+ */
+function _readRunebookPositions(runebook)
 {
 
     if (!runebook)
@@ -424,7 +527,7 @@ function readRunebookPositions(runebook)
 
     positions = []
 
-    runebookgump = getRunebookGump();
+    runebookgump = _runebook_get_gump();
 
     for (i = 0; i <= runebookgump.TextList().length; i++)
     {
@@ -445,9 +548,15 @@ function readRunebookPositions(runebook)
     return positions;
 }
 
-function checkIfTileIsMarked(tile)
+/**
+ * Description
+ * @method _checkIfTileIsMarked
+ * @param {} tile
+ 
+ */
+function _checkIfTileIsMarked(tile)
 {
-    positions = readRunebookPositions();
+    positions = _readRunebookPositions();
 
     var i = 0;
     for (i = 0; i < positions.length; i++)
@@ -469,28 +578,19 @@ function checkIfTileIsMarked(tile)
 
 }
 
-function getRunebookGump()
+/**
+ * Description
+ * @method _markRune
+ * @param {} position_text
+ 
+ */
+function _markRune(position_text)
 {
-    var runebookgump;
-    for (var i = 0; i < Orion.GumpCount(); i++)
-    {
-        runebookgump = Orion.GetGump(i);
-        if (runebookgump != null && runebookgump.ID() == '0x542832BA')
-        {
-            break;
-        }
-    }
 
-    return runebookgump;
-}
-
-function markRune(position_text)
-{
-    worldSave();
     var cleanRune = Orion.FindType('0x1f14', 'any', 'backpack', 'fast');
     var runebook = Orion.GetSerial('LargeSpotBook');
 
-    runebookgump = getRunebookGump();
+    runebookgump = _runebook_get_gump();
     if (runebookgump)
         runebookgump.Close();
 
@@ -519,149 +619,153 @@ function markRune(position_text)
     }
 }
 
-function removeDuplicates(arr, equals)
-{
-    var originalArr = arr.slice(0);
-    var i, len, val;
-    arr.length = 0;
 
-    for (i = 0, len = originalArr.length; i < len; ++i)
-    {
-        val = originalArr[i];
-        if (!arr.some(function(item)
-            {
-                return equals(item, val);
-            }))
-        {
-            arr.push(val);
-        }
-    }
-    return arr;
+function _tiles_comparison(tile1, tile2)
+{
+    return tile1.X() === tile2.X() &&
+    tile1.Y() === tile2.Y() &&
+    tile1.Z() === tile2.Z();
 }
 
-function thingsEqual(thing1, thing2)
-{
-    return thing1.X() === thing2.X() &&
-        thing1.Y() === thing2.Y() &&
-        thing1.Z() === thing2.Z();
-}
 
-function PanForGold_SearchNewSpot(waterTilesRange)
+function panning_search_new_spot(waterTilesRange)
 {
     Orion.Exec('afkCheck', true);
-    Orion.Exec('handleWorldSaves', true);
+    Orion.Exec('loop_world_saves', true);
 
-    checkRunebook();
-    if (!validateRunebook())
+    _checkRunebook();
+
+    if (!_validateRunebook())
     {
         Orion.Print(
-            "This book has no Panning spots left to mark. Please choose another book."
+            "This book has no panning spots left to mark. Please choose another book."
         );
         Orion.RemoveObject('LargeSpotBook');
         return false;
     }
 
-    var runebookgump = getRunebookGump();
-    if (runebookgump)
-        runebookgump.Close();
+    var runebookgump = _runebook_get_gump();
 
-    //	waterTiles = uniqBy(GetWaterTiles(waterTilesRange), JSON.stringify);
-    waterTiles = GetWaterTiles(waterTilesRange).filter(function(item, pos, self)
+    if (runebookgump != null)
+        runebookgump.Close();
+    else 
+        throw "Runebook gump not found. Exiting."
+
+
+    // must remove all and any repeated watertiles found.
+    //	waterTiles = uniqBy(_getWaterTiles(waterTilesRange), JSON.stringify);
+
+    waterTileObjs = _getWaterTiles(waterTilesRange).filter(function(item, pos, self)
     {
         return self.indexOf(item) == pos;
     })
 
-    waterTiles = removeDuplicates(GetWaterTiles(waterTilesRange), thingsEqual);
+    
+   // waterTileObjs = _removeDuplicates(_getWaterTiles(waterTilesRange), _compare_spots);
 
+	tilearray = []
     //Mark all tiles first
-    for (var i = 0; i < waterTiles.length; i++)
+    for (var i = 0; i < waterTileObjs.length; i++)
     {
-        water = waterTiles[i];
-        Orion.AddFakeMapObject(Orion.Random(0, 2000), "0x99FD", "0x613", water.X(), water.Y(), water.Z(),
-            fakeTitleDelay);
 
+		    tiledata = {
+            'X': waterTileObjs[i].X(),
+            'Y': waterTileObjs[i].Y(),
+            'Z': waterTileObjs[i].Z(),
+            'Graphic': waterTileObjs[i].Graphic(), 
+            'fakeSerial': Orion.Random(65534)
+            };
+      
+          Orion.AddFakeMapObject(tiledata.fakeSerial, '0x1810', '0x25', tiledata.X,
+              tiledata.Y, tiledata
+              .Z, fakeTitleDelay);
+              
+	    tilearray.push(tiledata);
     }
 
-    // Panning routine starts
-    for (var i = 0; i < waterTiles.length; i++)
+    // panning routine starts
+    for (var i = 0; i < tilearray.length; i++)
     {
-			Orion.AddFakeMapObject(Orion.Random(0, 3000), '0x99FD', '0x7B0', waterTiles[i].X(), waterTiles[i]
-			.Y(), waterTiles[i]
-			.Z(), fakeTitleDelay);
+        tiledata = tilearray[i];
+        
+        //Orion.Print('>stringify'+JSON.stringify(tiledata));
+
 
         while (true)
         {
-            panResult = handlePanResult(waterTiles[i]);
-                
-                if (!panResult || panResult == false || panResult.size == undefined )
+
+            panResult = _handlePanResult(tiledata);
+            Orion.AddFakeMapObject(tiledata.fakeSerial, '0x99FD', '0x7B0', tiledata.X, tiledata.Y, tiledata.Z, fakeTitleDelay);
+
+            if (!panResult || panResult == false || panResult == undefined)
+            {
+                Orion.AddFakeMapObject(tiledata.fakeSerial, '0x050F', 0, tiledata.X,
+                    tiledata.Y, tiledata
+                    .Z, fakeTitleDelay);
+                break;
+            }
+            else
+            {
+
+                if (panResult == "large")
                 {
-                    Orion.AddFakeMapObject(Orion.Random(0, 4000), '0x181A', '0x25', waterTiles[i].X(),
-                    waterTiles[i].Y(), waterTiles[i]
-                    .Z(), fakeTitleDelay);
-                    break;                   
+                    check_marked = _checkIfTileIsMarked(waterTileObjs[i]);
+
+                    if (check_marked == false)
+                    {
+                        positionText = String(tiledata.X) + ',' +
+                            String(tiledata.Y) + ',' + String(tiledata.Z) + ',' + String(parseInt(tiledata.Graphic,16));
+
+                        Orion.Print("Mark This Spot as " + positionText);
+                        _markRune(positionText);
+                        Orion.AddFakeMapObject(tiledata.fakeSerial, '0x1F17', '0x612', tiledata
+                            .X, tiledata.Y, tiledata.Z, fakeTitleDelay);
+                        Orion.Say('[e woohoo');
+                        return; // break the spot because we're searching for larges, not panning all the nuggets
+                    }
+                    else
+                    {
+                        Orion.Print("Spot already marked at " + check_marked);
+                    }
+                    break; //We already found a large spot here. Next spot
                 }
-                else 
+                else if (panResult == "medium")
                 {
-                      Orion.Print(1990, "Got a " + panResult.size);
-                      if (panResult.size == "large")
-                      {
-		                      check_marked = checkIfTileIsMarked(waterTiles[i]);
-		
-		                      if (check_marked == false)
-		                      {
-											positionText = String(panResult.tile[0]) + ',' +
-											String(panResult.tile[1]) + ',' + String(panResult
-											.tile[2]) + ',' + String(parseInt(panResult.tile[3], 16));
-											
-											Orion.Print("Mark This Spot as " + positionText);
-											markRune(positionText);
-											Orion.AddFakeMapObject(Orion.Random(0, 5000), '0x1F17', '0x612', waterTiles[i]
-											.X(), waterTiles[i].Y(), waterTiles[i]
-											.Z(), fakeTitleDelay);
-											Orion.Say('[e woohoo');
-											return; // break the spot because we're searching for larges, not panning all the nuggets
-		                      }
-		                      else
-		                      {
-		                          Orion.Print("Spot already marked at " + check_marked);
-		                      }
-		                          break; //We already found a large spot here. Next spot
-                      } 
-                      else if (panResult.size == "medium" )
-                      {  
-                           break; // and skipp mediums becase when there is a medium will never have a large
-                      }
+                    break; // and skipp mediums becase when there is a medium will never have a large
                 }
+            }
 
 
         }
-        
+
     }
     Orion.Wait(middlePause);
-    trashLoot();
+    _trashLoot();
     Orion.Wait(middlePause);
-    fillGoldKey();
+    _fillGoldKey();
     Orion.Wait(middlePause);
-    clearMiBs(extractMiBs);
+    _clearMiBs(extractMiBs);
     Orion.Wait(middlePause);
     Orion.CharPrint('self', 82, "All spots analyzed");
     Orion.Wait(middlePause);
     return true;
 }
 
-function goHome()
-{
-    Orion.PlayMacro(recallHomeMacro);
-}
-
-function PanForGold_RunebookTravel()
+/**
+ * Description
+ * @method panning_runebook_travel
+ 
+ */
+function panning_runebook_travel()
 {
     // 1 - get books
-    // 2 - open books
-    // 3 - list spots
-    // 4 - recall spot
+    // 2 - open one book
+    // 3 - read spots
+    // 4 - recall to spot
     // 5 - pan spot
-    Orion.Exec("afkCheck");
+    // 6 - clean up
+    Orion.Exec('afkCheck', true);
+    Orion.Exec('loop_world_saves', true);
 
     all_runebooks = Orion.FindType('0x22C5', '0x0000');
     panning_books = [];
@@ -671,8 +775,8 @@ function PanForGold_RunebookTravel()
         {
 
             runebook = all_runebooks[i];
-            book_name = getNuggetsBookName(runebook);
-            if (book_name != false)
+            isLargeNuggetBook = _getNuggetsBookName(runebook);
+            if (isLargeNuggetBook != false)
             {
                 panning_books.push(runebook);
             }
@@ -686,96 +790,39 @@ function PanForGold_RunebookTravel()
         return false;
     }
 
-    for (var i = 0; i < panning_books.length; i++)
+    for (var i = 0; i < panning_books.length; i++) // for each book
     {
         Orion.UseObject(panning_books[i]);
-        Orion.Wait(5000);
+        Orion.Wait(4000);
         positions = null;
-        positions = readRunebookPositions(panning_books[i]);
-        for (var j = 0; j < positions.length; j++)
+        positions = _readRunebookPositions(panning_books[i]);
+        for (var j = 0; j < positions.length; j++) // for each spot on the book
         {
-            Orion.Wait(5000);
-            Orion.UseObject(panning_books[i]);
-            gumpButton = 6 * (j + 1) + 1;
-            Orion.Print("Recalling to spot #{0}@{1} coord. X{2}/Y{3}/Z{4}".format(
-                (j + 1), getNuggetsBookName(panning_books[i]),
-                positions[j].X, positions[j].Y, positions[j].Z));
-            Orion.WaitGump(Orion.CreateGumpHook(gumpButton));
-            Orion.Wait(3000);
-            do {
-                panResult = handlePanResult(positions[j].X, positions[j].Y, positions[j].Z);
-                //Orion.Print("Got " + panResult);
-            } while (panResult != false)
 
+	            Orion.Print("Recalling to spot #{0}, book {1},  coord. X{2}/Y{3}/Z{4}".format(
+                (j + 1), _getNuggetsBookName(panning_books[i]),
+                positions[j].X, positions[j].Y, positions[j].Z));
+
+				_runebook_travel(panning_books[i], j+1)
+
+                Orion.Wait(4000);
+            do {
+                panResult = _handlePanResult(positions[j]);
+            } while (panResult != undefined)
+
+			_handlePanResult(positions[j]);
         }
 
     }
-    Orion.Wait(1500);
-    trashLoot();
+    Orion.Wait(3000);
+    _trashLoot();
     Orion.Wait(middlePause);
-    fillGoldKey();
+    _fillGoldKey();
     Orion.Wait(middlePause);
-    clearMiBs(extractMiBs);
+    _clearMiBs(extractMiBs);
     Orion.Print("All books panned. Returning Home");
-    goHome();
+    
+    Orion.PlayMacro(recallHomeMacro)
+
     return true;
 }
-
-function GetGump(text, index)
-{
-    if (index == undefined || index == null) index = 0;
-
-    var count = Orion.GumpCount();
-
-    if (!count)
-    {
-        return null;
-    }
-
-    for (var i = count - 1; i >= 0; i--)
-    {
-        var gump = Orion.GetGump(i);
-        if (gump && Orion.GumpExists("generic", gump.Serial(), gump.ID()))
-        {
-
-            for (var j = 0; j < gump.TextList().length; j++)
-            {
-                if (Orion.Contains(gump.Text(j), text))
-                {
-                    return gump;
-                }
-            }
-        }
-
-    }
-
-    return null;
-}
-
-function afkCheck()
-{
-    while (true)
-    {
-        while (GetGump("AFK Captcha") != null)
-        //		while (GetGump("of the Day") != null ) //for testing 
-        {
-            Orion.Print("Captcha!");
-            Orion.CharPrint("self", 1990, "Captcha!");
-            Orion.Sound(1341);
-            Orion.Wait(400);
-            Orion.Sound(519);
-            Orion.Wait(400);
-            Orion.Sound(1634);
-            Orion.Wait(4000);
-        }
-        Orion.Wait(50);
-    }
-
-}
-
-function handleEnemiesWhilePanning()
-{
-enemy = acquireTarget()
-// Using magic
-}
-
