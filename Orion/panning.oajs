@@ -864,16 +864,16 @@ function panning_runebook_travel()
     
             });
 
-
+            _trashLoot();
+            Orion.Wait(middlePause);
+            _fillGoldKey();
+            Orion.Wait(middlePause);
+            _clearMiBs(extractMiBs);
     });
 
 
     Orion.Wait(3000);
-    _trashLoot();
-    Orion.Wait(middlePause);
-    _fillGoldKey();
-    Orion.Wait(middlePause);
-    _clearMiBs(extractMiBs);
+
     Orion.Print("All books panned. Returning Home");
     
     Orion.PlayMacro(recallHomeMacro)
