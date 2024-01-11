@@ -15,10 +15,9 @@ function _runebook_reset(runebook_type)
 /**
  * Description
  * @method _runebook_close
- * @param {} runebook_type
- * @return Literal
+  * @return Literal
  */
-function _runebook_close(runebook_type)
+function _runebook_close()
 {
     runebook_gump = _runebook_get_gump();
 
@@ -28,6 +27,28 @@ function _runebook_close(runebook_type)
         return true;
     }
     return false;
+}
+
+
+/**
+ * Description
+ * @method _runebook_close
+ * @param {} runebook_type
+ * @return Literal
+ */
+function _runebook_close_all()
+{
+    var runebookgump;
+    for (var i = 0; i < Orion.GumpCount(); i++)
+    {
+        runebookgump = Orion.GetGump(i);
+        if (runebookgump != null && runebookgump.ID() == global_runebook_id)
+        {
+            runebookgump.Close();
+        }
+    }
+
+    return null;
 }
 
 

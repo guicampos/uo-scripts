@@ -7,7 +7,7 @@
 
 // YOU MUST CHANGE THOSE - Use the ingame command '_info' to check IDs and Graphics
 var bankCrystal = 0x42a30987; // your bank crystal item ID
-var dressName = 'panning'; //  Your dress panning set name. You can add a set in the Agents tab. This is mandatory. Also make sure that all pieces of the set is inside your backpack (or a subconteiner inside it). If any piece of the set is missing, the script will loop forever and won't work.
+var dressName = 'panning'; //  Your dress panning set name, case sensitive. You can add a set in the Agents tab. This is mandatory. Also make sure that all pieces of the set is inside your backpack (or a subconteiner inside it). If any piece of the set is missing, the script will loop forever and won't work.
 var recallHomeMacro = 'gohome'; // a recall macro recalling to your home or a safe place
 
 // YOU MAY HAVE TO CHANGE THOSE
@@ -77,7 +77,7 @@ function _checkRunebook()
     if (!Orion.FindObject(runebook))
     {
         Orion.CharPrint(self, 0x0021,
-            "Please target a Runebook with empty spots to begin..")
+            "Please target a Runebook with empty spots to begin.")
         Orion.WaitForAddObject("LargeSpotBook");
     }
 
@@ -376,6 +376,7 @@ function _checkSkill(dressName)
 function _panTile(tiledata)
 {
     _checkGoldpan();
+    
     _checkSkill(dressName);
 
     Orion.Wait(middlePause * 2);
@@ -490,10 +491,9 @@ function _getWaterTiles(_range)
  * @param {} runebook
  
  */
-function _getNuggetsBookName(runebook)
+function _getPanningBookName(runebook)
 {
-    runebookObj = Orion.FindObject(runebook);
-    props = runebookObj.Properties().split("\n");
+    props = runebook.Properties().split("\n");
     for (var i = 0; i < props.length; i++)
     {
         var prop = props[
@@ -508,6 +508,7 @@ function _getNuggetsBookName(runebook)
     return false;
 }
 
+
 /**
  * Description
  * @method _readRunebookPositions
@@ -517,11 +518,11 @@ function _getNuggetsBookName(runebook)
 function _readRunebookPositions(runebook)
 {
 
-    if (!runebook)
-    {
-        runebook = Orion.GetSerial('LargeSpotBook');
-    }
-    Orion.UseObject(runebook);
+    _runebook_close_all();
+    Orion.Wait(1000);
+    Orion.UseObject(runebook.Serial());
+    
+    Orion.Wait(3000);
 
     Orion.WaitForGump(middlePause);
 
@@ -630,6 +631,14 @@ function _tiles_comparison(tile1, tile2)
 
 function panning_search_new_spot(waterTilesRange)
 {
+    if (Orion.GetDressList(dressName).length < 1)
+    {
+        Orion.Print("Cannot find a dress agent named "+dressName+". Check your assistant tab 'agents' and create a panning profile");
+        
+        return false;
+    }
+    
+    _runebook_close_all();
     Orion.Exec('afkCheck', true);
     Orion.Exec('loop_world_saves', true);
 
@@ -764,56 +773,101 @@ function panning_runebook_travel()
     // 4 - recall to spot
     // 5 - pan spot
     // 6 - clean up
-    Orion.Exec('afkCheck', true);
-    Orion.Exec('loop_world_saves', true);
-
-    all_runebooks = Orion.FindType('0x22C5', '0x0000');
-    panning_books = [];
-    if (all_runebooks.length > 0)
+    _runebook_close_all();
+    if (Orion.GetDressList(dressName).length < 1)
     {
-        for (var i = 0; i < all_runebooks.length; i++)
-        {
-
-            runebook = all_runebooks[i];
-            isLargeNuggetBook = _getNuggetsBookName(runebook);
-            if (isLargeNuggetBook != false)
-            {
-                panning_books.push(runebook);
-            }
-
-        }
-    }
-
-    if (all_runebooks.length == 0 || panning_books.length == 0)
-    {
-        Orion.Print("no runebook to run");
+        Orion.Print("Cannot find a dress agent named "+dressName+". Check your assistant tab 'agents' and create a panning profile");
+        
         return false;
     }
 
-    for (var i = 0; i < panning_books.length; i++) // for each book
+    Orion.Exec('afkCheck', true);
+    Orion.Exec('loop_world_saves', true);
+
+    var panning_books = [];
+    var all_runebooks = Orion.FindTypeEx('0x22C5', any);
+
+    if (all_runebooks.length == 0)
     {
-        Orion.UseObject(panning_books[i]);
-        Orion.Wait(4000);
-        positions = null;
-        positions = _readRunebookPositions(panning_books[i]);
-        for (var j = 0; j < positions.length; j++) // for each spot on the book
-        {
-
-	            Orion.Print("Recalling to spot #{0}, book {1},  coord. X{2}/Y{3}/Z{4}".format(
-                (j + 1), _getNuggetsBookName(panning_books[i]),
-                positions[j].X, positions[j].Y, positions[j].Z));
-
-				_runebook_travel(panning_books[i], j+1)
-
-                Orion.Wait(4000);
-            do {
-                panResult = _handlePanResult(positions[j]);
-            } while (panResult != undefined)
-
-			_handlePanResult(positions[j]);
-        }
-
+        Orion.Print("No runebooks found on your backpack");
+        return false;
     }
+
+    panning_books = all_runebooks
+	.filter(function(runebook)
+	{
+        prop = runebook.Properties().split("\n");
+        return Orion.Contains(prop, 'Large Nuggets');
+    })
+	.sort(function(a, b) 
+	{
+		lastCharA = a.Properties().slice(-1);
+		lastCharB = b.Properties().slice(-1);
+
+		if (lastCharA < lastCharB) 
+		{
+		return -1;
+		}
+		if (lastCharA > lastCharB) 
+		{
+		return 1;
+		}
+		return 0;
+	})
+
+
+    if (panning_books.length == 0)
+    {
+        Orion.Print("No runebook named Large Nuggets <#> to be run");
+        return false;
+    }
+
+	Orion.Print("Velland's Gold Panning System");
+	Orion.Wait(100);
+	Orion.Print("Starting to pan books: ");
+	Orion.Wait(100);
+    panning_books.forEach(function(book)
+    {
+    
+        panning_book_name = _getPanningBookName(book);
+        Orion.Wait(300);
+        Orion.Print("    " + panning_book_name)
+    })
+
+        Orion.Wait(1000);    
+        panning_books.forEach(function(panning_book)
+        {
+            Orion.UseObject(panning_book);
+            Orion.Wait(2000);
+            panning_book_name = _getPanningBookName(panning_book);
+            positions = _readRunebookPositions(panning_book);
+            button_number = 1;
+    
+            positions.forEach(function(panning_spot)
+            {
+                Orion.Print("Recalling to spot #{0}, book {1},  coord. X{2}/Y{3}/Z{4}".format(
+                    button_number, panning_book_name,
+                    panning_spot.X, panning_spot.Y, panning_spot.Z));
+    
+    				_runebook_travel(panning_book.Serial(), button_number)
+    
+                    Orion.Wait(5000);
+                    panResult = null;
+                do 
+                {
+                    panResult = _handlePanResult(panning_spot);
+                } while (panResult != undefined)
+    
+    			_handlePanResult(panning_spot);
+                button_number = button_number+1;
+    
+    
+            });
+
+
+    });
+
+
     Orion.Wait(3000);
     _trashLoot();
     Orion.Wait(middlePause);
@@ -826,3 +880,8 @@ function panning_runebook_travel()
 
     return true;
 }
+
+//function _check_fel_hard_skillcap()
+//{
+//
+//}
