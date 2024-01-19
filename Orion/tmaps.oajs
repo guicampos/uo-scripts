@@ -1,4 +1,6 @@
-//#include tmaps_lib.oajs
+//#include travelling.oajs
+//#include lib.oajs
+
 
 //************************************************ 
 //* Velland's automatic tmap identifier and transporter
@@ -8,9 +10,393 @@
 //* Then execute the function 'loop_tmap' and open a valid FELUCA tmap.
 //* It looks like magic but it's not. I did the long work of mapping a list of coordinates/runebook button, so I could read Orion's native OCR tmap identification and find the correct book from the list. And then a little 600 lines Orion/javascript code.
 //*         # The list of coordinates/runebook buttons is protected, but I can share if you share your script idea.
-//*  If you use and like this system please leave it a signal at discord and consider donating ed or gold coins to keep me motivated!
+//*  If you use and like this system please leave it a signal at discord and consider a contribution in USD to keep me motivated!
 //* Velland/guicampos#6410
 //************************************************ 
 
 
-var runebooks_source = backpack // or backpack
+var tmap_library_type = 'backpack' // 'backpack' or 'ground'
+
+
+// DO NOT CHANGE BELOW
+
+// Here is my dirty little secret. Mapped all tmaps spots as X,Y coordinates.
+var tmaps_coordinates_xy_position =
+    '961,506:1;1162,189:2;1315,317:3;1469,230:4;1504,364:5;2672,392:6;2741,435:7;2770,345:8;2781,289:9;2836,233:10;3014,250:11;3082,202:12;1028,1181:13;1318,889:14;1414,771:15;1530,753:16;1555,806:17;1510,968:18;1561,1058:19;1510,1071:20;2339,645:21;2350,689:22;2396,723:23;2433,767:24;2643,851:25;2458,1042:26;2517,1066:27;2338,1159:28;2391,1155:29;3246,246:30;3403,238:31;3376,458:32;3369,638:33;199,1460:34;207,1442:35;359,1337:36;581,1453:37;348,1565:38;619,1706:39;962,1859:40;979,1850:41;970,1884:42;969,1894:43;977,1880:44;1017,1859:45;1034,1877:46;1041,1903:47;1042,1958:48;1032,1972:49;1024,1991:50;974,1992:51;989,1991:52;450,2054:53;478,2043:54;492,2027:55;468,2087:56;466,2100:57;1657,2030:58;1689,1992:59;1709,1964:60;1725,1999:61;1732,2017:62;1742,2028:63;1753,2020:64;2034,1942:65;2054,1963:66;2065,1979:67;2058,1990:68;2070,2007:69;2062,1962:70;2098,1976:71;2089,1987:72;2093,2006:73;2188,1991:74;1426,2405:75;1434,2381:76;1470,2340:77;1451,2301:78;1436,2294:79;1438,2217:80;1467,2181:81;1464,2246:82;1478,2273:83;1562,2312:84;1545,2222:85;1518,2214:86;1533,2189:87;1522,2150:88;1541,2115:89;1594,2193:90;1618,2236:91;1654,2268:92;1724,2288:93;1773,2321:94;1758,2333:95;1765,2431:96;1702,2318:97;1654,2304:98;2061,2144:99;2104,2124:100;2098,2101:101;2129,2108:102;2152,2120:103;2186,2143:104;2177,2151:105;2161,2149:106;2130,2133:107;2123,2121:108;2647,2167:109;2628,2221:110;2642,2289:111;2682,2291:112;2727,2309:113;2781,2294:114;2804,2255:115;2850,2252:116;2957,2150:117;2967,2171:118;2952,2177:119;2955,2200:120;2932,2240:121;958,2505:122;1025,2702:123;1290,2735:124;1382,2840:125;1390,2985:126;1414,3059:127;1647,2642:128;1561,2699:129;1671,2808:130;1601,3013:131;1665,3063:132;1068,3182:133;1075,3156:134;1073,3133:135;1090,3110:136;1093,3132:137;1096,3179:138;1129,3403:139;1162,3468:140;1127,3499:141;1785,1885:142;2014,3269:143;2040,3427:144;2094,3384:145;2148,3361:146;2370,3427:147;2340,3482:148;2359,3508:149;2387,3506:150;2464,3583:151;2479,3624:152;2524,3587:153;2533,3608:154;2795,3451:155;2802,3488:156;2793,3519:157;2829,3510:158;2988,3606:159;3035,3601:160;2154,3983:161;2144,3985:162;2140,3941:163;2157,3924:164;2152,3951:165;2162,3988:166;2452,3942:167;2421,3929:168;2414,3920:169;2436,3902:170;2481,3908:171;2512,3899:172;2512,3920:173;2512,3962:174;2527,3982:175;2516,3998:176;4479,3280:177;4475,3231:178;4465,3209:179;4423,3152:180;4418,3117:181;4447,3130:182;4452,3148:183;4498,3108:184;4512,3103:185;4471,3188:186;4506,3226:187;4495,3240:188;4643,3371:189;4694,3484:190;3477,2761:191;3426,2723:192;3418,2675:193;3533,2471:194;3511,2421:195;3568,2402:196;3702,2825:197;3594,2826:198;3557,2820:199;3541,2784:200'
+
+
+/**
+ * Description
+ * @method loop_tmap
+ * @return 
+ */
+function loop_tmap()
+{
+    while (true)
+    {
+
+        if (Orion.InJournal('Map opened to: ', 'normal'))
+        {
+            map_xy = _tmap_get_map_xy();
+            spot_data = _tmap_get_spot_data();
+
+            if (spot_data.length > 0)
+            {
+
+                runebook_data = _tmap_get_book_data(spot_data[1]);
+                runebook_name = runebook_data.lower_bound + '-' + runebook_data.upper_bound;
+
+                runebook_serial = _runebook_find_by_name(runebook_name,
+                tmap_library_type); // name, fallback to ground (true or false)
+                if (!runebook_serial)
+                {
+                    Orion.Print('1990', 'Runebook named ' + runebook_name + ' not found (tmap_library_type is '+tmap_library_type+'. Maybe change it?).')
+                    continue;
+                }
+
+        		Orion.CharPrint(runebook_serial, 1990, runebook_name);
+        
+                //button_sequence is relative to the tmap book. for example, button 1, 2, 3 etc up to 16. Need this to _runebook_travel
+                //lower spot_data[1] - lowerbound +1?
+                button_sequence = spot_data[1] - runebook_data.lower_bound + 1
+
+                // off we go! Weeeeeeee
+                Orion.Print('2213','Coords ' + spot_data[0] + ' is the map ' + spot_data[1] + ' (button ' +
+                    button_sequence + ')' + ' in book ' + runebook_name);
+                Orion.Wait(pulse_time);
+                _runebook_travel(runebook_serial, button_sequence, 6)
+            }
+            else
+            {
+                Orion.Print('1990', 'Could not determine the correct map number for this opened map.')
+            }
+
+        }
+        Orion.Wait(pulse_time)
+    }
+
+}
+
+/**
+ * Description
+ * @method _tmap_get_map_xy
+ * @return Literal
+ */
+function _tmap_get_map_xy()
+{
+    msg = Orion.InJournal('Map opened to: ', 'normal');
+
+    if (msg)
+    {
+        xy = msg.Text().split(' to: ')[1].replace(':', ',');
+        Orion.ClearJournal();
+        return xy;
+    }
+    else
+    {
+        Orion.Print('1990', 'Cannot find a map open message. Please open a map.')
+        return false;
+    }
+
+    return null;
+}
+
+
+
+// from string. more portable
+/**
+ * Description
+ * @method _tmap_get_spot_data
+ * @return spot_info
+ */
+function _tmap_get_spot_data()
+{
+    // Sample - 961,506:1;1162,189:2;1315,317:3;1469,230:4;
+
+    var spots_data = tmaps_coordinates_xy_position.split(
+    ';'); // split the string at ';' so every number,number:number is one different line
+
+    var spot_info = [];
+
+    for (var i = 0, len = spots_data.length; i < len; i++)
+    {
+        var fields = spots_data[i].split(
+            ':') // split the line at ':' so every number:number is a fileld (position 0 ) and number (position 1) is another field.
+        // this way, this line 961,506:1 will be: ['961,506',1] - element [0] is x,y and element [1] is the map_number
+
+        var spot_xy = fields[0];
+        var map_number = fields[1];
+        // so, spot[0] is 961,506', an x,y information
+        //		Orion.Print(spot_xy+'/'+ map_xy)
+        if (_tmap_check_spot_area(spot_xy, map_xy))
+        {
+            spot_info = fields;
+            break;
+        }
+    }
+
+    return spot_info;
+}
+
+/**
+ * Description
+ * @method _tmap_get_book_data
+ * @param {} map_number
+ * @return ObjectExpression
+ */
+function _tmap_get_book_data(map_number)
+{
+    map_ratio = map_number / 16;
+    upper_bound = Math.ceil(map_ratio) * 16;
+    lower_bound = upper_bound - 15;
+
+    return {
+        'map_ratio': map_ratio,
+        'upper_bound': upper_bound,
+        'lower_bound': lower_bound
+    }
+
+
+}
+
+
+/**
+ * Description
+ * @method _tmap_check_spot_area
+ * @param {} spot_xy
+ * @param {} map_xy
+ * @return Literal
+ */
+function _tmap_check_spot_area(spot_xy, map_xy)
+{
+    sxy = spot_xy.split(',');
+    spotx = parseInt(sxy[0]);
+    spoty = parseInt(sxy[1]);
+    mxy = map_xy.split(',')
+    mapx = parseInt(mxy[0]);
+    mapy = parseInt(mxy[1]);
+
+    if (
+        (mapx >= spotx - 3 && mapx <= spotx + 3) &&
+        (mapy >= spoty - 3 && mapy <= spoty + 3)
+    )
+    {
+        return true;
+    }
+
+
+    return false;
+}
+
+
+/**
+ * from file - not reliable/portable but useful
+ * function _tmap_get_map_spot_info()
+ * {
+ * var spot_info = [];
+ * var tmap_coords_file_path = reports_path+'/'+'runebook_mapping.txt'
+ * var tmap_coords_file = Orion.NewFile();
+ * tmap_coords_file.Open(tmap_coords_file_path);
+ * map_xy = _tmap_get_map_xy();
+ * spots_data = _file_content_to_array(tmap_coords_file, ':');
+ * //[0] - x,y position; [2] button sequence
+ * for (var i = 0, len = spots_data.length; i < len; i++) 
+ * {
+ * spot = spots_data[i];
+ * if (_tmap_check_spot_area(spot[0], map_xy))
+ * {
+ * spot_info = spot;
+ * break;
+ * }
+ * }
+ * return spot_info;
+ * }
+ * @method _tmap_rune_mark
+ * @param {} text
+ * @param {} runebook_name
+ * @return 
+ */
+function _tmap_rune_mark(text, runebook_name)
+{
+    var cleanRune = Orion.FindType('0x1f14', 'any', 'backpack', 'fast');
+    
+    runebook = _runebook_find_by_name(runebook_name, tmap_library_type)
+
+    if (!runebook)
+    {
+        Orion.Print('1990', 'Runebook ' + runebook_name + ' not found.');
+        return false;
+    }
+
+    Orion.Cast("Mark");
+    Orion.Wait(pulse_time * 22);
+    if (cleanRune)
+    {
+        Orion.TargetObject(cleanRune);
+        Orion.Wait(pulse_time * 4);
+        Orion.UseObject(cleanRune);
+        Orion.WaitForPrompt(3000);
+        Orion.SendPrompt(text)
+        Orion.Wait(pulse_time * 8)
+        Orion.MoveItem(cleanRune, 1, runebook)
+        Orion.Wait(pulse_time * 3);
+        return true;
+    }
+    else
+    {
+        Orion.Print('1990', "No rune found in you backpack. Place a rune in you backpack and try again."
+        );
+    }
+}
+
+
+
+/**
+ * Description
+ * @method tmap_mark
+ * @return 
+ */
+function tmap_mark()
+{
+
+    file = Orion.NewFile();
+    file.Open(reports_path + '/runebook_mapping.txt');
+    spot_info = _file_content_to_array(file, '');
+    file.Close()
+
+    map_number = (spot_info && spot_info.length > 0) ? spot_info.length + 1 : 1;
+
+    runebook_data = _tmap_get_book_data(map_number);
+   runebook_name = runebook_data.lower_bound + '-' + runebook_data.upper_bound;
+
+    if (!_runebook_find_by_name(runebook_name, tmap_library_type))
+    {
+        Orion.Print('1990', 'Runebook named ' + runebook_name + ' not found')
+        return false;
+    }
+
+    file = Orion.NewFile();
+    file.Append(reports_path + '/runebook_mapping.txt');
+    file.Write(Player.X() + ',' + Player.Y() + ':' + map_number);
+    file.Write("\n");
+    file.Close()
+
+    _tmap_rune_mark(map_number, runebook_name)
+    Orion.Print('1990', 'Treasure spot ' + map_number + ' stored at book ' + runebook_name);
+
+}
+
+/**
+ * Description
+ * @method searchTreasureSpot
+ * @return 
+ */
+function searchTreasureSpot()
+{
+
+    //    while (true)
+    {
+        tiles = Orion.GetTilesInRect('land', Player.X() - 3, Player.Y() - 3, 0, Player.X() + 3, Player.Y() +
+            3, 0);
+        Orion.Print(tiles.length)
+        for (i = 0; i < tiles.length; i++)
+        {
+            Orion.AddFakeMapObject(Orion.Random(0, 65000) + i, '0x023E', '0x0021', tiles[i].X(), tiles[i].Y(),
+                tiles[i].Z());
+            Orion.Wait(5);
+        }
+        Orion.Wait(600);
+        for (i = 0; i < tiles.length; i++)
+        {
+            Orion.AddFakeMapObject(Orion.Random(0, 65000) + i, '0x023E', '0x0000', tiles[i].X(), tiles[i].Y(),
+                tiles[i].Z());
+            tmap = Orion.FindType('0x14EC', '0x08AB', backpack, 'item|fast', '', false);
+            Orion.RequestContextMenu(tmap);
+            Orion.WaitContextMenuID(tmap, 1);
+            if (Orion.WaitForTarget(2000))
+            {
+                Orion.AddFakeMapObject(Orion.Random(0, 65000), '0x023E', '0x04F8', tiles[i].X(), tiles[i].Y(),
+                    tiles[i].Z())
+                Orion.Print('Digging')
+                Orion.Wait(400);
+                Orion.TargetTile('any', tiles[i].X(), tiles[i].Y(), tiles[i].Z());
+            }
+        }
+    }
+
+}
+
+/**
+ * Description
+ * @method tmap_hunt
+ * @return 
+ */
+function tmap_hunt()
+{
+    //get tmap from key
+    // open tmap
+    // get decode
+    // from xyz journal to sextant
+    //search list[lat/lon].book/list[lat/lon].button
+    // walk 2 tles away
+
+    msg = Orion.InJournal('Map opened to: ')
+    if (msg && msg.Text().length > 0)
+    {
+        mapXYZ = msg.Text().split('Map opened to: ')[1];
+    }
+
+    if (!msg || !mapXYZ) return false
+
+    Orion.ClearJournal();
+
+    TextWindow.Open();
+    TextWindow.Print('=====================');
+    Orion.FindTypeEx('0x22C5', '0x0501', 'ground', 'item').forEach(function (runebook)
+    {
+        btn_idx = 5;
+        Orion.Wait(2000);
+
+        Orion.UseObject(runebook.Serial());
+        Orion.WaitForGump(3000);
+        gump = getRunebookGump();
+        TextWindow.Print(runebook.Serial() + ' - ' + runebook.Properties() + ' |' + gump.TextList());
+        for (var i = 0; i < gump.TextList().length; i++)
+        {
+            if (Orion.Contains(gump.TextList()[i], "'N|'S "))
+            {
+                TextWindow.Print('XYZ:' + gump.TextList()[i].replace('°', 'o') + ' ' + gump
+                .TextList()[i + 1].replace('°', 'o'));
+                xyz = Orion.SextantToXY(gump.TextList()[i].replace('°', 'o') + ' ' + gump.TextList()[
+                    i + 1].replace('°', 'o'), 0);
+                if (!xyz)
+                {
+                    TextWindow.Print('Falied:' + gump.TextList()[i].replace('°', 'o') + ' ' + gump
+                        .TextList()[i + 1].replace('°', 'o'));
+                }
+
+                if (!go[xyz.X() + ':' + xyz.Y()])
+                {
+                    go[xyz.X() + ':' + xyz.Y()] = {
+                        'runebook': runebook.Serial(),
+                        'button': btn_idx,
+                        'lat': gump.TextList()[i].replace('°', 'o') + ' ' + gump.TextList()[i + 1]
+                            .replace('°', 'o')
+                    }
+                    TextWindow.Print(JSON.stringify(go));
+                    btn_idx = btn_idx + btn_step;
+                    //                    list_go.push(go);
+                    Orion.Print('c');
+
+                }
+            }
+        }
+        Orion.Wait(2000);
+        gump.Close();
+        TextWindow.Print('--------------');
+    }); // end FindTypeEx
+    Orion.Print('d');
+    Orion.Print('aaa' + go[mapXYZ])
+
+}
+
