@@ -1,0 +1,218 @@
+//#include lib.oajs
+//#include general.oajs
+
+// TODO: custom filtering
+
+process_type = 'bs'; // can be: bs, tailor, carp, fletch, tink, taming
+
+use_filtering_data = false;
+
+
+
+filtering_data = 
+{
+'contents': 'bardiche, dagger',
+'amount': 15,
+'exceptional': 'yes',
+'resource': '',
+}
+
+
+// ###############################
+
+// Object: ultimate_BOD_book_gump_data
+// Represents an ultimate BOD book gump and list it's main useful properties.
+// ID - HEX idenfier for this kind of gump 
+// bs, tailor, carp, bf, tink, tam: Types of bod books
+// smbtn and lgbtn: small and large buttons positions for clicking
+var ultimate_BOD_book_gump_data = 
+{
+	'name': 'ultimate_BOD_book_gump',
+	'ID': '0x06ABCE12',
+	'bs':{'smbtn':1, 'lgbtn':8},
+	'tailor':{'smbtn':2, 'lgbtn':9},
+	'carp':{'smbtn':3, 'lgbtn':10},
+	'bf':{'smbtn':4, 'lgbtn':11},
+	'tink':{'smbtn':5, 'lgbtn':12},
+	'tam':{'smbtn':6, 'lgbtn':13},
+
+}
+
+
+// Object: bod_list_gump_data
+// Represents the gump page that lists the actual bods deeds stored on the book. The button [100] is always the first gem button to retrieve the first bod listed.
+// It is from this gump that you get the unique small/large bod to your backpack
+// ID - HEX idenfier for this kind of gump 
+// search_fields: Positional information to quickly use the natural gump filtering capabilities.
+
+var bod_list_gump_data = 
+{
+	'name': 'large_bod_list',
+	'ID': '0xB2F21F1A',
+	'retrieve_first_button': 100,
+	'search_fields': 
+		{
+			'type':{'textfield':0, 'button':12},
+			'amount':{'textfield':1, 'button':22},
+			'except':{'textfield':2, 'button':32},
+			'resource':{'textfield':3, 'button':42},
+			
+		}
+
+}
+
+
+// BOD data information
+// bs, tailor, carp, fletch, tink, taming
+bod_data = 
+{
+'bs': {'graphic':0x2258, 'color':0x044E, 'type_position':3},
+'tailor': {'graphic':1, 'color':2, 'type_position':3},
+'carp': {'graphic':1, 'color':2, 'type_position':3},
+'fletch': {'graphic':1, 'color':2, 'type_position':3},
+'tink': {'graphic':1, 'color':2, 'type_position':3},
+'taming': {'graphic':1, 'color':2, 'type_position':3}
+
+}
+
+
+function _find_ultimate_BOD_book()
+{
+	var ultimate_BOD_book = Orion.FindTypeEx(0x2259, 'any', 'backpack');
+	
+	if ( ultimate_BOD_book == null || ultimate_BOD_book == undefined || ultimate_BOD_book.length < 1)
+	{
+		Orion.Print('Could not find an Ultimate BOD Book to get BODs from.')
+		return false;
+	}
+	
+	ultimate_BOD_book = ultimate_BOD_book.filter(function(book){
+	
+		return Orion.Contains(book.Properties(), 'Ultimate BOD Book');
+	
+	});
+	
+
+	if ( ultimate_BOD_book.length > 1)
+	{
+		Orion.Print('It seems that you have more than one Ultimate BOD Book in your backpack. You can have only one with you at a time.')
+		return false;
+	}
+	
+	return ultimate_BOD_book[0];
+	
+}
+
+
+function _filter_gump_using_textentry(gump, gump_data, criteria, value)
+{
+			var search_data = gump_data.search_fields[criteria];
+			var gumpHook0 = Orion.CreateGumpHook(search_data.button);            
+			
+            gumpHook0.AddEntry(search_data.textfield, value);            
+            gump.Select(gumpHook0); 
+
+
+}
+
+function _clear_gump_textentry_filter(gump_data)
+{
+		for ( key in bod_list_gump_data.search_fields) 
+		{
+			gump = _bod_get_gump(bod_list_gump_data)
+			_filter_gump_using_textentry(gump, bod_list_gump_data, key, "");
+
+			Orion.WaitForGump();
+
+
+		}
+}
+
+
+function main_bod()
+{
+	var ultimate_BOD_book = _find_ultimate_BOD_book();
+	
+	Orion.Print(ultimate_BOD_book.Name())
+	
+	Orion.UseObject(ultimate_BOD_book.Serial());
+	
+	Orion.WaitForGump(3000);	
+	
+	ultimate_bod_book_gump =  _bod_get_gump(ultimate_BOD_book_gump_data)
+
+	Orion.WaitForGump(3000);	
+	
+	if (ultimate_bod_book_gump == null || ultimate_bod_book_gump == undefined )
+	{
+		Orion.Print('Could not find the main bod gump');
+		return false;
+	}
+	
+	// open the lg bod gump
+	ultimate_bod_book_gump.Select(Orion.CreateGumpHook(ultimate_BOD_book_gump_data.bs.lgbtn))
+	// pick the first one, read and store it's information.
+
+	Orion.WaitForGump(3000);
+		
+	bod_filter_gump = _bod_get_gump(bod_list_gump_data)
+	
+	Orion.WaitForGump(3000);	
+	
+	if (bod_filter_gump == null || bod_filter_gump == undefined )
+	{
+		Orion.Print('Could not find the bod filter gump');
+		return false;
+	}
+	
+	// RESET FILTERING
+	// _clear_gump_textentry_filter(bod_filter_gump, bod_list_gump_data)
+	
+	// now retrieve the first large bod
+	if ( ! Orion.Contains(bod_filter_gump.ButtonList(),bod_list_gump_data.retrieve_first_button ) )
+	{
+		Orion.Print('The bod list is empty. No BOD to retrieve.');
+		return false;
+	
+	}
+	else
+	{
+		bod_filter_gump.Select(Orion.CreateGumpHook(bod_list_gump_data.retrieve_first_button))	
+	}
+
+	// Get a large bod from backpack
+	// small and large bods are exact the same, except for a 'property'  position 3, 'Small' or 'Large' Bulk Order
+	// Mapear item - craft gump - button
+	// pode ser nome do item ou graphic (decimal)
+	
+
+
+	
+	
+	
+	
+	
+	
+	// _filter_gump_using_textentry(bod_filter_gump, bod_list_gump_data, 'amount', 20)	
+	
+	
+}
+
+
+function _bod_get_gump(bod_data)
+{
+    var bod_gump;
+    for (var i = 0; i < Orion.GumpCount(); i++)
+    {
+    Orion.Print('>'+bod_data.ID)
+        bod_gump = Orion.GetGump(i);
+
+        if (bod_gump != null && bod_gump.ID() == bod_data.ID)
+        {
+            return bod_gump;
+        }
+    }
+
+    return null;
+}
+
