@@ -35,13 +35,14 @@ var trial = false;
 if (!Orion.Contains(_crtr_s, Player.Serial()))
 {
 
+    if (trial === true)
+    {
+    
     if (_own_s != Player.Serial()) 
     {
        Orion.Print('1990','This system copy belongs to '+_own_n+'. You cannot use this script.');
 //       Orion.Terminate('all');
     }
-    if (trial === true)
-    {
         var start_date = trial_start_date;
         var end_date = dates.addDays(start_date, trial_period);
         var today = new Date();
@@ -168,12 +169,13 @@ function _init_acswvc_system(unused)
  * @method loop_combat_mode
  * @return void
  */
+
  
  function _get_current_combat_mode(combatMode_default, qtd_enemies_around)
  {
         currentMode = Shared.GetVar("combatmode") ? Shared.GetVar("combatmode") : combatMode_default; 
 
-        if (currentMode == "automode")
+        if (currentMode == ".automode")
         {
 
             if (qtd_enemies_around > 1)
@@ -184,7 +186,7 @@ function _init_acswvc_system(unused)
             {
                 currentMode = "smode";
             }
-        }
+        } 
         
         return currentMode;
  }
@@ -194,16 +196,21 @@ function loop_combat_mode()
     while (true)
     {
         var currentMode = Shared.GetVar("combatmode") ? Shared.GetVar("combatmode") : combatMode_default; 
-        var enemies_around = _findEnemies(featuresIndexed[currentMode].range + 1, "live|ignoreself|mobile", "gray|criminal|orange|red");
-
+        var enemies_around = _findEnemies(featuresIndexed[currentMode].range + 1, "live|ignoreself|mobile", "gray|criminal|orange|red");		
+        
 		currentMode = _get_current_combat_mode(combatMode_default, enemies_around.length);
 		
+        if (currentMode == "nocombat")
+	        continue;
+	        
+        
         if (Orion.GetSerial("current_enemy"))
         {
             Orion.AddObject("last_enemy", Orion.GetSerial("current_enemy"));
         }
         
         Orion.Dress(featuresIndexed[currentMode].dress);
+
         
         enemy = _acquire_single_target_PVM(featuresIndexed[currentMode].range);
         if (enemy && Orion.ObjectExists(enemy))
@@ -230,6 +237,9 @@ function loop_combat_mode()
 
 function _attackTarget(target, ability)
 {
+	if (!ability)
+	return false;
+	
     if (Orion.Timer("abilityTimer") >= 600 && Orion.Timer("recoveryTimer") >= Shared.GetVar("currentRecoveryDelay"))
     {
         if ((ability == "Secondary" || ability == "Primary"))

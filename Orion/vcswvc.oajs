@@ -44,6 +44,14 @@ var adjective_list = ['Saviour of Sosaria', 'Love of My Life', 'Friend', 'My Eye
 
 features = [
     { // A feature block starts on the first {
+        'name': 'automode',
+        'command': '.am',
+        'defaultv': 'on',
+        'type': 'combatmode',
+        'range': 1,
+        'dress': 'championset'
+    },  //and ends with {,
+    { 
         'name': 'cmode',
         'command': '.cm',
         'defaultv': 'on',
@@ -51,7 +59,7 @@ features = [
         'ability': 'Secondary',
         'range': 1,
         'dress': 'championset'
-    }, //and ends with {,
+    }, 
     {
         'name': 'smode',
         'command': '.sm',
@@ -62,14 +70,6 @@ features = [
         'dress': 'singleset'
     },
     {
-        'name': 'automode',
-        'command': '.am',
-        'defaultv': 'on',
-        'type': 'combatmode',
-        'range': 1,
-        'dress': 'championset'
-    },
-    {
         'name': 'rmode',
         'command': '.rm',
         'defaultv': 'on',
@@ -77,6 +77,12 @@ features = [
         'ability': 'Primary',
         'range': 12,
         'dress': 'rangedset'
+    },
+    {
+        'name': 'nocombat',
+        'command': '.nocombat',
+        'defaultv': 'off',
+        'type': 'combatmode'
     },
     {
         'name': 'Consecrate Weapon',
